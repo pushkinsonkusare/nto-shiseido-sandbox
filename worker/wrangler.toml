@@ -1,0 +1,20 @@
+name = "sa26-llm-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# `nodejs_compat` is NOT required — the Worker uses only Web standard
+# APIs (fetch, Headers, Request, Response, URL). Keep the bundle lean.
+
+# OPENAI_API_KEY is provisioned as a *secret*, not a plain var.
+# Set it once with:
+#   wrangler secret put OPENAI_API_KEY
+# (interactive — paste the key when prompted)
+
+[observability]
+enabled = true
+
+# Tighten this allowlist for your domain(s). The Worker also
+# enforces the list at runtime; this section is purely belt-and-
+# suspenders for ops visibility.
+[vars]
+ALLOWED_ORIGINS = "https://pushkinsonkusare.github.io,http://localhost:5173,http://127.0.0.1:5173"

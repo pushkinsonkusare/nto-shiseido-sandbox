@@ -1,0 +1,793 @@
+:root {
+  --plp-page-max-width: 1536px;
+  --plp-side-padding: 64px;
+  --plp-section-gap: 44px;
+  --plp-grid-gap-x: 24px;
+  --plp-grid-gap-y: 40px;
+  --plp-filter-width: 260px;
+
+  --plp-surface: #ffffff;
+  --plp-border: #d1d5db;
+  --plp-text-primary: #17171b;
+  --plp-text-muted: #35353b;
+  --plp-accent: #0045df;
+  --plp-success: #2e844a;
+
+  /* Mobile PLP typography/spacing tokens */
+  --plp-mobile-header-gap: 16px;
+  --plp-mobile-breadcrumb-size: 12px;
+  --plp-mobile-breadcrumb-line: 16px;
+  --plp-mobile-title-size: 34px;
+  --plp-mobile-title-tracking: -0.02em;
+  --plp-mobile-filter-collapsed-height: 60px;
+  --plp-mobile-filter-title-size: 18px;
+  --plp-mobile-filter-title-line: 1.2;
+  --plp-mobile-filter-title-weight: 600;
+  --plp-mobile-filter-expanded-title-size: 16px;
+}
+
+.figma-plp {
+  width: 100%;
+  background: var(--plp-surface);
+  color: var(--plp-text-primary);
+  box-sizing: border-box;
+  font-family: var(--font-family-base);
+}
+
+.figma-plp__header-shell {
+  background: #18181b;
+  position: sticky;
+  top: var(--sxs-mode-bar-height, var(--app-topbar-height, 56px));
+  z-index: 50;
+}
+
+.figma-plp__announcement {
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: #000;
+}
+
+.figma-plp__top-nav {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-page-desktop, var(--plp-side-padding));
+}
+
+.figma-plp__brand-row {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24px;
+}
+
+.figma-plp__brand-mark {
+  color: #fff;
+}
+
+a.prototype-brand-link.figma-plp__brand-mark {
+  color: rgba(255, 255, 255, 1);
+}
+
+.figma-plp__quick-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.figma-plp__quick-links a {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #e5e5e5;
+  text-decoration: none;
+}
+
+.figma-plp__quick-links a:hover {
+  color: #fff;
+}
+
+.figma-plp__sale-link {
+  font-weight: 700 !important;
+}
+
+.figma-plp__top-actions {
+  display: flex;
+  gap: 0;
+  align-items: center;
+}
+
+.figma-plp__top-actions button {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #f4f4f5;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.figma-plp__top-actions button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.figma-plp__top-actions button:focus-visible {
+  outline: 2px solid #7c5cff;
+  outline-offset: 2px;
+}
+
+.figma-plp__page-inner {
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px var(--space-page-desktop, 64px) 16px;
+}
+
+.figma-plp__header {
+  margin-bottom: var(--plp-section-gap);
+}
+
+.figma-plp__breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--plp-text-muted);
+  margin-bottom: 12px;
+}
+
+.figma-plp__sep {
+  opacity: 1;
+  display: inline-flex;
+  align-items: center;
+  color: #52525b;
+}
+
+.figma-plp__breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.figma-plp__breadcrumb-link:hover,
+.figma-plp__breadcrumb-link:focus-visible {
+  color: #18181b;
+  text-decoration: underline;
+}
+
+.figma-plp__title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #3f3f46;
+}
+
+.figma-plp__main {
+  display: grid;
+  grid-template-columns: var(--plp-filter-width) 1fr;
+  gap: var(--plp-section-gap);
+  align-items: start;
+}
+
+.figma-plp__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Drill-down escape: shown above the filter list when the shopper has
+ * narrowed to a single known category. Clicking returns to the
+ * cross-category sidebar (top-level multi-select). Styled as a
+ * lightweight inline link rather than a heavy button so it doesn't
+ * compete with the filter groups visually. */
+.figma-plp__filter-escape {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: #4b5563;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.figma-plp__filter-escape:hover {
+  color: #17171b;
+  text-decoration: underline;
+}
+
+.figma-plp__filter-escape:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.figma-plp__filter-group {
+  border: 1px solid var(--plp-border);
+  background: var(--plp-surface);
+  padding: 12px 24px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Collapsed state: header is the only visible content. The flex gap
+ * between the h2 and the (now-omitted) body elements is implicitly
+ * zero because there's only one child. We also drop the h2's bottom
+ * margin since the gap layout covers spacing when expanded. */
+.figma-plp__filter-group--collapsed {
+  gap: 0;
+}
+
+.figma-plp__filter-group h2 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Header toggle button: borderless square, 36x36 hit target matches
+ * the Figma node, only the icon shows. Hover/focus states keep the
+ * filter card looking clickable as a whole without competing with
+ * the title. */
+.figma-plp__filter-toggle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #17171b;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.figma-plp__filter-toggle:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.figma-plp__filter-toggle:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+/* Min/Max input row for the price filter — sits above the bucket list.
+ * Two equal-width fields with a small "to" label between them. Each
+ * field is a 1px-bordered input shell with a leading dollar-sign icon
+ * and a numeric input that loses its native spinner styling so the
+ * field reads as plain text. */
+.figma-plp__price-range {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.figma-plp__price-field {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--agentic-input-bg, #ffffff);
+  border: 1px solid var(--agentic-input-border, #d1d5db);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.02);
+  box-sizing: border-box;
+  cursor: text;
+}
+
+.figma-plp__price-field:focus-within {
+  border-color: #9ca3af;
+}
+
+.figma-plp__price-field-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.figma-plp__price-field input {
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: #17171b;
+  padding: 0;
+}
+
+.figma-plp__price-field input::placeholder {
+  color: #6b7280;
+}
+
+/* Strip the native number-input spinner so the field looks like a
+ * plain text input — the user can still type digits and the browser
+ * still validates numeric input via inputMode/min, just without the
+ * up/down arrows that don't match the design. */
+.figma-plp__price-field input::-webkit-outer-spin-button,
+.figma-plp__price-field input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.figma-plp__price-field input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.figma-plp__price-range-sep {
+  font-size: 14px;
+  line-height: 1;
+  color: #17171b;
+  flex-shrink: 0;
+}
+
+.figma-plp__filter-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.figma-plp__filter-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #17171b;
+}
+
+/* Inline "Clear" link rendered below the price bucket list when a
+ * price filter is active. Styled as a lightweight text button to
+ * match the low-emphasis "Browse all categories" escape link, so the
+ * sidebar has one consistent visual language for clear/escape
+ * actions rather than mixing button shapes. */
+.figma-plp__filter-clear {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: #4b5563;
+  cursor: pointer;
+  align-self: flex-start;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.figma-plp__filter-clear:hover {
+  color: #17171b;
+}
+
+.figma-plp__filter-clear:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.figma-plp__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--plp-grid-gap-y) var(--plp-grid-gap-x);
+  align-content: flex-start;
+  margin-top: 32px;
+}
+
+.figma-plp__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 32px 0;
+  color: var(--plp-text-muted);
+  font-size: 14px;
+}
+
+.figma-plp__empty-reset {
+  appearance: none;
+  background: #18181b;
+  color: #fafafa;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.figma-plp__empty-reset:hover,
+.figma-plp__empty-reset:focus-visible {
+  background: #3f3f46;
+}
+
+.figma-plp__card-wrap {
+  width: 260px;
+  flex: 0 0 260px;
+}
+
+.figma-plp__footer {
+  margin-top: 80px;
+  padding: 24px 0 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  color: #35353b;
+}
+
+.figma-plp__footer-left strong {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.figma-plp__footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.figma-plp__footer a {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--plp-text-muted);
+  text-decoration: none;
+}
+
+.figma-plp__footer a:hover {
+  color: var(--plp-accent);
+}
+
+.figma-plp__footer-copy {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--plp-text-muted);
+}
+
+.figma-plp__footer-right {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+@media (max-width: 1024px) {
+  .figma-plp__top-nav { padding: 0 24px; }
+  .figma-plp__page-inner { padding: 24px; }
+
+  .figma-plp__main {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-plp__filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .figma-plp__footer {
+    flex-direction: column;
+  }
+
+  .figma-plp__footer-right {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .figma-plp__filters {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-plp__grid {
+    justify-content: center;
+  }
+
+  .figma-plp__quick-links {
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .figma-plp__top-actions {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 767px) {
+  .figma-plp {
+    --plp-grid-gap-x: 16px;
+    --plp-grid-gap-y: 20px;
+  }
+
+  .figma-plp__announcement {
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .figma-plp__top-nav {
+    height: 64px;
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-plp__quick-links {
+    display: none;
+  }
+
+  .figma-plp__top-actions {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .figma-plp__page-inner {
+    padding: 16px max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px))
+      calc(24px + var(--safe-area-bottom, 0px))
+      max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-plp__header {
+    margin-bottom: var(--plp-mobile-header-gap);
+  }
+
+  .figma-plp__breadcrumbs {
+    margin-bottom: 10px;
+    gap: 4px 8px;
+    font-size: var(--plp-mobile-breadcrumb-size);
+    line-height: var(--plp-mobile-breadcrumb-line);
+  }
+
+  .figma-plp__title {
+    font-size: var(--plp-mobile-title-size);
+    line-height: 1;
+    letter-spacing: var(--plp-mobile-title-tracking);
+  }
+
+  .figma-plp__filter-group {
+    padding: 0;
+    min-height: var(--plp-mobile-filter-collapsed-height);
+    justify-content: center;
+  }
+
+  .figma-plp__filter-group h2 {
+    min-height: var(--plp-mobile-filter-collapsed-height);
+    padding: 0 16px;
+    align-items: center;
+    font-size: var(--plp-mobile-filter-title-size);
+    line-height: var(--plp-mobile-filter-title-line);
+    letter-spacing: 0;
+  }
+
+  .figma-plp__filter-group h2 span {
+    font-weight: var(--plp-mobile-filter-title-weight);
+  }
+
+  .figma-plp__filter-toggle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .figma-plp__filter-group:not(.figma-plp__filter-group--collapsed) {
+    padding: 12px 14px 16px;
+  }
+
+  .figma-plp__filter-group:not(.figma-plp__filter-group--collapsed) h2 {
+    min-height: 44px;
+    padding: 0;
+    font-size: var(--plp-mobile-filter-expanded-title-size);
+  }
+
+  .figma-plp__grid {
+    justify-content: stretch;
+  }
+
+  .figma-plp__card-wrap {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .figma-plp__footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    gap: 12px;
+  }
+
+  .figma-plp__footer-right,
+  .figma-plp__footer-links {
+    gap: 10px;
+  }
+}
+
+html[data-demo-viewport="mobile"] .figma-plp {
+  --plp-grid-gap-x: 16px;
+  --plp-grid-gap-y: 20px;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__announcement {
+  height: 22px;
+  font-size: 11px;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__top-nav {
+  height: 64px;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__quick-links {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__top-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__page-inner {
+  padding: 16px max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px))
+    calc(24px + var(--safe-area-bottom, 0px))
+    max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  overflow-x: hidden;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__header {
+  margin-bottom: var(--plp-mobile-header-gap);
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__breadcrumbs {
+  margin-bottom: 10px;
+  gap: 4px 8px;
+  font-size: var(--plp-mobile-breadcrumb-size);
+  line-height: var(--plp-mobile-breadcrumb-line);
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__title {
+  font-size: var(--plp-mobile-title-size);
+  line-height: 1;
+  letter-spacing: var(--plp-mobile-title-tracking);
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__main {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filter-group {
+  padding: 0;
+  min-height: var(--plp-mobile-filter-collapsed-height);
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filter-group h2 {
+  min-height: var(--plp-mobile-filter-collapsed-height);
+  padding: 0 16px;
+  align-items: center;
+  font-size: var(--plp-mobile-filter-title-size);
+  line-height: var(--plp-mobile-filter-title-line);
+  letter-spacing: 0;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filter-group h2 span {
+  font-weight: var(--plp-mobile-filter-title-weight);
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filter-toggle {
+  width: 32px;
+  height: 32px;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filter-group:not(.figma-plp__filter-group--collapsed) {
+  padding: 12px 14px 16px;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__filter-group:not(.figma-plp__filter-group--collapsed) h2 {
+  min-height: 44px;
+  padding: 0;
+  font-size: var(--plp-mobile-filter-expanded-title-size);
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__price-range,
+html[data-demo-viewport="mobile"] .figma-plp__price-field {
+  min-width: 0;
+  width: 100%;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__grid {
+  justify-content: stretch;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__card-wrap {
+  width: 100%;
+  flex: 1 1 100%;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  gap: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-plp__footer-right,
+html[data-demo-viewport="mobile"] .figma-plp__footer-links {
+  gap: 10px;
+}
+
+/* Platform switcher contract: Desktop mode must preserve desktop-native
+ * top-nav treatment regardless of host viewport width. */
+html[data-demo-viewport="desktop"] .figma-plp__top-nav {
+  height: 80px;
+  padding: 0 var(--space-page-desktop, var(--plp-side-padding));
+}
+
+html[data-demo-viewport="desktop"] .figma-plp__brand-row {
+  gap: 24px;
+}
+
+html[data-demo-viewport="desktop"] .figma-plp__quick-links {
+  display: flex;
+}
+
+html[data-demo-viewport="desktop"] .figma-plp__top-actions {
+  display: flex;
+}

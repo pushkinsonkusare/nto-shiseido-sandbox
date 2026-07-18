@@ -1,0 +1,1442 @@
+/* Wingman landing page (immersive mode only).
+ *
+ * Matches the Figma "Wingman Landing" frame (file IGx0URqo5hp3azh5Hs8ZZM,
+ * node 54:30501): page bg `#f7f9fa`, sticky `<ImmersiveHeader>`, then a
+ * 32px-padded main column containing a 32px-rounded hero card and a
+ * 3-up grid of topic cards.
+ *
+ * Every selector below is namespaced `.wingman-page*`. The page is only
+ * mounted by `App.tsx` when `mode === "immersive"`, so nothing here can
+ * leak into Native / Sidecar / Side-by-side. */
+
+.wingman-page {
+  background: #f7f9fa;
+  color: #17171b;
+  font-family: var(--font-family-base);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Structurally identical to `.wingman-plan-page .immersive-header`
+ * (same sticky float over the hero, same "snap-to-solid" scroll
+ * transition), but inverted colorwise: the wingman page's landscape
+ * banner has bright sky + light mountain tones that the plan page's
+ * white-on-dark-glass treatment would disappear into. Here the
+ * header stays dark-on-light-glass at rest so brand + nav + icons
+ * stay legible across the whole banner; on scroll it snaps to the
+ * standard opaque-white + dark-text + hairline-shadow state shared
+ * with the plan page (rule below). */
+.wingman-page .immersive-header {
+  --immersive-header-fg: #17171b;
+  --immersive-header-fg-muted: #17171b;
+  --immersive-header-hover-bg: rgba(17, 17, 27, 0.08);
+  --immersive-header-press-bg: rgba(17, 17, 27, 0.14);
+  --immersive-header-focus-ring: rgba(45, 125, 246, 0.52);
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  backdrop-filter: blur(8px) saturate(140%);
+  box-shadow: none;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    backdrop-filter 180ms ease;
+}
+
+.wingman-page--scrolled .immersive-header {
+  --immersive-header-fg: #17171b;
+  --immersive-header-fg-muted: #17171b;
+  --immersive-header-hover-bg: rgba(17, 17, 27, 0.06);
+  --immersive-header-press-bg: rgba(17, 17, 27, 0.1);
+  --immersive-header-focus-ring: rgba(45, 125, 246, 0.52);
+  background: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 1px 0 rgba(15, 15, 20, 0.06);
+}
+
+/* `--header-h` matches the immersive header's resolved height
+ * (18 padding + 36 content row + 18 padding = 72). The main column
+ * is pulled up by this amount so the hero lifestyle banner extends
+ * *behind* the (now-transparent) header, mirroring the Wingman Plan
+ * page. The header itself stays sticky with `z-index: 50`, so it
+ * always renders above the hero image. */
+/* `--main-pad-x: 120px` matches `.wingman-plan-page__main` exactly so
+ * the hero copy column anchors at the same 120 px viewport gutter on
+ * both surfaces — moving between the landing hero and the plan hero
+ * never shifts the left edge of the headline. */
+.wingman-page__main {
+  /* Content is capped at `--content-max-w` and centered on wide
+   * screens (Apple-store style): the gutter holds at 120px until the
+   * viewport is wide enough that content would exceed the cap, then
+   * grows so the content column stays centered instead of stretching
+   * edge-to-edge. Crossover happens at `--content-max-w + 240px`
+   * (= 1600px), which also matches the plan page's 1600px breakpoint
+   * so the two surfaces' left edges stay aligned on large screens.
+   * The full-bleed hero banner is unaffected — it bleeds via negative
+   * margins of `--main-pad-x`, so it always spans the full width. */
+  --content-max-w: 1360px;
+  --main-pad-x: max(120px, (100vw - var(--content-max-w)) / 2);
+  --header-h: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 var(--main-pad-x);
+  position: relative;
+  margin-top: calc(var(--header-h) * -1);
+}
+
+/* ---------- Hero ---------- */
+
+/* Full-bleed hero band. Reserves vertical space for the immersive
+ * header that now floats over it via `padding-top: var(--header-h)`,
+ * and bleeds to both viewport edges so the lifestyle banner doesn't
+ * inherit the page gutter. Mirrors `.wingman-plan-page__hero`. */
+.wingman-page__hero {
+  position: relative;
+  /* 853px tall to match `.wingman-plan-page__hero` — the welcome
+   * cover is a 1:1 image, so this taller band lets it render at a
+   * natural aspect under `object-fit: cover` instead of being
+   * crushed into a thin horizontal strip. */
+  min-height: 853px;
+  margin-left: calc(var(--main-pad-x) * -1);
+  margin-right: calc(var(--main-pad-x) * -1);
+  border-radius: 0;
+  /* No `overflow: hidden` here: the prompt card is absolutely
+   * positioned inside `.wingman-page__hero-content` and intentionally
+   * extends past the 853px hero band onto the page bg below. Clipping
+   * the scroll-driven blur/scale on the lifestyle image and the
+   * fade-to-#f7f9fa gradient is delegated to `.wingman-page__hero-art`
+   * below, which has the same box (`inset: 0`) but doesn't trap the
+   * card. */
+  padding-top: calc(var(--header-h) + 59px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  color: #17171b;
+}
+
+/* Lifestyle banner layer. Absolutely positioned so it ignores the
+ * hero's flex flow and bleeds edge-to-edge under the header. Same
+ * structure as `.wingman-plan-page__hero-art`.
+ *
+ * `overflow: hidden` lives here (not on `.wingman-page__hero`) so the
+ * blurred + scaled image and the `::after` fade-to-bg gradient stay
+ * contained to the hero's visual rect without also clipping the
+ * absolutely-positioned prompt card that overhangs past the hero. */
+.wingman-page__hero-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wingman-page__hero-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* `cover` keeps the banner filling the panel at the image's
+   * natural resolution. The Mini Beginner drone banner is a 2.25:1
+   * landscape source, so `cover` into a 1.99:1 hero clips only
+   * ~6% horizontally — `object-position: center right` keeps the
+   * woman + drone subject (right-of-center) fully visible and
+   * drops a thin strip of the left mountain forest, which is then
+   * masked further by the horizontal #f7f9fa wash from the
+   * gradient layer below. Matches the plan-page convention. */
+  object-fit: cover;
+  object-position: center right;
+  /* Depth-of-field driven by --hero-scroll-progress (0..1) which the
+   * page root publishes from a single rAF-batched scroll listener
+   * (see WingmanPage.tsx). At rest (p=0) the image is pristine;
+   * at p=1 it's blurred 10px and scaled 1.06. `will-change` keeps
+   * the layer GPU-composited so the filter + transform animate at
+   * 60fps. */
+  transform: scale(calc(1 + var(--hero-scroll-progress, 0) * 0.06));
+  filter: blur(calc(var(--hero-scroll-progress, 0) * 10px));
+  transform-origin: center center;
+  will-change: transform, filter;
+}
+
+/* Three stacked gradient layers carry the hero into the page bg
+ * without a hard seam (mirrors `.wingman-plan-page__hero-art::after`,
+ * keyed to this page's bg `#f7f9fa` instead of `#f8f9fa`):
+ *   - top: a uniform white wash whose alpha ramps with
+ *     --hero-scroll-progress (0 at rest, ~0.45 fully scrolled). This
+ *     is the "dim toward white" half of the parallax depth-of-field
+ *     — it pairs with the blur on the underlying image so the hero
+ *     visibly recedes as the cards take focus.
+ *   - vertical: an ease-in fade from transparent (top) to opaque
+ *     #f7f9fa (bottom) so the imagery dissolves into the page bg.
+ *     The alpha stops follow an approximate ease-in curve so the
+ *     transition has no perceptible Mach-band edge.
+ *   - horizontal: opaque #f7f9fa from the left, fading to
+ *     transparent by ~70% so the right-column subject of the image
+ *     is preserved. The transparent stops are also keyed to #f7f9fa
+ *     (alpha 0) to avoid the WebKit "fade-to-grey" artifact. */
+.wingman-page__hero-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      rgba(255, 255, 255, calc(var(--hero-scroll-progress, 0) * 0.45)),
+      rgba(255, 255, 255, calc(var(--hero-scroll-progress, 0) * 0.45))
+    ),
+    linear-gradient(
+      180deg,
+      rgba(247, 249, 250, 0) 0%,
+      rgba(247, 249, 250, 0.02) 30%,
+      rgba(247, 249, 250, 0.08) 50%,
+      rgba(247, 249, 250, 0.22) 68%,
+      rgba(247, 249, 250, 0.55) 82%,
+      rgba(247, 249, 250, 0.88) 93%,
+      rgb(247, 249, 250) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgb(247, 249, 250) 0%,
+      rgba(247, 249, 250, 0.8) 34.065%,
+      rgba(247, 249, 250, 0) 71.255%,
+      rgba(247, 249, 250, 0) 100%
+    );
+}
+
+.wingman-page__hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: none;
+  height: 100%;
+  width: 100%;
+  padding-left: var(--main-pad-x);
+  padding-right: var(--main-pad-x);
+  box-sizing: border-box;
+}
+
+/* Drop the welcome copy column at the same viewport anchor the plan
+ * page uses for its `.wingman-plan-page__hero-headline` (viewport
+ * y=250). Same reference frame as the prompt card below: the hero
+ * starts at viewport y=0 on both surfaces (immersive header floats
+ * over it via `main { margin-top: -header-h }`).
+ *
+ * Math:
+ *   hero padding-top = var(--header-h) + 59px = 72 + 59 = 131px
+ *   intro is the first flex child of hero-content with no prior
+ *     siblings, so it sits at viewport y = 131 + margin-top
+ *   target viewport y = 250
+ *   ⇒ margin-top = 250 − 131 = 119px
+ *
+ * Encoded as `calc(250px - var(--header-h) - 59px)` so the anchor
+ * tracks any future change to the hero's top padding. `margin-top`
+ * (not hero `padding-top`) keeps the absolutely-positioned prompt
+ * card + chips below anchored where they are — only the intro
+ * moves. */
+.wingman-page__hero-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 567px;
+  margin-top: calc(250px - var(--header-h) - 59px);
+}
+
+.wingman-page__hero-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  font-family: "Open Sans", var(--font-family-base);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #17171b;
+}
+
+.wingman-page__hero-copy {
+  margin: 0;
+  max-width: 406px;
+  font-family: "Open Sans", var(--font-family-base);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #1f252d;
+  text-align: left;
+}
+
+/* ---------- Prompt input + chips ---------- */
+
+/* Anchor the prompt at viewport top=453px so it lines up exactly with
+ * `.wingman-plan-page__combos-card` on the plan page (which sits at
+ * `hero-bottom - 400px = 853 - 400 = 453`).
+ *
+ * Reference frame for both pages is the same: the immersive header
+ * floats over the hero via `main { margin-top: -header-h }`, so the
+ * hero starts at viewport y=0 on both surfaces.
+ *
+ * Math for the wingman page:
+ *   hero padding-top = var(--header-h) + 59px = 72 + 59 = 131px
+ *   prompt is absolute inside hero-content, whose padding-edge sits
+ *     at viewport y = 131
+ *   target viewport y = 453
+ *   ⇒ CSS top = 453 − 131 = 322px
+ *
+ * `top: calc(453px - var(--header-h) - 59px)` keeps the relationship
+ * explicit: if hero padding-top is ever retuned, the prompt's anchor
+ * automatically tracks viewport 453 without manual re-math.
+ *
+ * Using `left`/`right: var(--main-pad-x)` (instead of `width: 100%`)
+ * makes the card stretch to exactly the same content-area width as
+ * the combos-card no matter the viewport size, since both pages
+ * share `--main-pad-x`. Pinning to the gutter variable (rather than a
+ * literal 120px) means the card follows the centered, max-width
+ * content column on wide screens instead of stretching to the edges. */
+.wingman-page__prompt {
+  position: absolute;
+  top: calc(453px - var(--header-h) - 59px);
+  left: var(--main-pad-x);
+  right: var(--main-pad-x);
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  background: #ffffff;
+  border: 1px solid #e3e3e3;
+  border-radius: 20px;
+  box-shadow: 0 10px 34px rgba(15, 15, 20, 0.08);
+  padding: 56px 24px 24px;
+}
+
+/* Title + input shell form one visual unit (the "ask" pair).
+ * Wrapping them in a tighter-gap flex column keeps the headline
+ * paired with the field it's prompting for, while the outer
+ * `.wingman-page__prompt` retains its larger gap to separate this
+ * pair from the error slot and the continue-your-search row. */
+.wingman-page__prompt-ask {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 32px;
+}
+
+.wingman-page__prompt-title {
+  margin: 0;
+  text-align: center;
+  font-family: "Open Sans", var(--font-family-base);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: #17171b;
+}
+
+.wingman-page__input-stack {
+  position: relative;
+  width: min(100%, 610px);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+}
+
+/* Input shell — three visual states share the same layout
+ * ([Plus] [textarea-wrap] [Mic] [Send]) but differ in border and
+ * shadow so the shopper always knows which state they're in:
+ *
+ *   • rest        — empty + unfocused. Soft #d1d5db border, no
+ *                   shadow. Brief on first paint because the page
+ *                   autofocuses the input on mount (see
+ *                   WingmanPage.tsx), but still applies if the
+ *                   shopper later blurs an empty field.
+ *   • select /
+ *     focus       — pointer-down or keyboard focus on the shell.
+ *                   Dark #17171b border + a soft 3px focus ring so
+ *                   the field reads as "active". The browser's
+ *                   real blinking caret is the only caret on the
+ *                   page — we deliberately don't render a CSS fake
+ *                   caret in rest state because two carets could
+ *                   then race each other during focus transitions.
+ *   • text-entry  — has user content, focused or not. Dark
+ *                   #17171b border (commits the visual once the
+ *                   shopper has typed something) but no focus ring
+ *                   when blurred, so the chrome relaxes back to a
+ *                   resting line.
+ *
+ * NB: `--touched` is preserved as a no-op class for backwards
+ * compatibility with the existing JSX hook. */
+.wingman-page__input-shell {
+  /* Two-zone composer (ChatGPT/Cursor/Claude pattern): the textarea
+   * owns the top zone and fills top-down, and a dedicated toolbar row
+   * (`+` leading, mic + send trailing) sits pinned to the bottom. This
+   * makes the pill read as a roomy "write a paragraph" compose box
+   * rather than a single-line search field. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* Vertical gap between the text zone and the toolbar row. */
+  gap: 8px;
+  width: 541px;
+  height: fit-content;
+  /* 12px block padding + 16px inline-start padding (was 8 / 12) lifts
+   * the icons + text off the rounded edge so the pill reads as a
+   * premium chat shell rather than a stock <input>. The asymmetric
+   * left value matches the visual offset of the round-edge → leading
+   * `+` icon center. */
+  padding: 12px;
+  padding-left: 16px;
+  background: var(--white, #ffffff);
+  border: 1px solid #d1d5db;
+  border-radius: 24px;
+  box-sizing: border-box;
+  margin: 0;
+  /* Premium "AI pill" elevation. Four stacked layers, finest → broadest:
+   *   1. 1px tight hairline — grounds the pill on the prompt card so it
+   *      doesn't read as a floating sticker.
+   *   2. Neutral mid-drop — the conventional soft drop shadow that
+   *      gives the pill its physical lift.
+   *   3. Blue halo (#3b82f6) — a wider, softer azure wash that signals
+   *      "this surface is the AI input" without tinting the white fill.
+   *   4. Indigo halo (#6366f1) — sits underneath the blue layer to
+   *      fake a vertical blue→indigo gradient glow (true CSS gradient
+   *      pseudo-elements would require z-index gymnastics against the
+   *      surrounding white prompt-card bg; stacked colored shadows are
+   *      cheaper and render identically here).
+   * All layers stay subtle at rest and amplify on focus/touched below. */
+  box-shadow:
+    0 4px 2px rgba(92, 163, 255, 0.04),
+    0 4px 24px -8px rgba(15, 15, 20, 0.08),
+    0 8px 40px -12px rgba(56, 159, 255, 0.18),
+    0 14px 64px -16px rgba(116, 99, 242, 0.16);
+  transition:
+    border-color 160ms ease,
+    box-shadow 220ms ease;
+}
+
+/* text-entry — has user content. Softened to gray-600 (#4b5563): one
+ * step lighter than near-black `--agentic-foreground` so the touched
+ * state still reads as active against the resting #d1d5db, but the
+ * stroke doesn't dominate the prompt card. Shadow stays identical to
+ * the resting pill so the "wake up" is communicated by the darker
+ * border alone — amplifying the glow read as too heavy. */
+.wingman-page__input-shell:has(.wingman-page__input:not(:placeholder-shown)) {
+  border-color: #4b5563;
+}
+
+/* select / focus — same softened gray-600 stroke as the touched
+ * state, so tabbing into the empty input commits the border in the
+ * same way. Shadow is inherited from the resting rule (intentionally
+ * not re-declared) to keep the glow intensity constant across all
+ * three states. */
+.wingman-page__input-shell:focus-within {
+  border-color: #4b5563;
+}
+
+/* Wraps the textarea so the flex shrink math works (the textarea is
+ * `width: 100%` but the wrap is the flex item that owns `flex: 1`). */
+.wingman-page__input-textarea-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+/* Bottom toolbar row: leading `+` on the left, mic + send grouped on
+ * the right. `space-between` pushes the two groups apart across the
+ * full pill width. */
+.wingman-page__input-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Trailing control cluster (mic + send) kept together on the right. */
+.wingman-page__input-toolbar-trailing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wingman-page__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  padding-top: 4px;
+  padding-left: 6px;
+  margin: 0;
+  background: transparent;
+  resize: none;
+  outline: none;
+  font-family: var(
+    --font-family-base,
+    "Open Sans",
+    system-ui,
+    -apple-system,
+    Helvetica,
+    Arial,
+    sans-serif
+  );
+  /* 14px / 22px is the body-copy metric used by Claude/ChatGPT/Linear
+   * chat inputs: compact glyphs for the hero search, plus a plusher
+   * ~1.57 line-height so multi-line prompts don't pack into a wall of
+   * text. */
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--agentic-foreground, #17171b);
+  height: fit-content;
+  /* Single-line look unless the auto-grow JS bumps the height. Cap
+   * raised to 132px (6 lines at 22px line-height) to keep parity with
+   * the previous ~5-line ceiling now that line-height grew — overflow
+   * still scrolls inside the textarea so a runaway 50-line message
+   * can't push the prompt card off-screen. */
+  max-height: 132px;
+  overflow-y: auto;
+  display: block;
+  box-shadow: none;
+}
+
+.wingman-page__input::placeholder {
+  color: #818181;
+  opacity: 1;
+}
+
+/* Icon buttons — Plus (leading, disabled), Mic (toggle), Send
+ * (primary). All 32px square; the send button picks up the accent
+ * fill so it stands out as the primary action. */
+.wingman-page__input-icon-button,
+.wingman-page__input-send {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 24px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: var(--agentic-foreground, #17171b);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    opacity 140ms ease;
+}
+
+.wingman-page__input-icon-button:hover:not(:disabled),
+.wingman-page__input-send:hover:not(:disabled) {
+  background: rgba(23, 23, 27, 0.06);
+}
+
+.wingman-page__input-icon-button:focus-visible,
+.wingman-page__input-send:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+.wingman-page__input-icon-button:disabled,
+.wingman-page__input-send:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.wingman-page__input-send {
+  background: var(--agentic-accent-bg, #ececec);
+}
+
+.wingman-page__input-send:not(:disabled) {
+  background: var(--agentic-accent-bg, #ececec);
+}
+
+.wingman-page__input-send:not(:disabled):hover {
+  background: #dcdcdc;
+}
+
+/* Listening waveform rendered inside the send button while the mic is
+ * hot. 5 thin bars whose scaleY is driven from JS (audio level +
+ * randomized jitter) so the affordance reads as "live" instead of a
+ * canned loop. Pattern + values match WingmanChatBar.css. */
+.wingman-page__input-voice-waveform {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.wingman-page__input-voice-waveform-bar {
+  width: 4px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  transform-origin: center center;
+  transition: transform 80ms linear;
+}
+
+/* Transcribing spinner — the Mic slot swaps to a LoaderCircle that
+ * spins until the Whisper upload resolves. */
+.wingman-page__input-mic-spinner {
+  animation: wingman-page-input-spin 900ms linear infinite;
+  transform-origin: center;
+}
+
+@keyframes wingman-page-input-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Inline mic / permission errors. Small, white-on-translucent so it
+ * stays legible against the hero imagery without yelling. */
+.wingman-page__prompt-error {
+  margin: 0;
+  max-width: 576px;
+  padding: 8px 14px;
+  background: rgba(220, 38, 38, 0.85);
+  border-radius: 8px;
+  font-family: "Open Sans", var(--font-family-base);
+  font-size: 13px;
+  line-height: 18px;
+  color: #ffffff;
+}
+
+.wingman-page__prompt-hints {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 12;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 14px;
+  border: 1px solid #e3e3e3;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(15, 15, 20, 0.08);
+}
+
+.wingman-page__prompt-hint {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #17171b;
+  padding: 10px 12px;
+  font-family: "Open Sans", var(--font-family-base);
+  font-size: 13px;
+  line-height: 1.35;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.wingman-page__prompt-hint:hover {
+  background: #f5f5f5;
+  border-color: #e3e3e3;
+}
+
+.wingman-page__prompt-hint--active {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.wingman-page__prompt-hint:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+.wingman-page__chips {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 16px;
+  /* Cards now flex-grow to fill the row, so no horizontal scroll is
+   * needed; if a future card overflows, switch back to
+   * `overflow-x: auto` and re-pin the cards to a fixed width. */
+  padding-bottom: 4px;
+}
+
+/* Translucent dark chips that sit on top of imagery — used both by the
+ * hero suggestions and the topic-card pills. The shared class keeps the
+ * affordance language identical between the two surfaces. */
+.wingman-page__chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  color: #2e333a;
+  font-family: "Open Sans", var(--font-family-base);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.wingman-page__chip:hover {
+  background: #f8fafc;
+  border-color: #d1d5db;
+}
+
+.wingman-page__chip:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+/* The regenerate chip is icon-only and sits beside the flex-filling
+ * search cards. `flex: 0 0 auto` keeps it at a fixed width so the
+ * cards absorb all extra row space; height + border-radius match
+ * the search cards so the row reads as one visual stack. */
+.wingman-page__chip--regenerate {
+  flex: 0 0 auto;
+  padding: 0;
+  width: 64px;
+  min-width: 64px;
+  height: 112px;
+  border-radius: 18px;
+}
+
+/* ============================================================
+ * Regenerate skeleton state — when the refresh chip is clicked,
+ * each suggestion card briefly swaps its image + label + copy
+ * for grey skeleton tokens with the same diagonal-sheen shimmer
+ * that powers `.wingman-plan-page__loading-pill` over on the
+ * plan page. Pattern: grey `#ececec` base + a translucent white
+ * sheen pseudo that sweeps across via `transform: translateX`
+ * with a cubic-bezier ease (long hold at each end so the eye
+ * registers the sweep as a deliberate beat rather than a strobe).
+ *
+ * Skeleton elements are rendered conditionally in JSX so the
+ * real image/label/copy nodes are fully replaced — no overlap,
+ * no opacity tricks. Refresh icon spins counter-clockwise
+ * (matching the `RefreshCcw` glyph direction) so the spin
+ * reads as "rewinding/reshuffling".
+ * ============================================================ */
+
+/* Disable hover + pointer reactions on the chip while skeletons
+ * stand in for content. `disabled` on the <button> already kills
+ * activation; this also suppresses the hover lift/border bump so
+ * the loading card sits visually still. */
+.wingman-page__search-chip--loading,
+.wingman-page__search-chip--loading:hover {
+  cursor: default;
+  border-color: #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 15, 20, 0.04);
+}
+
+.wingman-page__search-chip--loading .wingman-page__search-chip-icon {
+  /* Keep the arrow muted so it doesn't compete with the
+   * skeleton bars; the chip is non-interactive in this state. */
+  background: #f3f4f6;
+  color: #d1d5db;
+  border-color: #e5e7eb;
+}
+
+/* Shared skeleton-token primitives. `position: relative` +
+ * `overflow: hidden` anchor and clip the sheen pseudo. */
+.wingman-page__search-chip-skeleton-image,
+.wingman-page__search-chip-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #ececec;
+  display: block;
+}
+
+.wingman-page__search-chip-skeleton-image::after,
+.wingman-page__search-chip-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 28%,
+    rgba(255, 255, 255, 0.62) 50%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  transform: translateX(-130%);
+  animation: wingman-page__chip-skeleton-sheen 2.45s
+    cubic-bezier(0.42, 0.08, 0.3, 0.98) infinite;
+}
+
+@keyframes wingman-page__chip-skeleton-sheen {
+  0% {
+    transform: translateX(-130%);
+  }
+  20% {
+    transform: translateX(-130%);
+  }
+  64% {
+    transform: translateX(130%);
+  }
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+/* Image placeholder — identical footprint to the actual chip
+ * image so the card geometry doesn't shift when content swaps
+ * back in. */
+.wingman-page__search-chip-skeleton-image {
+  width: 88px;
+  height: 88px;
+  flex: 0 0 88px;
+  border-radius: 12px;
+}
+
+/* Text-bar skeletons. Two stacked bars approximate the title
+ * (which clamps to 2 lines via `-webkit-line-clamp`), and a
+ * shorter bar below stands in for the description copy. The
+ * heights roughly track the line-heights of the real text so
+ * the swap-in is visually quiet. */
+.wingman-page__search-chip-skeleton {
+  border-radius: 6px;
+}
+
+.wingman-page__search-chip-skeleton--title {
+  height: 14px;
+  width: 100%;
+}
+
+.wingman-page__search-chip-skeleton--title-2 {
+  height: 14px;
+  width: 62%;
+}
+
+/* Small extra step between the title pair and the description
+ * bar so the two-bar / one-bar grouping reads correctly. The
+ * parent body already supplies a 4px flex `gap`; this margin
+ * stacks on top of that for ~10px total. */
+.wingman-page__search-chip-skeleton--copy {
+  height: 10px;
+  width: 84%;
+  margin-top: 6px;
+}
+
+/* Refresh icon spin — counter-clockwise to match the visual
+ * direction of the `RefreshCcw` glyph. The chip itself stays
+ * disabled so the spin reads as "the assistant is working" and
+ * doesn't invite a second click. */
+.wingman-page__chip--regenerate.is-regenerating {
+  cursor: default;
+  background: #ffffff;
+}
+
+.wingman-page__chip--regenerate.is-regenerating svg {
+  animation: wingman-page__chip-skeleton-spin 0.9s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes wingman-page__chip-skeleton-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wingman-page__search-chip-skeleton-image::after,
+  .wingman-page__search-chip-skeleton::after {
+    animation: none;
+    transform: translateX(0);
+    background: linear-gradient(
+      105deg,
+      rgba(255, 255, 255, 0) 28%,
+      rgba(255, 255, 255, 0.32) 50%,
+      rgba(255, 255, 255, 0) 72%
+    );
+  }
+  .wingman-page__chip--regenerate.is-regenerating svg {
+    animation: none;
+  }
+}
+
+/* `display: contents` makes this wrapper invisible to the layout
+ * tree on desktop — the title behaves exactly as it did before
+ * (direct flex child of `.__continue`). On mobile a container query
+ * promotes this wrapper to a real flex row so the title + small
+ * regenerate icon sit side-by-side. */
+.wingman-page__continue-header {
+  display: contents;
+}
+
+/* Mobile-only icon button. Hidden on desktop since the chip-row
+ * regenerate (`.__chip--regenerate`) handles the same affordance
+ * inline with the chips. Mobile container query below shows it. */
+.wingman-page__continue-regenerate {
+  display: none;
+}
+
+.wingman-page__continue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wingman-page__continue-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #6b7280;
+}
+
+/* ============================================================
+ * Search-suggestion card — polished horizontal pattern (the
+ * Notion / Linear / Apple Settings reading of the row). Familiar
+ * horizontal layout: 88px rounded thumbnail on the left, two-line
+ * label + two-line description in the middle, 36px circular arrow
+ * on the right that fills dark on hover. Subtle layered shadow
+ * lift, no image effects — restrained and editorial.
+ *
+ * Picked from a three-variant design review (lifestyle / polished /
+ * minimal). See git history if you want the other two back.
+ * ============================================================ */
+.wingman-page__search-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  /* `flex: 1 1 0` makes all suggestion cards share the row's
+   * available width equally (the regenerate chip beside them stays
+   * at its fixed width via its own `flex: 0 0 auto` override).
+   * `min-width: 0` lets the cards shrink below their intrinsic
+   * content width on narrow viewports so the two-line label/copy
+   * clamps gracefully instead of overflowing. */
+  flex: 1 1 0;
+  min-width: 0;
+  height: 112px;
+  padding: 12px 16px 12px 12px;
+  margin: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(15, 15, 20, 0.04);
+  cursor: pointer;
+  text-align: left;
+  font-family: "Open Sans", var(--font-family-base);
+  color: inherit;
+  box-sizing: border-box;
+  transition:
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.wingman-page__search-chip:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 10px 26px rgba(15, 15, 20, 0.08);
+}
+
+.wingman-page__search-chip:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 3px;
+}
+
+.wingman-page__search-chip-image {
+  width: 88px;
+  height: 88px;
+  flex: 0 0 88px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.wingman-page__search-chip-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+  padding-top: 4px;
+  height: 100%;
+}
+
+.wingman-page__search-chip-label {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #17171b;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.wingman-page__search-chip-copy {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #6b7280;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.wingman-page__search-chip-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #17171b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.wingman-page__search-chip:hover .wingman-page__search-chip-icon {
+  background: #17171b;
+  color: #ffffff;
+  border-color: #17171b;
+}
+
+/* ---------- Topic cards ---------- */
+
+.wingman-page__topics {
+  display: none;
+}
+
+.wingman-page__topic-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 32px;
+  overflow: hidden;
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #ffffff;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Background imagery is set inline from `WingmanPage.tsx` (resolves
+ * `BASE_URL + "/Dji_product_images/Marketing assets/Activity type/<file>"`
+ * so dev and prod builds both work). The fallback color below shows
+ * while the photo is still loading instead of a flash of white. */
+.wingman-page__topic-card {
+  background-color: #1a1a1a;
+}
+
+.wingman-page__topic-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.15) 45%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  pointer-events: none;
+}
+
+.wingman-page__topic-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 552px;
+}
+
+.wingman-page__topic-title {
+  margin: 0;
+  font-family: "Open Sans", var(--font-family-base);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 130%;
+  color: #ffffff;
+}
+
+.wingman-page__topic-copy {
+  margin: 0;
+  font-family: "Open Sans", var(--font-family-base);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(227, 227, 227, 1);
+}
+
+/* Chip inside a topic card hugs its label and stays left-aligned. The
+ * parent `.wingman-page__topic-content` is `flex-direction: column`,
+ * which defaults `align-items: stretch` — that's what was forcing the
+ * chip to span the card's full content width. Scoping with the
+ * descendant selector keeps the hero chip behavior untouched (it lives
+ * inside `.wingman-page__chips`, a `flex-wrap` row that already
+ * intrinsic-sizes its children). */
+.wingman-page__topic-content .wingman-page__chip {
+  align-self: flex-start;
+}
+
+/* ---------- Responsive trims ----------
+ * 1280-1600 — slightly tighter padding so the hero fits without a
+ *   horizontal scroll.
+ * <1280 — drop the topic grid to two columns, then one. */
+
+@media (max-width: 1600px) {
+  .wingman-page__hero {
+    padding-top: 96px;
+    min-height: 700px;
+  }
+}
+
+/* Container queries against the `viewport` container declared on
+ * `#root` (see src/index.css). Same rules fire on real narrow
+ * devices AND inside the simulated phone-frame preview where the
+ * browser viewport stays at desktop width but `#root` is clamped
+ * to 430px — `@media` would never fire there. */
+@container viewport (max-width: 1280px) {
+  .wingman-page__main {
+    padding: 24px;
+    gap: 24px;
+  }
+
+  .wingman-page__hero {
+    padding: 64px;
+    min-height: 620px;
+    border-radius: 24px;
+  }
+
+  .wingman-page__hero-title {
+    font-size: 48px;
+  }
+
+  .wingman-page__topics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  .wingman-page__topic-card {
+    padding: 48px;
+    border-radius: 24px;
+  }
+
+  .wingman-page__topic-title {
+    font-size: 28px;
+  }
+}
+
+@container viewport (max-width: 800px) {
+  .wingman-page__topics {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+ * Mobile reflow (`#root` <= 768px wide)
+ * ============================================================
+ *
+ * Switches the prompt card from `position: absolute` (the desktop
+ * trick that anchors it to a specific viewport y) to `position:
+ * static` so the hero copy + prompt card + continue-chips all flow
+ * naturally inside the hero. On a 430px frame the absolute anchor
+ * was colliding with a multi-line title (e.g. "Welcome to Wingman,
+ * Pushkin"), so flow-based layout removes the collision entirely.
+ *
+ * Padding cascade is the same 16/12 industry-standard rhythm used
+ * by WingmanPlanPage. `--header-h: 60px` matches the mobile
+ * ImmersiveHeader height. */
+@container viewport (max-width: 768px) {
+  .wingman-page__main {
+    --main-pad-x: 16px;
+    --header-h: 60px;
+    padding: 0 var(--main-pad-x);
+    gap: 16px;
+  }
+
+  /* Auto-height hero — drops the desktop fixed 853/700/620px so the
+   * band sizes to the content stack. Page bg is `#ffffff` so the
+   * area below the bounded banner image reads as a clean white card
+   * surface for the prompt that flows in below. */
+  .wingman-page__hero {
+    min-height: auto;
+    padding: 0;
+    border-radius: 0;
+    background: #ffffff;
+  }
+
+  /* Banner art clips to a FIXED 388px tall zone at the top of the
+   * hero. Without this clamp the absolute layer would stretch to
+   * cover the entire hero (intro + prompt + chips), leaving the
+   * image visible only as a heavily-faded wash behind the prompt
+   * card. Capping it to a real banner height makes the image read
+   * as a proper hero photo with the prompt card floating cleanly
+   * below it.
+   *
+   * Height is tuned so the prompt card lands at the same viewport y
+   * as the WingmanPlanPage combos-card (y=348), preserving the
+   * "card emerges from banner" pattern with the same 40px bottom
+   * overlap (banner ends 388, prompt card top 348 → 40px overlap).
+   * Mirrors the desktop logic where all three cards (prompt, combos,
+   * loading) anchor at viewport y=453. */
+  .wingman-page__hero-art {
+    inset: 0 0 auto 0;
+    height: 388px;
+  }
+
+  /* Mobile gradient stack — same recipe as the desktop layered
+   * overlay, retuned for a 388px banner with a card overlap below:
+   *
+   *   1. parallax white wash (driven by --hero-scroll-progress) —
+   *      mirrors desktop so the image visibly recedes when the user
+   *      scrolls past the banner.
+   *   2. bottom vertical fade — the bottom ~38% of the image
+   *      dissolves into pure #ffffff so the prompt card's top edge
+   *      "emerges" out of the photo instead of sitting on a hard
+   *      seam. Equivalent to the desktop fade-to-#f7f9fa, keyed to
+   *      this surface's white page bg.
+   *   3. left-side horizontal wash — keeps the headline legible
+   *      against the right-leaning lifestyle photography. */
+  .wingman-page__hero-art::after {
+    background:
+      linear-gradient(
+        rgba(255, 255, 255, calc(var(--hero-scroll-progress, 0) * 0.45)),
+        rgba(255, 255, 255, calc(var(--hero-scroll-progress, 0) * 0.45))
+      ),
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0) 55%,
+        rgba(255, 255, 255, 0.18) 68%,
+        rgba(255, 255, 255, 0.55) 82%,
+        rgba(255, 255, 255, 0.88) 92%,
+        rgb(255, 255, 255) 100%
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.78) 25%,
+        rgba(255, 255, 255, 0.45) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        rgba(255, 255, 255, 0) 100%
+      );
+  }
+
+  /* Content stack: intro fills the upper banner zone, then the
+   * prompt card overlaps the lower 40px of the banner image —
+   * same "card emerges out of the hero photo" pattern the desktop
+   * uses (where `.__cards { margin-top: -400px }` pulls the cards
+   * up over the lower portion of the 853px hero). Sizing here just
+   * translates that idea to a 388px banner. */
+  .wingman-page__hero-content {
+    padding: calc(var(--header-h) + 20px) var(--main-pad-x) 24px;
+    gap: 0;
+  }
+
+  /* `min-height` keeps the title + copy stack docked in the upper
+   * portion of the 388px banner AND positions the prompt card at
+   * viewport y=348 (matching the WingmanPlanPage combos-card so the
+   * card stays fixed in place across navigation — same anchoring
+   * logic as desktop's `top: calc(453px - …)`).
+   *
+   * 388 - 60 (header) - 20 (top pad) = 308 visible; we use 268 to
+   * leave a clean ~40px belt of pure image between the bottom of
+   * the welcome copy and the top edge of the prompt card.
+   *
+   * Math: prompt card top = hero-content padding-top (80) + intro
+   * min-height (268) = 348 (matches combos viewport y). */
+  .wingman-page__hero-intro {
+    margin-top: 0;
+    max-width: 100%;
+    gap: 12px;
+    min-height: 268px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding-left: 16px;
+  }
+
+  /* display slot — bumped 28 -> 32 to read as a real banner headline
+   * against the lifestyle photography. */
+  .wingman-page__hero-title {
+    font-size: 24px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* body slot — 13px body for the welcome copy reads as a clear
+   * step below the 24px hero title so hierarchy is preserved.
+   * Matches the desktop hero copy size for consistency. */
+  .wingman-page__hero-copy {
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 223px;
+  }
+
+  /* Prompt card OVERLAPS the bottom of the 388px banner image —
+   * same pattern as the desktop `.__cards { margin-top: -400px }`
+   * card-emerges-from-hero treatment, sized to the mobile band.
+   * The bottom of the banner fades to white via the gradient stack
+   * above, so the card's top edge dissolves cleanly out of the
+   * photo rather than sitting on a hard seam.
+   *
+   * `position: relative` (overrides the desktop `absolute`) gives
+   * the card a stacking context so `z-index: 3` lifts it above the
+   * absolute `.__hero-art` layer (which sits at z 0). Without this
+   * the card would render behind the photo even with the negative
+   * margin pulling it up. */
+  .wingman-page__prompt {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    margin-top: 0px;
+    gap: 32px;
+    padding: 32px 16px 16px;
+    border-radius: 16px;
+    z-index: 3;
+  }
+
+  .wingman-page__prompt-ask {
+    gap: 24px;
+  }
+
+  /* h3 slot */
+  .wingman-page__prompt-title {
+    width: 241px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  /* Center the narrower mobile input pill within the prompt card.
+   * The default rule lays the stack out as a block; on mobile we
+   * make it a flex column so the explicitly-sized 340px form is
+   * centered horizontally inside the full-width input-stack. */
+  .wingman-page__input-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Mobile input pill is sized to 340px so it reads as a contained
+   * "ask" field inside the prompt card rather than stretching edge
+   * to edge. The default rule sets width: 541px; this override wins
+   * inside the 768px container query. */
+  .wingman-page__input-shell {
+    width: 340px;
+  }
+
+  /* "Continue your search" header — promote the wrapper from
+   * `display: contents` to a real flex row so the title + small
+   * regenerate icon sit on one line. The original chip-row
+   * regenerate is hidden so the icon doesn't render twice. */
+  .wingman-page__continue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .wingman-page__continue-regenerate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    border-radius: 999px;
+    color: #17171b;
+    cursor: pointer;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      transform 140ms ease;
+  }
+
+  .wingman-page__continue-regenerate:hover {
+    background: #f8fafc;
+    border-color: #d1d5db;
+  }
+
+  .wingman-page__continue-regenerate:focus-visible {
+    outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+    outline-offset: 2px;
+  }
+
+  .wingman-page__continue-regenerate[aria-busy="true"] svg {
+    animation: wingman-page__chip-skeleton-spin 0.9s linear infinite;
+    transform-origin: 50% 50%;
+  }
+
+  /* Hide the chip-row regenerate on mobile — the new icon next to
+   * the title takes over its role. */
+  .wingman-page__chip--regenerate {
+    display: none;
+  }
+
+  /* Stack the suggestion chips vertically. Was `flex-wrap: nowrap`
+   * row on desktop, which gives a horizontal carousel; on mobile we
+   * want a single vertical column so each chip's image + title +
+   * copy + arrow read fully without overflow. */
+  .wingman-page__chips {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  /* Each chip becomes a full-width row card. The image stays a
+   * left-anchored thumb, body fills available space, arrow caps
+   * the right edge. */
+  .wingman-page__search-chip {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .wingman-page__continue-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #17171b;
+  }
+
+  /* Topic cards (legacy "topic" carousel rendered below the hero
+   * on the desktop layout). They collapse to one column at 800px
+   * already — here we just tighten padding + headline. */
+  .wingman-page__topic-card {
+    padding: 24px;
+    border-radius: 20px;
+    gap: 12px;
+  }
+
+  /* h1 slot */
+  .wingman-page__topic-title {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+}

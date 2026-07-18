@@ -1,0 +1,966 @@
+.figma-storefront {
+  background: #fff;
+  color: #17171b;
+  font-family: var(--font-family-base);
+}
+
+.figma-storefront__header-shell {
+  background: #18181b;
+  position: sticky;
+  top: var(--sxs-mode-bar-height, var(--app-topbar-height, 56px));
+  z-index: 50;
+}
+
+.figma-storefront__announcement {
+  height: 25px;
+  background: #000;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-storefront__top-nav {
+  height: 80px;
+  padding: 0 var(--space-page-desktop, 64px);
+  display: flex;
+  align-items: center;
+}
+
+.figma-storefront__brand-row {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.figma-storefront__mobile-menu-trigger {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-storefront__brand-mark {
+  color: #fff;
+}
+
+a.prototype-brand-link.figma-storefront__brand-mark {
+  color: rgba(255, 255, 255, 1);
+}
+
+.figma-storefront__quick-links {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.figma-storefront__top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.figma-storefront__quick-links a {
+  color: #e5e5e5;
+  text-decoration: none;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.figma-storefront__sale-link {
+  font-weight: 700;
+}
+
+.figma-storefront__top-actions button {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #f5f5f5;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.figma-storefront__top-actions button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.figma-storefront__top-actions button:focus-visible {
+  outline: 2px solid #7c5cff;
+  outline-offset: 2px;
+}
+
+.figma-storefront__mobile-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  transition: background-color 180ms ease;
+  z-index: 89;
+}
+
+.figma-storefront__mobile-drawer-backdrop--open {
+  background: rgba(6, 8, 14, 0.5);
+  pointer-events: auto;
+}
+
+.figma-storefront__mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(84vw, 340px);
+  height: 100dvh;
+  background: #11141a;
+  color: #ffffff;
+  transform: translateX(-105%);
+  transition: transform 220ms ease;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.figma-storefront__mobile-drawer--open {
+  transform: translateX(0);
+}
+
+.figma-storefront__mobile-drawer-body {
+  padding: calc(20px + var(--safe-area-top, 0px)) 20px 20px;
+}
+
+.figma-storefront__mobile-drawer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.figma-storefront__mobile-drawer-heading h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.figma-storefront__mobile-drawer-close {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.figma-storefront__mobile-drawer-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.figma-storefront__mobile-drawer-close:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 2px;
+}
+
+.figma-storefront__mobile-drawer-nav {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.figma-storefront__mobile-drawer-link {
+  appearance: none;
+  border: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: #f5f7ff;
+  text-align: left;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.figma-storefront__mobile-drawer-link--emphasized {
+  font-weight: 700;
+}
+
+.figma-storefront__mobile-drawer-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 16px 20px calc(20px + var(--safe-area-bottom, 0px));
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.figma-storefront__mobile-drawer-footer a {
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.figma-storefront__page-inner {
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px var(--space-page-desktop, 64px) 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.figma-storefront__hero {
+  position: relative;
+  width: calc(100% + (var(--space-page-desktop, 64px) * 2));
+  height: 760px;
+  margin: -16px calc(var(--space-page-desktop, 64px) * -1) 40px;
+  overflow: visible;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.figma-storefront__hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  z-index: 0;
+}
+
+.figma-storefront__hero-peek {
+  position: absolute;
+  top: 0;
+  width: 176px;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  z-index: 0;
+}
+
+.figma-storefront__hero-peek--left {
+  left: 0;
+  transform: translateX(-188px);
+  object-position: left center;
+}
+
+.figma-storefront__hero-peek--right {
+  right: 0;
+  transform: translateX(188px);
+  object-position: right center;
+}
+
+.figma-storefront__hero-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: 1px solid #9ca3af;
+  border-radius: 9999px;
+  background: #fff;
+  color: #17171b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  z-index: 3;
+}
+
+.figma-storefront__hero-arrow--left {
+  left: 48px;
+}
+
+.figma-storefront__hero-arrow--left svg {
+  transform: rotate(180deg);
+}
+
+.figma-storefront__hero-arrow--right {
+  right: 48px;
+}
+
+.figma-storefront__hero-overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background-image: linear-gradient(237.65deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.1) 64.684%);
+  z-index: 1;
+}
+
+.figma-storefront__hero-content {
+  width: 100%;
+  max-width: 728px;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.figma-storefront__hero-copy {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.figma-storefront__hero-overlay h1 {
+  margin: 0;
+  font-size: 60px;
+  line-height: 1;
+  letter-spacing: -1.5px;
+  font-weight: 700;
+}
+
+.figma-storefront__hero-overlay p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.figma-storefront__hero-overlay button,
+.figma-storefront__promo-card button {
+  border: 0;
+  background: #131315;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  height: 36px;
+  padding: 8px 16px;
+}
+
+.figma-storefront__section {
+  width: 100%;
+  margin-bottom: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  /* Sizing container for the featured grid below. The grid's
+   * `@container` queries adapt the visible card count to the
+   * section's *actual* width — which is what shrinks when the
+   * side-by-side / sidecar assistant docks alongside the storefront.
+   * Plain `@media (max-width)` couldn't see that change because the
+   * viewport stays the same when the assistant opens. */
+  container-type: inline-size;
+}
+
+.figma-storefront__section h2 {
+  margin: 0 0 6px;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.9px;
+  font-weight: 500;
+}
+
+.figma-storefront__featured-grid {
+  /* Single-row adaptive grid. Cards stay at their designed 260px
+   * width; the *number* of visible cards drops as the section
+   * narrows. Trailing cards are removed from layout via
+   * `:nth-child(n+N+1) { display: none }` rules below so the row
+   * never clips a partial card and never wraps to a second row.
+   *
+   * Step thresholds = `N * 260 + (N - 1) * 24` — the exact width
+   * needed to fit N cards with 24px gaps:
+   *   ≥ 1680px  →  6 cards
+   *   1396–1679 →  5 cards
+   *   1112–1395 →  4 cards
+   *   828–1111  →  3 cards
+   *   544–827   →  2 cards
+   *   < 544     →  1 card (full bleed)
+   *
+   * Driven by `@container` queries against the parent section so the
+   * count adapts when the assistant docks beside the storefront, not
+   * just when the viewport itself changes. */
+  display: flex;
+  grid-template-columns: repeat(6, var(--pc-card-width));
+  justify-content: start;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 8px 0 2px;
+}
+
+@container (max-width: 1679px) {
+  .figma-storefront__featured-grid {
+    grid-template-columns: repeat(5, var(--pc-card-width));
+  }
+  .figma-storefront__featured-grid > *:nth-child(n+6) { display: none; }
+}
+
+@container (max-width: 1395px) {
+  .figma-storefront__featured-grid {
+    grid-template-columns: repeat(4, var(--pc-card-width));
+  }
+  .figma-storefront__featured-grid > *:nth-child(n+5) { display: none; }
+}
+
+@container (max-width: 1111px) {
+  .figma-storefront__featured-grid {
+    grid-template-columns: repeat(3, var(--pc-card-width));
+  }
+  .figma-storefront__featured-grid > *:nth-child(n+4) { display: none; }
+}
+
+@container (max-width: 827px) {
+  .figma-storefront__featured-grid {
+    grid-template-columns: repeat(2, var(--pc-card-width));
+  }
+  .figma-storefront__featured-grid > *:nth-child(n+3) { display: none; }
+}
+
+@container (max-width: 543px) {
+  .figma-storefront__featured-grid {
+    /* Phone-narrow: drop to a single full-bleed card so the visible
+     * one stays usable rather than stranded at 260px in a 360px
+     * viewport. */
+    grid-template-columns: 1fr;
+    --pc-card-width: 100%;
+  }
+  .figma-storefront__featured-grid > *:nth-child(n+2) { display: none; }
+}
+
+.figma-storefront__promo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 48px;
+}
+
+.figma-storefront__promo-card {
+  background: #fff;
+}
+
+.figma-storefront__promo-card-image-shell {
+  height: 500px;
+  overflow: visible;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  vertical-align: middle;
+  padding: 48px;
+  box-sizing: content-box;
+}
+
+.figma-storefront__promo-card-image-shell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.figma-storefront__promo-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px;
+}
+
+.figma-storefront__promo-card h3 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+  color: #3f3f46;
+  font-weight: 600;
+  letter-spacing: -0.6px;
+}
+
+.figma-storefront__promo-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: #35353b;
+}
+
+.figma-storefront__subtitle {
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 24px;
+  color: #35353b;
+}
+
+.figma-storefront__steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.figma-storefront__step-card {
+  display: flex;
+  flex-direction: column;
+  height: 420px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.figma-storefront__step-card-image-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-left: 0px;
+  margin-right: 0px;
+  padding: 24px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.figma-storefront__step-card-image-shell img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.figma-storefront__step-card-link {
+  border: 0;
+  background: transparent;
+  color: #3f3f46;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 24px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.figma-storefront__step-card-link svg {
+  flex: 0 0 auto;
+}
+
+.figma-storefront__newsletter {
+  width: 100%;
+  margin: 0 auto;
+  background: #17171b;
+  color: #fff;
+  border: 1px solid #9ca3af;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  gap: 12px;
+}
+
+.figma-storefront__newsletter h3 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.figma-storefront__newsletter p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.figma-storefront__newsletter form {
+  display: flex;
+  gap: 12px;
+}
+
+.figma-storefront__newsletter input {
+  width: 211px;
+  border: 1px solid #9ca3af;
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #35353b;
+}
+
+.figma-storefront__newsletter button {
+  border: 0;
+  background: #fff;
+  color: #17171b;
+  padding: 8px 16px;
+}
+
+.figma-storefront__footer {
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px var(--space-page-desktop, 64px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  color: #35353b;
+}
+
+.figma-storefront__footer-links {
+  display: flex;
+  gap: 14px;
+  margin: 8px 0;
+}
+
+.figma-storefront__footer a {
+  color: #35353b;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.figma-storefront__footer p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.figma-storefront__footer-right {
+  display: flex;
+  gap: 14px;
+}
+
+@media (max-width: 1200px) {
+  .figma-storefront__top-nav,
+  .figma-storefront__page-inner,
+  .figma-storefront__footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .figma-storefront__promo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-storefront__steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .figma-storefront__promo-card-image-shell {
+    height: 380px;
+  }
+
+  .figma-storefront__hero {
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
+  }
+
+  .figma-storefront__hero-content {
+    max-width: 100%;
+    padding: 32px;
+  }
+
+  .figma-storefront__hero-overlay h1 {
+    font-size: 44px;
+  }
+
+  .figma-storefront__hero-overlay p {
+    font-size: 16px;
+  }
+
+  .figma-storefront__hero-peek,
+  .figma-storefront__hero-arrow {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .figma-storefront__announcement {
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .figma-storefront__top-nav {
+    height: 64px;
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-storefront__top-actions {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .figma-storefront__quick-links {
+    display: none;
+  }
+
+  .figma-storefront__brand-row {
+    gap: 12px;
+  }
+
+  .figma-storefront__mobile-menu-trigger {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .figma-storefront__page-inner {
+    gap: 20px;
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+    padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+  }
+
+  .figma-storefront__hero {
+    width: calc(100% + (var(--space-page-mobile, 16px) * 2));
+    margin-left: calc(var(--space-page-mobile, 16px) * -1);
+    margin-right: calc(var(--space-page-mobile, 16px) * -1);
+    margin-bottom: 24px;
+    height: 420px;
+  }
+
+  .figma-storefront__hero-content {
+    padding: 20px 16px;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .figma-storefront__hero-overlay h1 {
+    font-size: 34px;
+    letter-spacing: -0.04em;
+  }
+
+  .figma-storefront__hero-overlay p {
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .figma-storefront__section {
+    margin-bottom: 24px;
+    gap: 16px;
+  }
+
+  .figma-storefront__section h2 {
+    font-size: 28px;
+  }
+
+  .figma-storefront__featured-grid,
+  .figma-storefront__promo-grid,
+  .figma-storefront__steps-grid {
+    gap: 16px;
+  }
+
+  .figma-storefront__steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-storefront__promo-card-image-shell {
+    height: 280px;
+    padding: 24px;
+  }
+
+  .figma-storefront__step-card {
+    height: auto;
+  }
+
+  .figma-storefront__newsletter {
+    align-items: flex-start;
+  }
+
+  .figma-storefront__newsletter form {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .figma-storefront__newsletter input,
+  .figma-storefront__newsletter button {
+    width: 100%;
+  }
+
+  .figma-storefront__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+    padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+  }
+}
+
+/* Mirror real mobile header behavior in Cursor demo-mobile mode even when
+ * desktop viewport width is larger than 767px. */
+html[data-demo-viewport="mobile"] .figma-storefront__top-nav {
+  height: 64px;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__top-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__quick-links {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__brand-row {
+  gap: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__mobile-menu-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* Apply full phone layout in demo-mobile mode even on wide host viewports. */
+html[data-demo-viewport="mobile"] .figma-storefront__page-inner {
+  gap: 20px;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__hero {
+  width: calc(100% + (var(--space-page-mobile, 16px) * 2));
+  margin-left: calc(var(--space-page-mobile, 16px) * -1);
+  margin-right: calc(var(--space-page-mobile, 16px) * -1);
+  margin-bottom: 24px;
+  height: 420px;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__hero-image {
+  object-fit: cover;
+  object-position: center;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__hero-content {
+  padding: 20px 16px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__hero-overlay h1 {
+  font-size: 34px;
+  letter-spacing: -0.04em;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__hero-overlay p {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__section {
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__section h2 {
+  font-size: 28px;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__featured-grid,
+html[data-demo-viewport="mobile"] .figma-storefront__promo-grid,
+html[data-demo-viewport="mobile"] .figma-storefront__steps-grid {
+  gap: 16px;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__steps-grid {
+  grid-template-columns: 1fr;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__promo-grid {
+  grid-template-columns: 1fr;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__promo-card-image-shell {
+  height: 280px;
+  padding: 24px;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__step-card {
+  height: auto;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__newsletter {
+  align-items: flex-start;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__newsletter form {
+  width: 100%;
+  flex-direction: column;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__newsletter input,
+html[data-demo-viewport="mobile"] .figma-storefront__newsletter button {
+  width: 100%;
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__footer {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+}
+
+html[data-demo-viewport="mobile"] .figma-storefront__mobile-drawer {
+  --demo-mobile-frame-left: max((100vw - min(430px, 100vw)) / 2, 0px);
+  left: var(--demo-mobile-frame-left);
+  width: min(calc(min(430px, 100vw) * 0.84), 340px);
+}
+
+html[data-demo-viewport="mobile"]
+  .figma-storefront__mobile-drawer:not(.figma-storefront__mobile-drawer--open) {
+  transform: translateX(calc(-105% - var(--demo-mobile-frame-left)));
+}
+
+/* Platform switcher contract: Desktop mode must keep desktop-native header
+ * treatment even if the host viewport is narrow. */
+html[data-demo-viewport="desktop"] .figma-storefront__top-nav {
+  height: 80px;
+  padding: 0 var(--space-page-desktop, 64px);
+}
+
+html[data-demo-viewport="desktop"] .figma-storefront__brand-row {
+  gap: 24px;
+}
+
+html[data-demo-viewport="desktop"] .figma-storefront__quick-links {
+  display: flex;
+}
+
+html[data-demo-viewport="desktop"] .figma-storefront__top-actions {
+  display: flex;
+  align-items: center;
+}
+
+html[data-demo-viewport="desktop"] .figma-storefront__mobile-menu-trigger {
+  display: none;
+}

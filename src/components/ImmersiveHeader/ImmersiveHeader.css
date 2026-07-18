@@ -1,0 +1,407 @@
+/* Immersive-mode storefront header.
+ *
+ * Matches the Figma "Immersive Header" frame (file IGx0URqo5hp3azh5Hs8ZZM,
+ * node 58:30763): light surface, brand → primary nav → spacer → black
+ * "Wingman" pill → 5-icon action group, with 64px horizontal / 24px vertical
+ * padding and 24px gap between top-level slots.
+ *
+ * EVERY rule below is namespaced `.immersive-header*` so the existing dark
+ * `.figma-storefront__top-nav` (rendered in non-immersive modes) is never
+ * touched. Mounting is gated by `useAgentMode().mode === "immersive"` in
+ * `StorefrontPage.tsx`. */
+
+.immersive-header {
+  --immersive-header-fg: #17171b;
+  --immersive-header-fg-muted: var(--immersive-header-fg);
+  --immersive-header-hover-bg: rgba(17, 17, 27, 0.06);
+  --immersive-header-press-bg: rgba(17, 17, 27, 0.12);
+  --immersive-header-focus-ring: var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  /* 18px block padding + a ~36px content row = 72px resolved height.
+   * Driven by padding (not a fixed `height`) so page-level overrides
+   * that retune the vertical padding — e.g. the plan page's slimmer
+   * 12px → 60px header — still win via specificity instead of being
+   * clamped by a hard height on this base rule. */
+  padding: 18px 64px;
+  background: #ffffff;
+  color: var(--foreground, #17171b);
+  font-family: var(--font-family-base);
+  /* Stick below the AgentModeBar (same offset variable used by the dark
+   * storefront header so both modes feel identical when scrolling). */
+  position: sticky;
+  top: var(--sxs-mode-bar-height, 64px);
+  z-index: 50;
+}
+
+/* Brand wordmark — small, dark, bold; clicking returns to home (handled
+ * by `<PrototypeBrandLink>`). When we have the real DJI logo asset
+ * committed locally we swap this for an <img>. */
+.immersive-header__brand,
+a.prototype-brand-link.immersive-header__brand {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0;
+  color: var(--immersive-header-fg);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+/* DJI wordmark logo: height-constrained to the brand row so it swaps
+ * in cleanly where the "DJI" text used to sit. `currentColor` tint via
+ * the black source PNG keeps it readable on both the transparent-glass
+ * and scrolled-white header states. */
+.immersive-header__brand-logo {
+  display: block;
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Nav row — `flex: 1 1 0` is what pushes the Wingman pill + actions to
+ * the far right while still letting nav links wrap if the viewport is
+ * narrow (Figma never narrows below ~1280, but defensive is cheap). */
+.immersive-header__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Spacer that replaces the (now hidden) primary nav in the immersive
+ * concept, preserving the flex-grow that pushes the Wingman pill +
+ * action icons to the right edge. */
+.immersive-header__spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.immersive-header__nav-link {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--immersive-header-fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 8px;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.immersive-header__nav-link:hover {
+  background: var(--immersive-header-hover-bg);
+}
+
+.immersive-header__nav-link:active {
+  background: var(--immersive-header-press-bg);
+  transform: translateY(0.5px);
+}
+
+.immersive-header__nav-link:focus-visible {
+  outline: 2px solid var(--immersive-header-focus-ring);
+  outline-offset: 2px;
+}
+
+.immersive-header__nav-link--emphasized {
+  font-weight: 700;
+  color: var(--immersive-header-fg);
+}
+
+/* Wingman pill — black surface, sparkle icon trailing the label per the
+ * Figma. Click target stays 36px tall to align with the icon row, and
+ * the 24px border-radius gives the pill silhouette. */
+.immersive-header__wingman {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 8px 16px;
+  background: #000000;
+  border: none;
+  border-radius: 24px;
+  color: #e5e5e5;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  /* `position: relative` + `overflow: hidden` together host the
+   * shimmer pseudo: relative anchors it, hidden clips it to the
+   * pill shape so the highlight dies cleanly at the edges. */
+  position: relative;
+  overflow: hidden;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* Idle attention shimmer.
+ *
+ * Subtle "catch of light" pass that sweeps across the pill on a 4.5s
+ * cycle — long pauses at either end so each sweep reads as
+ * intentional, not strobing. The 100° gradient angle gives a slight
+ * downward-right slant that mimics light grazing a beveled surface
+ * (the way Apple product page CTAs and luxury watch faces shimmer).
+ *
+ * Easing: `cubic-bezier(0.16, 1, 0.3, 1)` — iOS-style easeOutExpo,
+ * silk-smooth deceleration. Anything more linear feels mechanical;
+ * anything bouncier feels cheap.
+ *
+ * The pseudo paints in the same stacking context as the label/icon
+ * but BELOW them via the explicit z-index lift on
+ * `__wingman-label` / `__wingman-icon`, so the text stays crisp
+ * while the highlight passes underneath. */
+.immersive-header__wingman::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.06) 55%,
+    transparent 65%
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  animation:
+    immersive-header__wingman-shimmer 4.5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes immersive-header__wingman-shimmer {
+  /* Hold off-screen-left for the first 30% of the cycle. */
+  0%,
+  30% {
+    background-position: -100% 0;
+  }
+  /* Sweep completes by 70%, then holds off-screen-right for the
+   * final 30%. The asymmetric hold split gives a clear "anticipate
+   * → strike → settle" rhythm. */
+  70%,
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.immersive-header__wingman:hover {
+  background: #1f1f23;
+  transform: translateY(-0.5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.immersive-header__wingman:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+}
+
+.immersive-header__wingman:focus-visible {
+  outline: 2px solid var(--immersive-header-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Suppress the idle shimmer on interaction — never compete two
+ * attention cues in the same frame. The 200ms opacity fade keeps
+ * the suppression itself from feeling abrupt. */
+.immersive-header__wingman:hover::before,
+.immersive-header__wingman:focus-visible::before,
+.immersive-header__wingman:active::before {
+  animation-play-state: paused;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+/* Respect users who've opted out of decorative motion. */
+@media (prefers-reduced-motion: reduce) {
+  .immersive-header__wingman::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.immersive-header__wingman-label {
+  white-space: nowrap;
+  /* Lift the label above the shimmer pseudo so the highlight
+   * passes underneath without dimming the text. */
+  position: relative;
+  z-index: 1;
+}
+
+.immersive-header__wingman-icon {
+  flex: 0 0 12px;
+  color: currentColor;
+  position: relative;
+  z-index: 1;
+}
+
+/* Action icon group — 5 transparent 36×36 buttons sitting flush against
+ * each other (no gap), per Figma's `Toggle Group`. Hover/focus styles
+ * mirror `.sxs-assistant__header-btn` so the affordance language is
+ * consistent across the app. */
+.immersive-header__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.immersive-header__action {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--immersive-header-fg);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.immersive-header__action:hover {
+  background: var(--immersive-header-hover-bg);
+}
+
+.immersive-header__action:active {
+  background: var(--immersive-header-press-bg);
+  transform: translateY(0.5px);
+}
+
+.immersive-header__action:focus-visible {
+  outline: 2px solid var(--immersive-header-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Hamburger toggle: hidden on desktop (the inline nav handles
+ * primary navigation). Becomes visible inside the 768px block below. */
+.immersive-header__menu-toggle {
+  appearance: none;
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--immersive-header-fg);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.immersive-header__menu-toggle:hover {
+  background: var(--immersive-header-hover-bg);
+}
+
+.immersive-header__menu-toggle:active {
+  background: var(--immersive-header-press-bg);
+  transform: translateY(0.5px);
+}
+
+.immersive-header__menu-toggle:focus-visible {
+  outline: 2px solid var(--immersive-header-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1200px) {
+  .immersive-header {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+/* Mobile reflow.
+ *
+ * Reduces the header to brand + Wingman pill + cart + hamburger.
+ * The primary nav and the non-cart action icons (search, sparkle,
+ * store, account) are surfaced inside the slide-in
+ * `ImmersiveHeaderMobileSheet` instead. The Wingman pill stays in
+ * the row because it's the page's primary CTA — burying it inside
+ * the drawer would hide the assistant entry behind an extra tap.
+ *
+ * Uses a container query against the `viewport` container declared
+ * on `#root` (see index.css). This fires both on a real narrow
+ * device (where `#root` is 100vw) AND inside the simulated phone
+ * frame (`html[data-demo-viewport="mobile"]` clamps `#root` to
+ * 430px but the browser viewport stays at desktop width — a plain
+ * `@media` would never fire there). Same pattern as the existing
+ * `@container` rules in `ProductDetailPage.css` and
+ * `StorefrontPage.css`. */
+@container viewport (max-width: 768px) {
+  .immersive-header {
+    /* Tightened gutters + a smaller fixed height so page-level
+     * `--header-h` overrides land on a real number. The plan-page +
+     * landing both retune `--header-h: 60px` so the sticky offset
+     * and the negative margin under the hero stay in sync with
+     * this row. */
+    gap: 8px;
+    padding: 12px 16px;
+    min-height: 60px;
+  }
+
+  .immersive-header__nav {
+    display: none;
+  }
+
+  /* Wingman pill on mobile sits flush against the cart + hamburger
+   * cluster on the right (not next to the brand) — the assistant
+   * pairs with the other primary actions rather than the brand
+   * lockup. `margin-left: auto` on the pill consumes the remaining
+   * row space, pushing Wingman + actions + menu-toggle as a single
+   * right-aligned cluster.
+   *
+   * Padding is tightened (12px vs the desktop's 16px) and the label
+   * drops to 13px so the pill stays compact in a 430px row. The
+   * black surface, sparkle icon, and pill silhouette are kept
+   * identical to desktop for brand recall. */
+  .immersive-header__wingman {
+    margin-left: auto;
+    padding: 6px 12px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  /* Hide every action button EXCEPT the cart on mobile. Search,
+   * sparkle, store, and account move into the drawer so the row
+   * stays a clean 4-slot layout (brand + Wingman + cart + menu). */
+  .immersive-header__action:not(.immersive-header__action--cart) {
+    display: none;
+  }
+
+  .immersive-header__menu-toggle {
+    display: inline-flex;
+  }
+
+  /* Punchier brand mark on mobile — reads as a logo lockup rather
+   * than a small label inside a row of icons. */
+  .immersive-header__brand,
+  a.prototype-brand-link.immersive-header__brand {
+    font-size: 18px;
+    font-weight: 700;
+  }
+}

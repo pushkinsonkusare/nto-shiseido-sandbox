@@ -1,0 +1,201 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* Typography tokens
+   * The design system exposes four weights: Light, Regular, Semibold, Bold.
+   * (Medium / 500 is still loaded above for backwards compatibility with
+   * existing component CSS, but new code should reference one of the four
+   * tokens below.) */
+  --font-family-base: "Open Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --prototype-brand-width: 139px;
+  --prototype-brand-height: 19px;
+  --prototype-brand-font-size: 20px;
+  --prototype-brand-font-weight: var(--font-weight-bold);
+  --prototype-brand-letter-spacing: 0.06em;
+
+  /* ----- Agentic chat-panel design tokens (light theme) -----
+   * These tokens are used by the components that render inside the
+   * SidecarAssistant chat panel (PLP card, PDP card, cart, order summary,
+   * agent utterances, NBA pills, etc.).  They mirror the variables
+   * referenced in the Figma design system. */
+  --agentic-card-bg: #ffffff;
+  --agentic-card-border: #d1d5db;
+  --agentic-card-foreground: #3f3f46;
+  --agentic-foreground: #17171b;
+  --agentic-muted-foreground: #35353b;
+  --agentic-secondary-bg: #f8f8f8;
+  --agentic-secondary-foreground: #33373d;
+  --agentic-primary-bg: #131315;
+  --agentic-primary-foreground: #ffffff;
+  --agentic-accent-bg: #ececec;
+  --agentic-message-input: #dbeafe;
+  --agentic-input-bg: #ffffff;
+  --agentic-strike: #6b7280;
+  --agentic-star: #facc15;
+  --agentic-focus: rgba(163, 163, 163, 0.5);
+
+  /* Shadows used inside agent message cards. */
+  --agentic-shadow-2xs: 0 0 0 0 rgba(0, 0, 0, 0.1);
+  --agentic-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --agentic-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --agentic-shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.06);
+
+  /* Shared responsive tokens for storefront parity */
+  --mobile-breakpoint-max: 767px;
+  --tablet-breakpoint-max: 1099px;
+  --desktop-content-max: 1536px;
+  --app-topbar-height: 0px;
+
+  --space-page-desktop: 64px;
+  --space-page-tablet: 24px;
+  --space-page-mobile: 16px;
+  --space-stack-desktop: 24px;
+  --space-stack-mobile: 16px;
+
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+/* Declare `#root` as a CSS query container named `viewport`.
+ *
+ * Every responsive rule in the immersive Wingman flow that needs to
+ * fire BOTH on real narrow devices AND inside the simulated phone
+ * frame (`html[data-demo-viewport="mobile"]` clamps `#root` to
+ * 430px while the browser viewport stays at desktop width) keys off
+ * `@container viewport (max-width: ...)` instead of `@media`. The
+ * container's inline-size matches `#root`'s rendered width — which
+ * tracks the visible frame in both modes — so a single set of
+ * mobile rules works in dev preview and production.
+ *
+ * Existing `@container` queries in `ProductDetailPage.css` and
+ * `StorefrontPage.css` are scoped to their own internal containers,
+ * so this top-level declaration does not collide with them. */
+#root {
+  container-type: inline-size;
+  container-name: viewport;
+}
+
+body {
+  background: #ffffff;
+  font-family: var(--font-family-base);
+  font-weight: var(--font-weight-regular);
+  overflow-x: hidden;
+}
+
+/* ------------------------------------------------------------------
+ * Elegant, thin scrollbars (global baseline).
+ *
+ * The default OS/browser scrollbar reads far too heavy for this
+ * design. We slim it to an 8px overlay-style bar with a transparent
+ * track and a soft, rounded translucent thumb that only firms up on
+ * hover — mirroring the treatment used by GitHub, Linear, macOS
+ * overlay scrollbars, etc.
+ *
+ * Firefox uses the standard `scrollbar-width` / `scrollbar-color`
+ * pair; WebKit/Chromium/Edge use the `::-webkit-scrollbar` shadow
+ * parts. Components that intentionally hide their scrollbar (carousels,
+ * rails) override this with more specific selectors, so they win.
+ * ------------------------------------------------------------------ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17, 17, 27, 0.28) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(17, 17, 27, 0.28);
+  border-radius: 8px;
+  /* Transparent border creates inset padding so the thumb reads as a
+   * slim pill floating inside the track rather than edge-to-edge. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(17, 17, 27, 0.45);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+html[data-demo-viewport="mobile"] body {
+  background: #eceff3;
+}
+
+html[data-demo-viewport="mobile"] #root {
+  width: min(430px, 100%);
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.08),
+    0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 1099px) {
+  :root {
+    --space-page-desktop: var(--space-page-tablet);
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --space-page-desktop: var(--space-page-mobile);
+    --space-stack-desktop: var(--space-stack-mobile);
+  }
+}
+
+.prototype-brand-link {
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: var(--prototype-brand-height);
+  font-size: var(--prototype-brand-font-size);
+  font-weight: var(--prototype-brand-font-weight);
+  line-height: 1;
+  letter-spacing: var(--prototype-brand-letter-spacing);
+  white-space: nowrap;
+}
+
+.prototype-brand-link > img {
+  display: block;
+  width: var(--prototype-brand-width);
+  height: var(--prototype-brand-height);
+  object-fit: contain;
+  object-position: left center;
+}

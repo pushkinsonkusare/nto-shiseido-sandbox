@@ -1,0 +1,17 @@
+{
+  "name": "sa26-llm-proxy",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Cloudflare Worker that proxies OpenAI requests for the SA26 GitHub Pages frontend.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250911.0",
+    "typescript": "^5.6.2",
+    "wrangler": "^4.42.0"
+  }
+}

@@ -1,0 +1,465 @@
+/* Side-by-side layout: storefront on the left, inline assistant column on the right.
+ *
+ * Structure (per the Figma reference):
+ *
+ *   +--------------------------------------------+
+ *   |  AgentModeBar  (full width, sticky)        |  <- rendered by App, above .sxs-layout
+ *   +--------------------------------------------+
+ *   |  Storefront announcement + top-nav         |  <- full viewport width
+ *   +-------------------------+------------------+
+ *   |                         |                  |
+ *   |  PLP / PDP / etc body   |  Assistant panel |  <- side by side, NOT overlay
+ *   |                         |                  |
+ *   +-------------------------+------------------+
+ *   |  Footer                                    |  <- full viewport width
+ *   +--------------------------------------------+
+ *
+ * Implementation: .sxs-layout is a CSS grid (1fr | 420px). We "unwrap" the
+ * .sxs-layout__main child and the page wrapper (.figma-plp etc.) using
+ * `display: contents` so that the page's children (header-shell, page-inner,
+ * footer) become direct grid items of .sxs-layout. The header-shell spans
+ * both columns (full width), the body takes column 1, and the assistant
+ * panel sits in column 2 next to the body — never under the header. */
+
+:root {
+  --sxs-mode-bar-height: 0px;
+  --sxs-panel-width: 420px;
+  --sxs-mobile-vh: 100dvh;
+  /* Total height of the storefront sticky header (announcement + top-nav).
+   * Defaults to 0 and is overridden per page below via :has(). */
+  --sxs-storefront-header-height: 0px;
+}
+
+/* The shell clips horizontally so the panel can slide off the right edge
+ * during its exit animation without producing a horizontal scroll bar.
+ * `overflow-x: clip` is the right tool here because (unlike `hidden`) it does
+ * NOT establish a new scroll container, so `position: sticky` on the panel
+ * still binds to the viewport. */
+.sxs-shell {
+  overflow-x: clip;
+}
+
+.sxs-layout {
+  display: grid;
+  /* Use an explicit length for the second track (instead of just the CSS var)
+   * so the closed/open states share a transition-compatible shape:
+   * `1fr <length>` ↔ `1fr 0px`. Both tracks animate as the storefront body
+   * reflows into the freed space. */
+  grid-template-columns: 1fr var(--sxs-panel-width);
+  grid-auto-rows: min-content;
+  grid-auto-flow: dense;
+  min-height: calc(100vh - var(--sxs-mode-bar-height));
+  background: #ffffff;
+  transition: grid-template-columns 460ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Panel closed: collapse the assistant column to 0 and let column 1 take the
+ * full viewport width. Same shape as the open state so the grid track
+ * transition can interpolate smoothly. */
+.sxs-layout--panel-collapsed {
+  grid-template-columns: 1fr 0px;
+}
+
+/* Per-page storefront header heights so the assistant panel can stick BELOW
+ * the page's sticky header. Each value is the rendered height of that page's
+ * sticky top-nav (announcement bars are no longer rendered).
+ * Applied on .sxs-shell so descendants (including the fixed reopen control)
+ * inherit the same variable. */
+.sxs-shell:has(.figma-pdp),
+.sxs-shell:has(.figma-storefront),
+.sxs-shell:has(.figma-plp),
+.sxs-shell:has(.figma-cart),
+.sxs-shell:has(.figma-about),
+.sxs-shell:has(.figma-overview) {
+  --sxs-storefront-header-height: 80px;
+}
+.sxs-shell:has(.figma-order-confirmation),
+.sxs-shell:has(.figma-checkout) {
+  --sxs-storefront-header-height: 84px;
+}
+
+/* Unwrap the layout main slot so children of the page wrapper become grid
+ * items of .sxs-layout, not inner items of a column-1 box. */
+.sxs-layout__main {
+  display: contents;
+}
+
+/* Each storefront page wrapper is also unwrapped so its header / body / footer
+ * become grid items at the layout level. The wrappers carry CSS variables
+ * (e.g. --plp-surface) which still cascade to children via the inheritance
+ * tree even when the box itself is removed. */
+.sxs-layout__main > .figma-plp,
+.sxs-layout__main > .figma-storefront,
+.sxs-layout__main > .figma-pdp,
+.sxs-layout__main > .figma-cart,
+.sxs-layout__main > .figma-checkout,
+.sxs-layout__main > .figma-order-confirmation,
+.sxs-layout__main > .figma-about,
+.sxs-layout__main > .figma-overview,
+.sxs-layout__main > .figma-login {
+  display: contents;
+}
+
+/* Page header bars span the full viewport width on the top row. The top-nav
+ * appears above the body+panel split, never covered by the assistant. */
+.sxs-layout__main .figma-plp__header-shell,
+.sxs-layout__main .figma-storefront__header-shell,
+.sxs-layout__main .figma-pdp__header-shell,
+.sxs-layout__main .figma-cart__header-shell,
+.sxs-layout__main .figma-order-confirmation__header-shell,
+.sxs-layout__main .figma-about__top-nav,
+.sxs-layout__main .figma-overview__top-nav,
+.sxs-layout__main .figma-checkout__topbar {
+  grid-column: 1 / -1;
+}
+
+/* Some pages render the shared header directly (without a `__header-shell`
+ * wrapper). Pin it to the full-width top row so it never auto-places into
+ * the assistant row and stretches to panel height. */
+.sxs-layout__main .unified-top-header,
+.sxs-layout__main .immersive-header {
+  grid-column: 1 / -1;
+  align-self: start;
+}
+
+/* Page body sections occupy column 1. They sit next to the assistant panel
+ * in column 2, so their effective width is automatically `viewport - 420px`.
+ *
+ * The storefront newsletter and footer are included here (rather than the
+ * full-width footer rule below) so they reflow next to the assistant panel
+ * instead of extending behind it when the panel is open. */
+.sxs-layout__main .figma-plp__page-inner,
+.sxs-layout__main .figma-storefront__page-inner,
+.sxs-layout__main .figma-storefront__newsletter,
+.sxs-layout__main .figma-storefront__footer,
+.sxs-layout__main .figma-pdp__page-inner,
+.sxs-layout__main .figma-cart__main-wrap,
+.sxs-layout__main .figma-checkout__main,
+.sxs-layout__main .figma-order-confirmation__main,
+.sxs-layout__main .figma-about__page,
+.sxs-layout__main .figma-overview__page,
+.sxs-layout__main .figma-login__shell {
+  grid-column: 1;
+  min-width: 0;
+}
+
+/* Bottom-of-page sections (footer) span the full viewport width below the
+ * body+panel row. Anything that is a direct child of a page wrapper but is
+ * NOT the body must be assigned a grid column here, otherwise
+ * grid-auto-flow:dense will place it into the assistant panel column. */
+.sxs-layout__main .figma-plp__footer,
+.sxs-layout__main .figma-pdp__footer,
+.sxs-layout__main .figma-cart__footer,
+.sxs-layout__main .figma-order-confirmation__footer,
+.sxs-layout__main .figma-about__footer,
+.sxs-layout__main .figma-overview__footer,
+.sxs-layout__main .figma-checkout__footer {
+  grid-column: 1 / -1;
+}
+
+/* Assistant panel sits in column 2 in the body row (auto-placed next to the
+ * page body via grid-auto-flow:dense). It sticks below the AgentModeBar AND
+ * below the storefront's sticky header so its own header is never covered. */
+.sxs-layout__panel {
+  grid-column: 2;
+  position: sticky;
+  top: calc(
+    var(--sxs-mode-bar-height) + var(--sxs-storefront-header-height)
+  );
+  align-self: start;
+  /* The panel keeps its full 420px width during the close animation so its
+   * inner content never reflows mid-transition. As the column collapses the
+   * panel slides off the right of the viewport (clipped by `.sxs-shell`). */
+  width: var(--sxs-panel-width);
+  height: calc(
+    100vh - var(--sxs-mode-bar-height) - var(--sxs-storefront-header-height)
+  );
+  background: #f4f4f5;
+  border-left: none;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  will-change: transform, opacity;
+}
+
+/* Open / close animations.
+ *
+ * The easing — cubic-bezier(0.22, 1, 0.36, 1) — is "easeOutQuint": a quick
+ * initial pull followed by a long, slow settle. It gives the panel the
+ * confident, decelerating feel typical of high-end native UIs (and matches
+ * the curve already used by `.sxs-layout__fab`).
+ *
+ * `animation-fill-mode: both` ensures the panel rests at the keyframe end
+ * state once the animation completes (so the closing panel stays invisible
+ * until React unmounts it). */
+.sxs-layout__panel--open {
+  animation: sxs-layout__panel-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sxs-layout__panel--closing {
+  animation: sxs-layout__panel-out 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+
+@keyframes sxs-layout__panel-in {
+  from {
+    transform: translate3d(40px, 0, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes sxs-layout__panel-out {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(40px, 0, 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sxs-layout {
+    transition: none;
+  }
+  .sxs-layout__panel--open,
+  .sxs-layout__panel--closing {
+    animation: none;
+  }
+}
+
+/* Collapsed: floating open control (matches Sidecar assistant FAB). */
+.sxs-layout__fab {
+  position: fixed;
+  right: 64px;
+  bottom: 64px;
+  height: 70px;
+  width: 70px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: none;
+  background: #131315;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+  z-index: 900;
+  transition:
+    width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+  animation: sxs-layout__fab-in 220ms ease-out;
+}
+
+.sxs-layout__backdrop {
+  position: fixed;
+  top: var(--sxs-mode-bar-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 11;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.sxs-layout__fab-icon {
+  flex: 0 0 auto;
+}
+
+.sxs-layout__fab-label {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateX(-4px);
+  transition:
+    max-width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sxs-layout__fab:hover,
+.sxs-layout__fab:focus-visible {
+  width: 168px;
+  gap: 10px;
+}
+
+.sxs-layout__fab:hover .sxs-layout__fab-label,
+.sxs-layout__fab:focus-visible .sxs-layout__fab-label {
+  max-width: 120px;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    max-width 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease 80ms,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sxs-layout__fab:hover {
+  background: #1f1f23;
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.22),
+    0 4px 10px rgba(0, 0, 0, 0.16);
+}
+
+.sxs-layout__fab:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sxs-layout__fab,
+  .sxs-layout__fab-label {
+    transition: none;
+    animation: none;
+  }
+}
+
+@keyframes sxs-layout__fab-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Forced mobile demo mode (from AgentModeBar viewport switcher).
+ * In this mode SxS no longer uses split-grid; it behaves like an
+ * overlay sheet while preserving the same assistant component/state. */
+.sxs-layout--mobile {
+  display: block;
+  min-height: calc(100vh - var(--sxs-mode-bar-height));
+}
+
+.sxs-layout--mobile .sxs-layout__main {
+  display: block;
+  min-width: 0;
+}
+
+.sxs-layout--mobile .sxs-layout__main > .figma-plp,
+.sxs-layout--mobile .sxs-layout__main > .figma-storefront,
+.sxs-layout--mobile .sxs-layout__main > .figma-pdp,
+.sxs-layout--mobile .sxs-layout__main > .figma-cart,
+.sxs-layout--mobile .sxs-layout__main > .figma-checkout,
+.sxs-layout--mobile .sxs-layout__main > .figma-order-confirmation,
+.sxs-layout--mobile .sxs-layout__main > .figma-about,
+.sxs-layout--mobile .sxs-layout__main > .figma-overview,
+.sxs-layout--mobile .sxs-layout__main > .figma-login {
+  display: block;
+}
+
+.sxs-layout__panel--mobile {
+  position: fixed;
+  top: var(--sxs-mode-bar-height);
+  right: 0;
+  bottom: max(0px, calc(var(--sxs-mobile-vh) - 100vh));
+  left: auto;
+  width: min(420px, 100vw);
+  max-width: 100vw;
+  height: calc(var(--sxs-mobile-vh) - var(--sxs-mode-bar-height));
+  border-left: 1px solid #d1d5db;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  overflow: hidden;
+  z-index: 12;
+  touch-action: pan-y;
+}
+
+html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
+  right: max((100vw - min(430px, 100vw)) / 2, 0px);
+}
+
+.sxs-layout__panel--mobile::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.24);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.sxs-layout__panel--mobile.sxs-layout__panel--open {
+  animation: sxs-layout__panel-mobile-in 340ms cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.sxs-layout__panel--mobile.sxs-layout__panel--closing {
+  animation: sxs-layout__panel-mobile-out 320ms cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+@keyframes sxs-layout__panel-mobile-in {
+  from {
+    transform: translate3d(100%, 0, 0);
+    opacity: 0.96;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes sxs-layout__panel-mobile-out {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(100%, 0, 0);
+    opacity: 0.98;
+  }
+}
+
+.sxs-layout--mobile .sxs-layout__fab {
+  right: calc(32px + env(safe-area-inset-right, 0px));
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  width: 60px;
+  height: 48px;
+}
+
+html[data-demo-viewport="mobile"] .sxs-layout--mobile .sxs-layout__fab {
+  right: calc(max((100vw - min(430px, 100vw)) / 2, 0px) + 32px);
+}
+
+.sxs-layout--mobile .sxs-layout__fab:hover,
+.sxs-layout--mobile .sxs-layout__fab:focus-visible {
+  width: 60px;
+  gap: 0;
+}
+
+.sxs-layout--mobile .sxs-layout__fab-label {
+  display: none;
+}

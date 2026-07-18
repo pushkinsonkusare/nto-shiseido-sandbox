@@ -1,0 +1,966 @@
+.figma-checkout {
+  background: var(--checkout-surface);
+  color: var(--checkout-text-primary);
+  font-family: var(--font-family-base);
+  min-height: 100vh;
+  --checkout-xs: 12px;
+  --checkout-sm: 14px;
+  --checkout-lg: 18px;
+  --checkout-xl: 20px;
+  --checkout-2xl: 24px;
+  --checkout-3xl: 30px;
+  --checkout-leading-4: 16px;
+  --checkout-leading-5: 20px;
+  --checkout-leading-7: 28px;
+  --checkout-leading-8: 32px;
+  --checkout-leading-tight: 1;
+  --checkout-leading-xl: 1.2;
+  --checkout-track-sm: -0.45px;
+  --checkout-track-lg: -0.6px;
+  --checkout-track-title: -0.75px;
+  --checkout-surface: #fff;
+  --checkout-text-primary: #17171b;
+  --checkout-border: #d1d5db;
+  --checkout-border-strong: #9ca3af;
+  --checkout-muted: #35353b;
+  --checkout-heading: #3f3f46;
+  --checkout-secondary-fg: #33373d;
+  --checkout-secondary-bg: #f8f8f8;
+  --checkout-primary: #131315;
+  --checkout-topbar-bg: #18181b;
+  --checkout-topbar-fg: #fff;
+  --checkout-link: #0176d3;
+  --checkout-paypal: #ffc43a;
+  --checkout-venmo: #008cff;
+  --checkout-amazon: #f0f1f2;
+  --checkout-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  --checkout-shadow-xs: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  --checkout-shadow-2xs: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  --checkout-page-pad: 64px;
+}
+
+.figma-checkout *,
+.figma-checkout *::before,
+.figma-checkout *::after {
+  box-sizing: border-box;
+}
+
+.figma-checkout button,
+.figma-checkout input {
+  font: inherit;
+}
+
+.figma-checkout__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  background: var(--checkout-topbar-bg);
+}
+
+.figma-checkout__topbar-inner {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 24px var(--checkout-page-pad);
+}
+
+.figma-checkout__brand-row {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.figma-checkout__brand-wrap {
+  display: flex;
+  align-items: center;
+  height: var(--prototype-brand-height);
+  color: var(--checkout-topbar-fg);
+}
+
+.figma-checkout__quick-links {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.figma-checkout__quick-links a {
+  color: #e5e5e5;
+  text-decoration: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.figma-checkout__sale-link {
+  font-weight: 700;
+}
+
+.figma-checkout__top-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+.figma-checkout__top-actions button {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--checkout-topbar-fg);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.figma-checkout__top-actions button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.figma-checkout__top-actions button:focus-visible {
+  outline: 2px solid #7c5cff;
+  outline-offset: 2px;
+}
+
+.figma-checkout__brand-logo {
+  filter: brightness(0) invert(1);
+}
+
+.figma-checkout__cart-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  min-width: 36px;
+  border: 0;
+  padding: 10px 8px;
+  background: transparent;
+  color: var(--checkout-topbar-fg);
+  cursor: pointer;
+}
+
+.figma-checkout__toggle-group {
+  display: flex;
+  align-items: center;
+}
+
+.figma-checkout__cart-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+}
+
+.figma-checkout__main {
+  width: 100%;
+}
+
+.figma-checkout__title-wrap {
+  padding: 32px var(--checkout-page-pad) 24px;
+}
+
+.figma-checkout__title-wrap h1 {
+  margin: 0;
+  color: var(--checkout-heading);
+  font-size: var(--checkout-3xl);
+  font-weight: 700;
+  letter-spacing: var(--checkout-track-title);
+  line-height: var(--checkout-leading-tight);
+}
+
+.figma-checkout__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 42px;
+  align-items: start;
+  padding: 0 var(--checkout-page-pad);
+}
+
+.figma-checkout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.figma-checkout__panel {
+  background: #fff;
+  border: 1px solid var(--checkout-border);
+  box-shadow: var(--checkout-shadow-sm);
+}
+
+.figma-checkout__express {
+  padding: 12px 15px 15px;
+}
+
+.figma-checkout__express-title {
+  margin: 0 0 8px;
+  color: var(--checkout-heading);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-tight);
+  text-align: center;
+}
+
+.figma-checkout__express-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.figma-checkout__pay-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  padding: 8px 12px;
+  box-shadow: var(--checkout-shadow-2xs);
+  cursor: pointer;
+}
+
+.figma-checkout__pay-btn--google,
+.figma-checkout__pay-btn--apple {
+  background: #000;
+  color: #fff;
+}
+
+.figma-checkout__pay-btn--paypal {
+  background: var(--checkout-paypal);
+}
+
+.figma-checkout__pay-btn--venmo {
+  background: var(--checkout-venmo);
+}
+
+.figma-checkout__pay-btn--amazon {
+  background: var(--checkout-amazon);
+}
+
+.figma-checkout__gpay-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.figma-checkout__gpay-glyph {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+
+.figma-checkout__gpay-wordmark {
+  width: 23px;
+  height: 15px;
+  object-fit: contain;
+}
+
+.figma-checkout__apple-pay {
+  font-family: "SF Pro Display", "Segoe UI", sans-serif;
+  font-size: 16.47px;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.88px;
+  line-height: 1;
+}
+
+.figma-checkout__paypal-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 73px;
+  height: 18px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.figma-checkout__venmo-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 18px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.figma-checkout__amazon-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 99px;
+  height: 19px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.figma-checkout__divider {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 20px;
+}
+
+.figma-checkout__divider span {
+  flex: 1;
+  height: 1px;
+  background: var(--checkout-border);
+}
+
+.figma-checkout__divider p {
+  margin: 0;
+  color: var(--checkout-muted);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__section-header {
+  padding: 16px 16px 16px 15px;
+  border-bottom: 1px solid var(--checkout-border);
+}
+
+.figma-checkout__section-header h2,
+.figma-checkout__summary-header h2 {
+  margin: 0;
+  color: var(--checkout-heading);
+  font-size: var(--checkout-2xl);
+  font-weight: 700;
+  letter-spacing: var(--checkout-track-lg);
+  line-height: var(--checkout-leading-8);
+}
+
+.figma-checkout__contact-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 15px 0;
+}
+
+.figma-checkout__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.figma-checkout__label {
+  color: var(--checkout-primary);
+  font-size: var(--checkout-sm);
+  font-weight: 500;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__field input,
+.figma-checkout__select,
+.figma-checkout__promo-entry input {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--checkout-border-strong);
+  border-radius: 0;
+  padding: 7px 11px;
+  background: #fff;
+  color: var(--checkout-primary);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+  box-shadow: none;
+}
+
+.figma-checkout__field input::placeholder,
+.figma-checkout__promo-entry input::placeholder {
+  color: var(--checkout-muted);
+  opacity: 1;
+}
+
+.figma-checkout__phone-row {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.figma-checkout__field--code {
+  min-width: 0;
+}
+
+.figma-checkout__select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 8px;
+  cursor: pointer;
+}
+
+.figma-checkout__select svg {
+  order: 2;
+  flex-shrink: 0;
+}
+
+.figma-checkout__section-action {
+  padding: 16px 15px 15px;
+}
+
+.figma-checkout__primary-btn,
+.figma-checkout__secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border: 0;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.figma-checkout__primary-btn {
+  width: 100%;
+  background: var(--checkout-primary);
+  color: #fff;
+  box-shadow: var(--checkout-shadow-2xs);
+  font-size: var(--checkout-sm);
+  font-weight: 500;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__section-body {
+  padding: 16px 15px 15px;
+}
+
+.figma-checkout__section-body p {
+  margin: 0;
+  color: var(--checkout-muted);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__summary {
+  width: 100%;
+}
+
+.figma-checkout__summary-group {
+  border-bottom: 1px solid var(--checkout-border);
+}
+
+.figma-checkout__summary-header {
+  padding: 16px 16px 16px 15px;
+  border-bottom: 1px solid var(--checkout-border);
+}
+
+.figma-checkout__summary-lines {
+  padding: 8px 15px;
+  border-bottom: 1px solid var(--checkout-border);
+}
+
+.figma-checkout__summary-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-height: 28px;
+  padding: 4px 0;
+  color: var(--checkout-muted);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__summary-line--total {
+  color: var(--checkout-primary);
+  font-weight: 700;
+}
+
+.figma-checkout__promo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 15px 15px;
+}
+
+.figma-checkout__promo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--checkout-link);
+  cursor: pointer;
+  font-size: var(--checkout-sm);
+  font-weight: 500;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__promo-toggle svg {
+  flex-shrink: 0;
+}
+
+.figma-checkout__promo-entry {
+  display: flex;
+  gap: 8px;
+}
+
+.figma-checkout__promo-entry input {
+  flex: 1;
+  min-width: 0;
+  border-color: var(--checkout-border);
+  box-shadow: var(--checkout-shadow-xs);
+}
+
+.figma-checkout__secondary-btn {
+  flex-shrink: 0;
+  background: var(--checkout-secondary-bg);
+  color: var(--checkout-secondary-fg);
+  box-shadow: var(--checkout-shadow-2xs);
+  font-size: var(--checkout-sm);
+  font-weight: 500;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__promo-applied {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--checkout-muted);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--checkout-secondary-bg);
+  color: var(--checkout-secondary-fg);
+  font-size: var(--checkout-xs);
+  font-weight: 600;
+  line-height: var(--checkout-leading-4);
+  white-space: nowrap;
+}
+
+.figma-checkout__summary-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.figma-checkout__summary-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.figma-checkout__summary-item + .figma-checkout__summary-item {
+  border-top: 1px solid var(--checkout-border);
+}
+
+.figma-checkout__summary-thumb {
+  flex-shrink: 0;
+  padding: 20px 0 20px 15px;
+}
+
+.figma-checkout__summary-image {
+  display: block;
+  width: 74px;
+  height: 74px;
+  object-fit: cover;
+}
+
+.figma-checkout__summary-details {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  flex: 1;
+  padding: 20px 15px;
+}
+
+.figma-checkout__summary-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.figma-checkout__summary-main h3 {
+  margin: 0;
+  color: var(--checkout-heading);
+  font-size: var(--checkout-lg);
+  font-weight: 600;
+  letter-spacing: var(--checkout-track-sm);
+  line-height: var(--checkout-leading-7);
+}
+
+.figma-checkout__summary-meta,
+.figma-checkout__summary-qty {
+  margin: 0;
+  color: var(--checkout-muted);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__summary-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.figma-checkout__summary-meta p,
+.figma-checkout__summary-qty {
+  margin: 0;
+}
+
+.figma-checkout__summary-pricing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.figma-checkout__summary-price-old {
+  color: var(--checkout-heading);
+  font-size: var(--checkout-xl);
+  font-weight: 400;
+  letter-spacing: var(--checkout-track-lg);
+  line-height: var(--checkout-leading-xl);
+  text-decoration: line-through;
+  text-decoration-skip-ink: none;
+}
+
+.figma-checkout__summary-price-current {
+  color: var(--checkout-heading);
+  font-size: var(--checkout-xl);
+  font-weight: 600;
+  letter-spacing: var(--checkout-track-lg);
+  line-height: var(--checkout-leading-tight);
+}
+
+.figma-checkout__summary-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.figma-checkout__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 124px var(--checkout-page-pad) 80px;
+}
+
+.figma-checkout__copyright {
+  margin: 0;
+  color: var(--checkout-muted);
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.figma-checkout__footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: var(--checkout-sm);
+  font-weight: 400;
+  line-height: var(--checkout-leading-5);
+}
+
+.figma-checkout__footer-link:hover {
+  color: var(--checkout-muted);
+}
+
+@media (max-width: 1100px) {
+  .figma-checkout {
+    --checkout-page-pad: 32px;
+  }
+
+  .figma-checkout__content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .figma-checkout__summary {
+    max-width: 652px;
+  }
+
+  .figma-checkout__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-top: 64px;
+  }
+}
+
+@media (max-width: 800px) {
+  .figma-checkout {
+    --checkout-page-pad: 20px;
+  }
+
+  .figma-checkout__express-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-checkout__phone-row,
+  .figma-checkout__promo-entry,
+  .figma-checkout__summary-item,
+  .figma-checkout__summary-details,
+  .figma-checkout__footer {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .figma-checkout__summary-badges {
+    align-items: flex-start;
+  }
+
+  .figma-checkout__footer-links {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 430px) {
+  .figma-checkout {
+    --checkout-page-pad: var(--space-page-mobile, 16px);
+  }
+
+  .figma-checkout__topbar {
+    min-height: 64px;
+  }
+
+  .figma-checkout__topbar-inner {
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .figma-checkout__brand-row {
+    gap: 12px;
+  }
+
+  .figma-checkout__quick-links {
+    display: none;
+  }
+
+  .figma-checkout__top-actions {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .figma-checkout__title-wrap {
+    padding-top: 16px;
+    padding-bottom: 12px;
+  }
+
+  .figma-checkout__title-wrap h1 {
+    font-size: 26px;
+  }
+
+  .figma-checkout__content {
+    gap: 16px;
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-checkout__section-header h2,
+  .figma-checkout__summary-header h2 {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .figma-checkout__contact-fields,
+  .figma-checkout__section-action,
+  .figma-checkout__section-body,
+  .figma-checkout__summary-lines,
+  .figma-checkout__promo-block {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .figma-checkout__summary-item {
+    gap: 8px;
+  }
+
+  .figma-checkout__summary-thumb {
+    padding-left: 12px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .figma-checkout__summary-image {
+    width: 64px;
+    height: 64px;
+  }
+
+  .figma-checkout__summary-details {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .figma-checkout__summary-main h3 {
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .figma-checkout__summary-price-old,
+  .figma-checkout__summary-price-current {
+    font-size: 16px;
+  }
+
+  .figma-checkout__footer {
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+    padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+    gap: 12px;
+  }
+}
+
+/* Mirror full phone checkout layout in Cursor demo-mobile mode even when
+ * the host viewport is wider than 430px. */
+html[data-demo-viewport="mobile"] .figma-checkout {
+  --checkout-page-pad: var(--space-page-mobile, 16px);
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__content {
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary {
+  max-width: none;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__topbar {
+  min-height: 64px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__topbar-inner {
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__brand-row {
+  gap: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__quick-links {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__top-actions {
+  display: inline-flex;
+  align-items: center;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__title-wrap {
+  padding-top: 16px;
+  padding-bottom: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__title-wrap h1 {
+  font-size: 26px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__express-grid {
+  grid-template-columns: 1fr;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__phone-row,
+html[data-demo-viewport="mobile"] .figma-checkout__promo-entry,
+html[data-demo-viewport="mobile"] .figma-checkout__summary-item,
+html[data-demo-viewport="mobile"] .figma-checkout__summary-details,
+html[data-demo-viewport="mobile"] .figma-checkout__footer {
+  grid-template-columns: 1fr;
+  flex-direction: column;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__section-header h2,
+html[data-demo-viewport="mobile"] .figma-checkout__summary-header h2 {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__contact-fields,
+html[data-demo-viewport="mobile"] .figma-checkout__section-action,
+html[data-demo-viewport="mobile"] .figma-checkout__section-body,
+html[data-demo-viewport="mobile"] .figma-checkout__summary-lines,
+html[data-demo-viewport="mobile"] .figma-checkout__promo-block {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-item {
+  gap: 8px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-thumb {
+  padding-left: 12px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-image {
+  width: 64px;
+  height: 64px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-details {
+  padding: 12px;
+  gap: 8px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-main h3 {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-price-old,
+html[data-demo-viewport="mobile"] .figma-checkout__summary-price-current {
+  font-size: 16px;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__summary-badges {
+  align-items: flex-start;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__footer-links {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+html[data-demo-viewport="mobile"] .figma-checkout__footer {
+  align-items: flex-start;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  padding-bottom: calc(24px + var(--safe-area-bottom, 0px));
+  gap: 12px;
+}

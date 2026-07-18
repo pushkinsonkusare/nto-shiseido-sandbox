@@ -1,0 +1,597 @@
+.figma-pdp {
+  background: #fff;
+  color: #17171b;
+  font-family: var(--font-family-base);
+  --pdp-space-2xs: 4px;
+  --pdp-space-xs: 8px;
+  --pdp-space-sm: 12px;
+  --pdp-space-md: var(--space-page-mobile, 16px);
+  --pdp-space-lg: var(--space-stack-desktop, 24px);
+  --pdp-space-xl: 32px;
+  --pdp-space-2xl: 40px;
+  --pdp-space-3xl: 80px;
+}
+
+.figma-pdp__header-shell {
+  background: #18181b;
+  position: sticky;
+  top: var(--sxs-mode-bar-height, var(--app-topbar-height, 56px));
+  z-index: 50;
+}
+
+.figma-pdp__announcement {
+  height: 25px;
+  background: #000;
+  color: #fff;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-pdp__top-nav {
+  height: 80px;
+  padding: 0 var(--space-page-desktop, 64px);
+  display: flex;
+  align-items: center;
+}
+
+.figma-pdp__brand-row {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--pdp-space-lg);
+}
+
+.figma-pdp__brand-mark { color: rgba(255, 255, 255, 1); }
+
+.figma-pdp__quick-links {
+  display: flex;
+  gap: var(--pdp-space-2xs);
+  margin-right: auto;
+}
+
+.figma-pdp__quick-links a {
+  color: #e5e5e5;
+  text-decoration: none;
+  padding: var(--pdp-space-xs) var(--pdp-space-md);
+  font-size: 14px;
+}
+
+.figma-pdp__sale-link { font-weight: 700; }
+
+.figma-pdp__top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.figma-pdp__top-actions button {
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #f5f5f5;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.figma-pdp__top-actions button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.figma-pdp__top-actions button:focus-visible {
+  outline: 2px solid #7c5cff;
+  outline-offset: 2px;
+}
+
+.figma-pdp__page-inner {
+  width: min(100%, 1536px);
+  margin: 0 auto;
+  padding: var(--pdp-space-lg) var(--pdp-space-md) var(--pdp-space-lg);
+}
+
+.figma-pdp__breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--pdp-space-xs);
+  color: #35353b;
+  font-size: 14px;
+  margin-bottom: var(--pdp-space-lg);
+}
+
+.figma-pdp__hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--pdp-space-xl);
+  margin-bottom: var(--pdp-space-lg);
+  width: 100%;
+}
+
+.figma-pdp__gallery {
+  flex: 1 1 420px;
+  min-width: 0;
+  width: 100%;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pdp-space-md);
+}
+
+.figma-pdp__hero-image-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.figma-pdp__gallery-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--secondary, #f8f8f8);
+  border: none;
+  border-radius: 2px;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  z-index: 2;
+  color: var(--foreground, #131315);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.figma-pdp__gallery-arrow:hover {
+  background: #e8e8e8;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.figma-pdp__gallery-arrow--prev {
+  left: var(--pdp-space-sm);
+}
+
+.figma-pdp__gallery-arrow--next {
+  right: var(--pdp-space-sm);
+}
+
+.figma-pdp__hero-image {
+  width: 100%;
+  aspect-ratio: 1/1;
+  /* `contain` (vs the previous `cover`) keeps tall marketing composites
+   * — e.g. the "Track Without Shaking" stacked OFF/ON panels — fully
+   * visible inside the 1:1 hero frame. Square product shots (the
+   * common case) render identically; non-square assets get letterboxed
+   * against the gallery surface instead of being centre-cropped. */
+  object-fit: contain;
+  display: block;
+}
+
+.figma-pdp__thumbs {
+  margin-top: var(--pdp-space-xl);
+  display: flex;
+  gap: var(--pdp-space-xl);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.figma-pdp__thumb {
+  width: 138px;
+  height: 138px;
+  object-fit: cover;
+  border: none;
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+.figma-pdp__thumb.is-active {
+  border-width: 0;
+  border-style: none;
+  border-color: transparent;
+  border-image: none;
+}
+
+.figma-pdp__info {
+  flex: 1 1 420px;
+  width: min(100%, 576px);
+  max-width: 576px;
+  min-width: 0;
+  padding: var(--pdp-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.figma-pdp__brand, .figma-pdp__sku { font-size: 12px; margin: 0 0 var(--pdp-space-xs); color: #33373d; }
+.figma-pdp__info h1 { margin: 0 0 var(--pdp-space-xs); font-size: 30px; line-height: 36px; letter-spacing: -0.75px; color: #3f3f46; }
+.figma-pdp__desc { margin: var(--pdp-space-md) 0; padding: var(--pdp-space-md) 0; font-size: 16px; line-height: 24px; color: rgba(23, 23, 27, 1); }
+.figma-pdp__stars { margin: 0 0 var(--pdp-space-xs); color: #f59e0b; font-size: 14px; }
+.figma-pdp__price { margin: 0 0 var(--pdp-space-sm); font-size: 24px; font-weight: 700; color: #3f3f46; }
+
+.figma-pdp__field { margin-bottom: var(--pdp-space-sm); }
+.figma-pdp__field label { display: block; font-size: 14px; margin-bottom: 6px; }
+.figma-pdp__chips { display: flex; gap: var(--pdp-space-xs); flex-wrap: wrap; }
+.figma-pdp__chips button {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  padding: 6px var(--pdp-space-sm);
+  font-size: 12px;
+}
+.figma-pdp__chips .is-active { background: #131315; color: #fff; border-color: #131315; }
+
+.figma-pdp__field input {
+  width: 64px;
+  border: 1px solid #d1d5db;
+  padding: var(--pdp-space-xs);
+}
+
+.figma-pdp__shipping-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--pdp-space-sm);
+  margin: var(--pdp-space-sm) 0;
+}
+.figma-pdp__shipping-row > div {
+  border: 1px solid #d1d5db;
+  padding: var(--pdp-space-sm);
+}
+.figma-pdp__shipping-row p { margin: 0 0 var(--pdp-space-2xs); font-size: 14px; }
+.figma-pdp__shipping-row small { font-size: 12px; color: #35353b; }
+.figma-pdp__shipping-row .is-disabled { opacity: .6; }
+
+.figma-pdp__cta {
+  width: 100%;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  background: #1cb167;
+  color: #fff;
+  font-size: 14px;
+  margin-bottom: var(--pdp-space-xs);
+}
+.figma-pdp__or { text-align: center; font-size: 14px; margin: var(--pdp-space-2xs) 0 var(--pdp-space-xs); }
+.figma-pdp__apple-pay, .figma-pdp__paypal {
+  width: 100%;
+  height: 36px;
+  border: 0;
+  margin-bottom: var(--pdp-space-xs);
+}
+.figma-pdp__apple-pay { background: #000; color: #fff; }
+.figma-pdp__paypal { background: #ffc43a; color: #111; }
+.figma-pdp__pay-note { font-size: 12px; margin: 0 0 var(--pdp-space-sm); }
+
+.figma-pdp__benefits { display: grid; gap: var(--pdp-space-sm); }
+.figma-pdp__benefits article { background: #f8f8f8; border: 1px solid #d1d5db; padding: var(--pdp-space-md); }
+.figma-pdp__benefits h3 { margin: 0 0 var(--pdp-space-2xs); font-size: 16px; color: #3f3f46; }
+.figma-pdp__benefits p { margin: 0; font-size: 12px; color: #33373d; }
+
+/* ---------- "Ask Assistant" NBA module (Figma 33250:50536) ---------- */
+/* Lives in the gallery column on the PDP, below the thumbs. Pills wrap and
+ * fire `agentic:ask-assistant` to seed a turn into the active assistant. */
+.pdp-nba {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pdp-space-md);
+  margin: var(--pdp-space-xl) 0 0;
+  width: 100%;
+}
+
+.pdp-nba__header {
+  display: flex;
+  align-items: center;
+  gap: var(--pdp-space-xs);
+  margin: 0;
+}
+
+.pdp-nba__header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--card-foreground, #3f3f46);
+}
+
+.pdp-nba__header-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--card-foreground, #3f3f46);
+}
+
+.pdp-nba__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  background: var(--primary, #131315);
+  color: var(--destructive-foreground, #dbeafe);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.pdp-nba__pill-set {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pdp-space-xs);
+  width: 100%;
+}
+
+.pdp-nba__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pdp-space-xs);
+  padding: var(--pdp-space-xs) var(--pdp-space-md);
+  background: #fff;
+  border: 1px solid var(--input, #d1d5db);
+  border-radius: 0;
+  box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.1);
+  color: var(--secondary-foreground, #33373d);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+}
+
+.pdp-nba__pill:hover {
+  background: #f8f8f8;
+  border-color: #b3b9c2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.pdp-nba__pill:focus-visible {
+  outline: 2px solid var(--primary, #131315);
+  outline-offset: 2px;
+}
+
+.pdp-nba__pill-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-width: 311px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.pdp-nba__pill-icon {
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.pdp-nba__regen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: var(--pdp-space-xs);
+  background: #fff;
+  border: 1px solid var(--input, #d1d5db);
+  border-radius: 0;
+  color: var(--secondary-foreground, #33373d);
+  cursor: pointer;
+  filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0.1));
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+
+.pdp-nba__regen:hover {
+  background: #f8f8f8;
+}
+
+.pdp-nba__regen:focus-visible {
+  outline: 2px solid var(--primary, #131315);
+  outline-offset: 2px;
+}
+
+.figma-pdp__rail {
+  padding: var(--pdp-space-lg) 0;
+  /* Sizing container so the cards row inside this rail can adapt its
+   * visible card count to the rail's *actual* width — which shrinks
+   * when the side-by-side / sidecar assistant docks alongside the
+   * PDP. Plain @media queries can't see that change because the
+   * viewport stays the same when the assistant opens. */
+  container-type: inline-size;
+}
+.figma-pdp__rail h2 {
+  margin: 0 0 var(--pdp-space-md);
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.9px;
+}
+
+.figma-pdp__cards {
+  /* Single-row adaptive layout, mirroring the storefront's featured
+   * grid. Cards stay at their designed 260px width; the *number* of
+   * visible cards drops as the rail narrows. Trailing cards are
+   * removed from layout via `:nth-child(n+N+1) { display: none }`
+   * rules below so the row never clips a partial card, never wraps
+   * to a second row, and never falls back to horizontal scrolling.
+   *
+   * Step thresholds = `N * 260 + (N - 1) * 24` — the exact width
+   * needed to fit N cards with 24px gaps:
+   *   ≥ 1396px  →  5 cards
+   *   1112–1395 →  4 cards
+   *   828–1111  →  3 cards
+   *   544–827   →  2 cards
+   *   < 544     →  1 card (full bleed) */
+  display: flex;
+  justify-content: start;
+  align-items: flex-start;
+  gap: var(--pdp-space-lg);
+  padding: var(--pdp-space-xs) 0 var(--pdp-space-2xs);
+}
+
+@container (max-width: 1395px) {
+  .figma-pdp__cards > *:nth-child(n+5) { display: none; }
+}
+
+@container (max-width: 1111px) {
+  .figma-pdp__cards > *:nth-child(n+4) { display: none; }
+}
+
+@container (max-width: 827px) {
+  .figma-pdp__cards > *:nth-child(n+3) { display: none; }
+}
+
+@container (max-width: 543px) {
+  .figma-pdp__cards {
+    --pc-card-width: 100%;
+  }
+  .figma-pdp__cards > *:nth-child(n+2) { display: none; }
+}
+
+.figma-pdp__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--pdp-space-lg);
+  padding: var(--pdp-space-2xl) 0 var(--pdp-space-3xl);
+}
+
+.figma-pdp__footer-links { display: flex; gap: 14px; margin: var(--pdp-space-xs) 0; flex-wrap: wrap; }
+.figma-pdp__footer a { color: #35353b; text-decoration: none; font-size: 14px; }
+.figma-pdp__footer p { margin: 0; font-size: 12px; color: #35353b; }
+.figma-pdp__footer-right { display: flex; gap: 14px; align-items: flex-end; }
+
+@media (max-width: 1200px) {
+  .figma-pdp__hero { flex-direction: column; }
+  .figma-pdp__info { flex: none; width: 100%; max-width: none; }
+  .figma-pdp__thumb { width: 96px; height: 96px; }
+}
+
+@media (max-width: 430px) {
+  .figma-pdp__announcement {
+    height: 22px;
+    font-size: 11px;
+  }
+
+  .figma-pdp__top-nav {
+    height: 64px;
+    padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+    padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-pdp__brand-row {
+    gap: 12px;
+  }
+
+  .figma-pdp__quick-links {
+    display: none;
+  }
+
+  .figma-pdp__top-actions {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .figma-pdp__page-inner {
+    padding: 16px max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px))
+      calc(24px + var(--safe-area-bottom, 0px))
+      max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-pdp__breadcrumbs {
+    margin-bottom: var(--pdp-space-sm);
+    font-size: 12px;
+  }
+
+  .figma-pdp__hero {
+    gap: var(--pdp-space-md);
+    margin-bottom: var(--pdp-space-md);
+  }
+
+  .figma-pdp__thumbs {
+    gap: var(--pdp-space-xs);
+    margin-top: var(--pdp-space-sm);
+  }
+
+  .figma-pdp__thumb {
+    width: 74px;
+    height: 74px;
+  }
+
+  .figma-pdp__info {
+    padding: 0;
+  }
+
+  .figma-pdp__info h1 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .figma-pdp__desc {
+    margin: var(--pdp-space-xs) 0 var(--pdp-space-sm);
+    padding: var(--pdp-space-xs) 0 var(--pdp-space-sm);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .figma-pdp__shipping-row {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-pdp__cta,
+  .figma-pdp__apple-pay,
+  .figma-pdp__paypal {
+    height: 42px;
+  }
+
+  .figma-pdp__rail {
+    padding: var(--pdp-space-md) 0 var(--pdp-space-xs);
+  }
+
+  .figma-pdp__rail h2 {
+    font-size: 28px;
+    margin-bottom: var(--pdp-space-sm);
+  }
+
+  .figma-pdp__cards {
+    gap: var(--pdp-space-md);
+  }
+
+  .figma-pdp__footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--pdp-space-sm);
+    padding: var(--pdp-space-lg) 0;
+  }
+}
+
+html[data-demo-viewport="mobile"] .figma-pdp__top-nav {
+  height: 64px;
+  padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
+  padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+}
+
+html[data-demo-viewport="mobile"] .figma-pdp__brand-row {
+  gap: 12px;
+}
+
+html[data-demo-viewport="mobile"] .figma-pdp__quick-links {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .figma-pdp__top-actions {
+  display: inline-flex;
+  align-items: center;
+}

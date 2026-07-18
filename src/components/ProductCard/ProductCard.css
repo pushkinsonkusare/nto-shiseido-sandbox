@@ -1,0 +1,305 @@
+:root {
+  /* Figma Product List -> Product Card */
+  --pc-card-width: 100%;
+  --pc-card-bg: #ffffff;
+  --pc-card-shadow: none;
+  --pc-card-shadow-hover: none;
+  --pc-control-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+
+  --pc-content-padding: 24px;
+  --pc-content-gap: 8px;
+  --pc-image-height: 260px;
+
+  --pc-swatch-gap: 4px;
+  --pc-swatch-size: 22px;
+  --pc-swatch-inner-size: 15px;
+
+  --pc-meta-color: #35353b;
+  --pc-title-color: #3f3f46;
+  --pc-desc-color: #2e844a;
+}
+
+.figma-product-card {
+  width: var(--pc-card-width);
+  background: var(--pc-card-bg);
+  box-shadow: var(--pc-card-shadow);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.figma-product-card--interactive {
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+}
+
+.figma-product-card--interactive:hover,
+.figma-product-card--interactive:focus-visible {
+  box-shadow: var(--pc-card-shadow-hover);
+}
+
+.figma-product-card--interactive:focus-visible {
+  outline: 2px solid #17171b;
+  outline-offset: 2px;
+}
+
+.figma-product-card__gallery {
+  position: relative;
+  width: 100%;
+}
+
+.figma-product-card__content {
+  width: 100%;
+  padding: var(--pc-content-padding);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-content-gap);
+}
+
+.figma-product-card__image-wrap {
+  width: 100%;
+  height: fit-content;
+  overflow: hidden;
+  background: #ffffff;
+  padding: 32px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.figma-product-card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.figma-product-card__badge-row {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.figma-product-card__badge {
+  background: #131315;
+  color: #dbeafe;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  padding: 2px 8px;
+}
+
+.figma-product-card__actions {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.figma-product-card__icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 0;
+  background: #f8f8f8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.figma-product-card__hover-checkbox,
+.figma-product-card__carousel-btn,
+.figma-product-card__hover-cta {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.figma-product-card--interactive:hover .figma-product-card__hover-checkbox,
+.figma-product-card--interactive:hover .figma-product-card__carousel-btn,
+.figma-product-card--interactive:hover .figma-product-card__hover-cta,
+.figma-product-card--interactive:focus-visible .figma-product-card__hover-checkbox,
+.figma-product-card--interactive:focus-visible .figma-product-card__carousel-btn,
+.figma-product-card--interactive:focus-visible .figma-product-card__hover-cta {
+  opacity: 1;
+}
+
+.figma-product-card__hover-checkbox {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #ffffff;
+  box-shadow: var(--pc-control-shadow);
+}
+
+.figma-product-card__carousel-btn {
+  position: absolute;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f8f8;
+  color: #17171b;
+  box-shadow: var(--pc-control-shadow);
+  transform: translateY(-50%);
+}
+
+.figma-product-card__carousel-btn--prev {
+  left: 12px;
+}
+
+.figma-product-card__carousel-btn--prev svg {
+  transform: rotate(180deg);
+}
+
+.figma-product-card__carousel-btn--next {
+  right: 12px;
+}
+
+.figma-product-card__hover-cta {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #131315;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  box-shadow: var(--pc-control-shadow);
+}
+
+.figma-product-card__title {
+  margin: 0;
+  color: var(--pc-title-color);
+  font-family: var(--font-family-base);
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 120%;
+  letter-spacing: -0.025em;
+}
+
+.figma-product-card__meta p {
+  margin: 0;
+  color: var(--pc-meta-color);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.figma-product-card__description {
+  margin: 0;
+  color: rgba(53, 53, 59, 1);
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 300;
+  line-height: 20px;
+  height: 80px;
+  overflow: hidden;
+}
+
+.figma-product-card__swatches {
+  display: flex;
+  align-items: center;
+  gap: var(--pc-swatch-gap);
+  min-height: 22px;
+}
+
+.figma-product-card__swatch {
+  width: var(--pc-swatch-size);
+  height: var(--pc-swatch-size);
+  border-radius: 999px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-product-card__swatch::before {
+  content: "";
+  width: var(--pc-swatch-inner-size);
+  height: var(--pc-swatch-inner-size);
+  border-radius: 999px;
+  background: var(--swatch-color, #000000);
+}
+
+.figma-product-card__swatch.is-selected {
+  border-color: #35353b;
+}
+
+.figma-product-card__swatch-more {
+  color: var(--pc-desc-color);
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.figma-product-card__stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #facc15;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.figma-product-card__reviews {
+  color: var(--pc-meta-color);
+  font-size: 12px;
+}
+
+.figma-product-card__star-muted {
+  color: #d1d5db;
+}
+
+.figma-product-card__price {
+  margin: 0;
+  color: var(--pc-title-color);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --pc-card-width: 100%;
+    --pc-content-padding: 16px;
+    --pc-image-height: 220px;
+  }
+
+  .figma-product-card__title {
+    font-size: 16px;
+  }
+
+  .figma-product-card__description {
+    height: auto;
+    min-height: 40px;
+  }
+}

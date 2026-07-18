@@ -1,0 +1,947 @@
+/* Side-by-Side Assistant — inline, non-overlay variant of the Personal Assistant.
+ *
+ * Pixel-matches the Figma "Side by side assistant" frame
+ * (file EUVJNhnF47i8ubfOWKwErc, node 32946:128103). Lives inside a 420px column
+ * managed by `.sxs-layout__panel`; this stylesheet handles only the panel
+ * internals (header / chat / footer) and the message subcomponents. */
+
+.sxs-assistant {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #ffffff;
+  border-left: 1px solid #d1d5db;
+  font-family: var(--font-family-base);
+  color: var(--agentic-foreground, #17171b);
+  box-shadow: none;
+}
+
+/* ---------- Header ---------- */
+
+.sxs-assistant__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--agentic-secondary-bg, #f8f8f8);
+  border-bottom: 1px solid #e5e7eb;
+  flex: 0 0 auto;
+}
+
+.sxs-assistant__header-title {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sxs-assistant__header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #17171b;
+  flex: 0 0 auto;
+}
+
+.sxs-assistant__header-label {
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 24px;
+  letter-spacing: 0.01em;
+  color: #17171b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sxs-assistant__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.sxs-assistant__header-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: #17171b;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 120ms ease;
+}
+
+.sxs-assistant__header-btn:hover {
+  background: rgba(17, 17, 27, 0.06);
+}
+
+.sxs-assistant__header-btn:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+/* ---------- Header dropdown menu ---------- */
+
+/* Anchor: the wrapper around the "More options" trigger so the menu can be
+ * absolutely positioned just below it without leaking into the rest of the
+ * header layout. */
+.sxs-assistant__menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The menu surface mirrors the rest of the assistant: white card on top of
+ * #f8f8f8 header bg, the same #d1d5db border + subtle shadow used by the
+ * input/result-card components, and 0 corner radius to match the squared
+ * tile language. Right-anchored to the trigger so it stays inside the
+ * panel. */
+.sxs-assistant__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: 0;
+  background: var(--agentic-card-bg, #ffffff);
+  border: 1px solid var(--agentic-input-border, #d1d5db);
+  box-shadow: 0 6px 16px rgba(17, 17, 27, 0.08);
+  font-family: var(--font-family-base);
+}
+
+.sxs-assistant__menu-item {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  color: #17171b;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.sxs-assistant__menu-item:hover {
+  background: rgba(17, 17, 27, 0.06);
+}
+
+.sxs-assistant__menu-item:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: -2px;
+}
+
+.sxs-assistant__menu-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #17171b;
+  flex: 0 0 16px;
+}
+
+.sxs-assistant__menu-item-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------- Chat body ---------- */
+
+.sxs-assistant__chat {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Inner stack: pinned to the bottom (justify-end) so light conversations
+ * sit at the bottom of the panel like the Figma. Auto-scrolls down on
+ * new messages. */
+.sxs-assistant__chat-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 16px;
+  margin-top: auto;
+}
+
+/* ---------- Agent simple utterance ----------
+ *
+ * Free-text replies are rendered inside the same .sxs-result-card chrome
+ * as result/broad cards (so every assistant message sits in a consistent
+ * frame). The only thing that differs is the body text colour — utterances
+ * use the full foreground (#17171b) per the Figma "Agent /
+ * Simple_Utterance" node, while result-card body text stays muted. */
+.sxs-utterance__text {
+  flex: 1 1 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  color: var(--agentic-foreground, #17171b);
+}
+
+/* ---------- Agent PDP utterance ----------
+ *
+ * PDP-origin reply card (NBA pill click). Lives inside the standard
+ * .sxs-result-card chrome and adds:
+ *   .sxs-pdp-utterance__context   ← bordered inner row: thumb + title + category
+ *     .sxs-pdp-utterance__thumb
+ *     .sxs-pdp-utterance__lead-text
+ *       .sxs-pdp-utterance__title
+ *       .sxs-pdp-utterance__category
+ *   .sxs-pdp-utterance__cta-wrap  ← optional, 24px side padding
+ *     .sxs-pdp-utterance__cta     ← "Detailed {topic} policy" external-link chip
+ *
+ * Per Figma nodes 33250:60409 / 60410 / 33266:60638. */
+/* Visual chrome mirrors `.sxs-result-card__row` (BroadResultCard row
+ * button) so the PDP context button reads as the same component family
+ * — background, hover, focus, and border all match. The PDP variant
+ * keeps its own thumb / lead-text sizing rules below since the inner
+ * markup differs (no `.sxs-result-card__lead` wrapper, no CTA icon). */
+.sxs-pdp-utterance__context {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #fafafa;
+  border: 1px solid var(--agentic-input-border, #d1d5db);
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.sxs-pdp-utterance__context:hover {
+  background: #f4f4f5;
+  border-color: #d1d5db;
+}
+
+.sxs-pdp-utterance__context:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+.sxs-pdp-utterance__thumb {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  background: var(--agentic-card-bg, #ffffff);
+  padding: 12px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.sxs-pdp-utterance__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+}
+
+.sxs-pdp-utterance__lead-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0px;
+  min-width: 0;
+  height: 100%;
+  padding: 8px 16px 8px 0;
+  flex: 1 1 0;
+}
+
+/* Title/category text scale mirrors the canonical card row
+ * (`.sxs-result-card__title` at 14px and `.sxs-result-card__count`
+ * at 12px) so a PDP-context button reads at the same weight and size
+ * as the Compact / Broad row buttons it sits next to. */
+.sxs-pdp-utterance__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1.2;
+  letter-spacing: -0.45px;
+  color: var(--agentic-card-foreground, #3f3f46);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sxs-pdp-utterance__category {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  color: var(--agentic-muted-foreground, #35353b);
+  white-space: nowrap;
+}
+
+.sxs-pdp-utterance__cta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* "Detailed return policy" chip — text + external-link icon. No fill /
+ * border per the Figma chip; the underline shows on hover so the link
+ * affordance is still discoverable. */
+.sxs-pdp-utterance__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 0;
+  text-decoration: none;
+  color: var(--agentic-foreground, #17171b);
+  font-size: 14px;
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 20px;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.sxs-pdp-utterance__cta:hover {
+  background: #f4f4f5;
+}
+
+.sxs-pdp-utterance__cta:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+.sxs-pdp-utterance__cta-label {
+  white-space: nowrap;
+}
+
+.sxs-pdp-utterance__cta-icon {
+  flex: 0 0 16px;
+  color: currentColor;
+}
+
+/* The body renderer in `AgentPdpUtterance.tsx` lifts `**bold**` markdown
+ * into <strong>, but the design treats those segments as emphasized prose
+ * rather than visually bold — keep the regular weight so the run flows
+ * with the surrounding paragraph instead of sprouting bold runs. */
+.sxs-pdp-utterance .sxs-result-card__body-text {
+  color: rgba(23, 23, 27, 1);
+}
+
+.sxs-pdp-utterance .sxs-result-card__body-text strong {
+  font-weight: var(--font-weight-regular, 400);
+}
+
+/* Loading state is rendered via <LatencyLoader> (Figma "Latency Loader"
+   component); styles live in SidecarAssistant/components/LatencyLoader.css. */
+
+/* ---------- Footer input ---------- */
+
+.sxs-assistant__footer {
+  flex: 0 0 auto;
+  padding: 16px 16px 20px;
+  background: #ffffff;
+  box-shadow: 0 0 2.5px rgba(33, 33, 33, 0.1);
+}
+
+.sxs-assistant__input-shell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #9ca3af;
+  background: #ffffff;
+  border-radius: 0;
+}
+
+.sxs-assistant__input-shell:focus-within {
+  border-color: #6b7280;
+}
+
+.sxs-assistant__input {
+  flex: 1 1 auto;
+  appearance: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--agentic-foreground, #17171b);
+  min-width: 0;
+}
+
+.sxs-assistant__input::placeholder {
+  color: #6b7280;
+}
+
+.sxs-assistant__send {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--agentic-foreground, #17171b);
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 6px;
+  transition: background-color 120ms ease;
+}
+
+.sxs-assistant__send:hover:not(:disabled) {
+  background: rgba(17, 17, 27, 0.06);
+}
+
+.sxs-assistant__send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sxs-assistant__send:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+/* ---------- Greeting card ---------- */
+
+.sxs-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: #fafafa;
+  border: 1px solid #d1d5db;
+  overflow: hidden;
+}
+
+.sxs-greeting__hero {
+  width: 100%;
+  height: 300px;
+  background-color: rgba(248, 248, 248, 1);
+  overflow: hidden;
+}
+
+.sxs-greeting__hero-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.sxs-greeting__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+}
+
+.sxs-greeting__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 28px;
+  color: var(--agentic-foreground, #17171b);
+}
+
+.sxs-greeting__copy {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  color: var(--agentic-muted-foreground, #35353b);
+}
+
+/* ---------- Shopper bubble ---------- */
+
+.sxs-shopper-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.sxs-shopper-bubble {
+  background: var(--agentic-message-input, #dbeafe);
+  color: var(--agentic-foreground, #17171b);
+  font-size: 14px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  padding: 16px 24px;
+  max-width: 300px;
+  word-break: break-word;
+}
+
+/* ---------- Compact result card ----------
+ *
+ * Matches the Figma "Result Card / Specific" component (file:
+ * EUVJNhnF47i8ubfOWKwErc, node 33090:156189). Two states share the same
+ * layout — only the trailing icon swaps between arrow-right (rest) and eye
+ * (viewing), and the inner row inverts to white when viewing.
+ *
+ * Structure:
+ *   .sxs-result-card                        ← #fafafa surface, #d1d5db border, 24px padding-y
+ *     .sxs-result-card__body                ← lead paragraph, 24px side padding
+ *       .sxs-result-card__body-text
+ *     .sxs-result-card__row-wrap            ← 24px side padding (was on row)
+ *       .sxs-result-card__row               ← bordered inner box: thumb + text + cta
+ *         .sxs-result-card__lead
+ *           .sxs-result-card__thumb         ← 64×64 lead product image, no border
+ *           .sxs-result-card__lead-text
+ *             .sxs-result-card__title
+ *             .sxs-result-card__count
+ *         .sxs-result-card__cta             ← 36×36 icon-only button (no fill / border)
+ *
+ * Shared row look: `.sxs-result-card__row` and the inner
+ * `.sxs-result-card__lead` / `__lead-text` / `__title` rules are
+ * intentionally the canonical "card row" treatment used by Compact,
+ * Broad (`.sxs-broad-card`) sub-topic rows, and AgentPdpUtterance's
+ * `.sxs-pdp-utterance__context` row alike — same #fafafa surface,
+ * vertically centered 64px lead, 14px semibold title, no gap between
+ * title and subtitle. Don't reintroduce per-variant overrides for
+ * font-size, gap, or vertical alignment unless the Figma genuinely
+ * diverges; pile any variant tweaks onto modifier classes only.
+ */
+
+.sxs-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 388px;
+  background: #fafafa;
+  border: 1px solid var(--agentic-input-border, #d1d5db);
+  padding: 24px 0;
+  align-self: flex-start;
+  font-family: var(--font-family-base);
+}
+
+.sxs-result-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.sxs-result-card__body-text {
+  flex: 1 1 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  color: var(--agentic-muted-foreground, #35353b);
+}
+
+.sxs-result-card__row-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* The row is the click target for the whole tile, rendered as a <button>.
+ * We strip native button chrome and treat it as a flex container so the
+ * existing layout (thumb + text + cta) is unchanged. */
+.sxs-result-card__row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #fafafa;
+  border: 1px solid var(--agentic-input-border, #d1d5db);
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.sxs-result-card__row:hover {
+  background: #f4f4f5;
+  border-color: #d1d5db;
+}
+
+.sxs-result-card__row:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+/* Viewing state: the inner row inverts to white so the active card reads
+ * at a glance, while the outer card surface stays #fafafa. The border
+ * picks up the neutral-500 ramp (#9CA3AF) so the active row reads as
+ * selected without a chromatic accent. We re-declare the border-color
+ * on the hover variant because the base `.sxs-result-card__row:hover`
+ * rule has the same specificity (one class + :hover) and would
+ * otherwise revert the active row's border to the hover gray. */
+.sxs-result-card__row--viewing {
+  background: var(--agentic-card-bg, #ffffff);
+  border-color: #9ca3af;
+}
+
+.sxs-result-card__row--viewing:hover {
+  background: #f4f4f5;
+  border-color: #9ca3af;
+}
+
+.sxs-result-card__lead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.sxs-result-card__thumb {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  background: var(--agentic-card-bg, #ffffff);
+  border: none;
+  padding: 12px;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.sxs-result-card__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+}
+
+.sxs-result-card__lead-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0px;
+  min-width: 0;
+  height: 64px;
+  padding: 8px 0;
+}
+
+.sxs-result-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold, 600);
+  /* Figma "Body/M/semibold" with leading-1.2 and -0.45px tracking, shared
+   * across all card-row families (Compact, Broad, PDP) so the row reads
+   * as one component regardless of which card emits it. */
+  line-height: 1.2;
+  letter-spacing: -0.45px;
+  color: var(--agentic-card-foreground, #3f3f46);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.sxs-result-card__count {
+  margin: 0;
+  font-size: 12px;
+  font-weight: var(--font-weight-regular, 400);
+  line-height: 20px;
+  color: var(--agentic-muted-foreground, #35353b);
+  white-space: nowrap;
+}
+
+/* Icon-only CTA per the Figma "Result Card / Specific" component: no fill,
+ * no border, no shadow — just the lucide icon. The row's white background
+ * (in viewing state) is what signals active scope; this button only owns
+ * its own focus ring. The 16px right-padding lives on a wrapper inside the
+ * row so the icon sits 16px from the inner border. */
+.sxs-result-card__cta-wrap {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 16px 0 0;
+  flex: 0 0 auto;
+}
+
+/* The CTA is now a decorative icon inside the row button — the parent row
+ * owns the click, focus ring, and hover. Keep the box untouched so layout
+ * is identical, but drive color from the row's hover state. */
+.sxs-result-card__cta {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: transparent;
+  color: var(--agentic-card-foreground, #3f3f46);
+  transition: color 160ms ease;
+}
+
+.sxs-result-card__row:hover .sxs-result-card__cta {
+  color: #17171b;
+}
+
+/* Viewing state on the icon: kept for back-compat with consumers that still
+ * pass the legacy class. The active visual now lives on the row's bg. */
+.sxs-result-card__cta--viewing {
+  color: #17171b;
+}
+
+/* ---------- Broad result card (sub-topic stack) ----------
+ *
+ * The "broad" card answers exploratory queries by stacking N sub-topic
+ * rows (each visually identical to a CompactResultCard `__row`) plus a
+ * "Show all" footer link. The outer surface re-uses .sxs-result-card so
+ * the chrome (background, border, vertical rhythm) stays in lockstep
+ * with the specific card; the modifier .sxs-broad-card only swaps in
+ * the multi-row layout + footer.
+ */
+
+.sxs-broad-card {
+  /* Inherits .sxs-result-card surface; nothing to override today.
+   * Hook kept for future per-variant tweaks (e.g. denser padding). */
+}
+
+/* Groups the rows stack and the "Show all" footer so they sit 8px apart,
+ * while the parent .sxs-result-card keeps its 24px rhythm between the body
+ * paragraph and the rest of the card. */
+.sxs-broad-card__rows-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.sxs-broad-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  width: 100%;
+}
+
+/* Collapse the seam between stacked rows: each row carries its own 1px
+ * border, so with gap:0 adjacent borders would render as a 2px line.
+ * Pulling every non-first row up by 1px makes its top border land
+ * exactly on the previous row's bottom border — the two 1px lines
+ * occupy the same pixel and read as a single hairline. Scoped to the
+ * broad stack so single-row consumers of `.sxs-result-card__row-wrap`
+ * (CompactResultCard, AgentPdpUtterance) are unaffected. */
+.sxs-broad-card__rows .sxs-result-card__row-wrap + .sxs-result-card__row-wrap {
+  margin-top: -1px;
+}
+
+/* Establish a stacking context on every row so the viewing variant —
+ * and any hovered/focused row — can paint above its neighbors. Without
+ * this the viewing row's bottom #9ca3af border would be covered by the
+ * next row's #d1d5db top border (later DOM order paints later), and a
+ * focus outline (outline-offset:2px) could be visually overlapped by
+ * the adjacent row's content. */
+.sxs-broad-card__rows .sxs-result-card__row {
+  position: relative;
+  z-index: 0;
+}
+
+.sxs-broad-card__rows .sxs-result-card__row:hover,
+.sxs-broad-card__rows .sxs-result-card__row:focus-visible,
+.sxs-broad-card__rows .sxs-result-card__row--viewing {
+  z-index: 1;
+}
+
+.sxs-broad-card__show-all {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sxs-broad-card__show-all-link {
+  appearance: none;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #17171b;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.sxs-broad-card__show-all-link:hover {
+  background-color: rgba(23, 23, 27, 0.04);
+}
+
+.sxs-broad-card__show-all-link:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+.sxs-broad-card__show-all-link__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* ---------- NBA pill row ---------- */
+
+.sxs-nba-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sxs-nba-pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 0;
+  color: var(--agentic-secondary-foreground, #33373d);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+/* Labels are allowed to flow up to two lines so longer prompts (e.g.
+ * "Beginner drone for landscape photography under $500") stay
+ * readable instead of getting truncated with an ellipsis. Anything
+ * past two lines is clipped without an ellipsis marker. */
+.sxs-nba-pill__label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-width: 311px;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
+
+.sxs-nba-pill__icon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+}
+
+.sxs-nba-pill:hover {
+  background: #f8f8f8;
+  border-color: #9ca3af;
+}
+
+.sxs-nba-pill:focus-visible {
+  outline: 2px solid var(--agentic-focus, rgba(163, 163, 163, 0.5));
+  outline-offset: 2px;
+}
+
+/* Mobile-sheet constraints (forced by SideBySideLayout mobile mode). */
+.sxs-layout__panel--mobile .sxs-assistant {
+  border-left: none;
+}
+
+.sxs-layout__panel--mobile .sxs-assistant__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.sxs-layout__panel--mobile .sxs-assistant__chat {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sxs-layout__panel--mobile .sxs-assistant__chat-stack {
+  padding: 12px;
+  gap: 12px;
+}
+
+.sxs-layout__panel--mobile .sxs-assistant__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.sxs-layout__panel--mobile .sxs-result-card {
+  max-width: 100%;
+}
+
+.sxs-layout__panel--mobile .sxs-shopper-bubble {
+  max-width: min(320px, 92%);
+}

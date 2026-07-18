@@ -1,0 +1,970 @@
+/* Search-suggestions overlay
+ *
+ * Triggered by the SearchIcon in any page header. Mirrors the Figma
+ * "Search" modal (node 33354:69307): a dimmed full-viewport layer with
+ * a top-anchored white panel containing input + recent searches +
+ * bestsellers grid + assistant promo strip.
+ *
+ * The AgentModeBar (z-index 1000) intentionally stays visible above the
+ * overlay; we sit at z-index 950 so the bar peeks through at the top.
+ */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-family-base, "Inter", system-ui, sans-serif);
+}
+
+.search-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 15, 20, 0.42);
+  cursor: pointer;
+}
+
+.search-overlay__panel {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  width: 100%;
+  max-height: calc(100vh - var(--app-topbar-height, 56px));
+  margin-top: var(--app-topbar-height, 56px); /* clear the AgentModeBar */
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--agentic-input-border, #e5e7eb);
+  box-shadow: 0 12px 32px rgba(15, 15, 20, 0.12);
+  overflow: hidden;
+}
+
+/* The dark `__input-row` is geometrically identical to the page's
+ * top-nav (top:64px, height:80px, bg:#18181b), so we deliberately
+ * DON'T animate it — animating a transform/opacity on a bar that's
+ * already congruent with the one underneath produces a ghosted
+ * "two stacked dark bars" effect during the transition. We instead
+ * slide+fade only the dropdown content (recent searches, bestsellers,
+ * promo) so the perceived transition is "page top-nav swaps to the
+ * search field and the dropdown drops out from under it". */
+.search-overlay__body,
+.search-overlay__promo {
+  animation: search-overlay__content-in 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes search-overlay__content-in {
+  from {
+    transform: translate3d(0, -8px, 0);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-overlay__body,
+  .search-overlay__promo {
+    animation: none;
+  }
+}
+
+/* ---------- Search-mode header (replaces page top-nav) ----------
+ *
+ * Mirrors Figma node 33354:69743: dark bar with the brand wordmark
+ * on the left, a dark search field in the middle, and a close X on
+ * the right. Sits flush at the top of the panel so when the
+ * overlay opens it literally replaces the page's top-nav (which is
+ * 80px tall in the existing pages — we match that height here).
+ */
+
+.search-overlay__input-row {
+  position: relative;
+  /* Three-column layout with equal-weight flanks (`1fr auto 1fr`) so
+   * the search field — sized at a fixed 928px in the centre column —
+   * lands at the true horizontal centre of the panel regardless of
+   * viewport width. Brand wordmark sits flush-left in column 1, close
+   * X sits flush-right in column 3 (each via `justify-self`). Earlier
+   * iterations used `360px 1fr auto` which biased the field rightward
+   * because the left rail was wider than the right one. The row spans
+   * the full panel width so the side anchors track the viewport edges
+   * instead of being capped to a centered max-width. */
+  display: flex;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0px;
+  height: 80px;
+  padding: 0 64px;
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  background: #18181b;
+  color: #ffffff;
+}
+
+@media (max-width: 1599.98px) {
+  .search-overlay__input-row {
+    grid-template-columns: 1fr auto 1fr;
+    padding: 0 48px;
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .search-overlay__input-row {
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    padding: 0 32px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .search-overlay__input-row {
+    gap: 12px;
+    height: 64px;
+    padding: 0 max(16px, var(--safe-area-right, 0px)) 0
+      max(16px, var(--safe-area-left, 0px));
+  }
+
+  .search-overlay__brand {
+    display: none;
+  }
+
+  .search-overlay__field {
+    width: 100%;
+  }
+}
+
+.search-overlay__brand {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.search-overlay__brand:hover,
+.search-overlay__brand:focus-visible {
+  color: #ffffff;
+  outline: none;
+}
+
+.search-overlay__field {
+  /* Sits in column 2 (`auto`) of the input-row grid, flanked by two
+   * equal `1fr` rails — that's what centres the field horizontally
+   * within the panel. The 600px width is the design spec; the
+   * surrounding `1fr` flanks soak up any extra viewport. At narrow
+   * viewports (<1280px) the row collapses to `auto 1fr auto` and the
+   * field stretches to fill the centre track instead. */
+  min-width: 0;
+  width: 600px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #404040;
+  cursor: text;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.search-overlay__field:hover {
+  border-color: #525252;
+}
+
+.search-overlay__field:focus-within {
+  border-color: #737373;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.search-overlay__input-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #a3a3a3;
+  flex: 0 0 auto;
+}
+
+.search-overlay__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.search-overlay__input::placeholder {
+  color: #a3a3a3;
+}
+
+/* Inline "Clear" link inside the search field — only rendered when
+ * the input has content. Sits to the right of the input via the
+ * label's flex layout. Styled as a low-emphasis link so it doesn't
+ * compete with the typed query for visual weight, but bright enough
+ * on hover to read as actionable. */
+.search-overlay__clear {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0 4px;
+  margin: 0;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  color: #a3a3a3;
+  cursor: pointer;
+  flex: 0 0 auto;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.search-overlay__clear:hover {
+  color: #ffffff;
+}
+
+.search-overlay__clear:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.search-overlay__close {
+  /* Column 3 is now `1fr` (flexible) instead of `auto`, so without an
+   * explicit `justify-self` the button would left-align inside the
+   * track and float toward the centre. Pin it to the right edge so it
+   * mirrors the brand wordmark on the left. */
+  justify-self: end;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.search-overlay__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.search-overlay__close:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  color: #ffffff;
+}
+
+/* ---------- Body ---------- */
+
+.search-overlay__body {
+  display: flex;
+  flex-flow: row;
+  /* Anchors the recent rail + bestsellers grid pair to the leading edge
+   * of the row so the columns line up with the search field above and
+   * any leftover horizontal space falls to the trailing side. */
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 32px;
+  width: 100%;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 56px 64px 32px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 1599.98px) {
+  .search-overlay__body {
+    padding: 56px 48px 32px;
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .search-overlay__body {
+    padding: 48px 32px 32px;
+  }
+}
+
+@media (max-width: 1099.98px) {
+  .search-overlay__body {
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 32px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .search-overlay__body {
+    align-items: stretch;
+    gap: 20px;
+    padding: 16px max(16px, var(--safe-area-left, 0px))
+      calc(24px + var(--safe-area-bottom, 0px))
+      max(16px, var(--safe-area-right, 0px));
+  }
+
+  .search-overlay__col--recent,
+  .search-overlay__col--bestsellers {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.search-overlay__col {
+  min-width: 0;
+}
+
+/* Recent searches column — fixed 360px lane in the row layout so the
+ * rail has enough breathing room for the longest demo labels (~25
+ * chars) without ellipsis. Shrinks to 320px at the 3-up tier to make
+ * room for the bestsellers grid, then becomes a full-width row when
+ * the body stacks below 1100px. */
+.search-overlay__col--recent {
+  flex: 0 0 360px;
+}
+
+@media (max-width: 1599.98px) {
+  .search-overlay__col--recent {
+    flex: 0 0 320px;
+  }
+}
+
+@media (max-width: 1099.98px) {
+  /* Stacked layout: rail spans the full row, capped at the 2-up grid
+   * width (2×260 + 1×24 = 544px) so it visually anchors above the
+   * grid instead of sprawling to the panel edges on tablet. */
+  .search-overlay__col--recent {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 544px;
+  }
+}
+
+/* Bestsellers column — must NOT shrink in the flex row, otherwise the
+ * inner 5/4/3-up grid (with 260px-wide ProductCards) would lose its
+ * track widths and the cards would overlap. `fit-content` lets the
+ * column hug the grid's intrinsic width at each breakpoint. */
+.search-overlay__col--bestsellers {
+  flex: 0 0 auto;
+  width: fit-content;
+}
+
+.search-overlay__heading {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #111827;
+  letter-spacing: -0.2px;
+}
+
+/* ---------- Recent searches ---------- */
+
+.search-overlay__recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-overlay__recent-list li {
+  margin: 0;
+}
+
+.search-overlay__recent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 8px;
+  margin: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: #1f2937;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.search-overlay__recent-item:hover {
+  background: var(--secondary, #f3f4f6);
+}
+
+.search-overlay__recent-item:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 1px;
+  background: var(--secondary, #f3f4f6);
+}
+
+.search-overlay__recent-icon {
+  flex: 0 0 auto;
+  color: #6b7280;
+}
+
+.search-overlay__recent-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+}
+
+.search-overlay__empty-suggestion {
+  padding: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ---------- "Search with assistant" section ----------
+ *
+ * Sits inside the recent-column flex (`.search-overlay__col--recent`)
+ * directly below the suggestion list. Phrases are dynamically
+ * generated from the matched products' metadata (rule-based, instant)
+ * with an optional LLM upgrade (~500ms after pause). Surface treatment
+ * mirrors the recent-suggestion list so the column reads as one
+ * cohesive rail rather than a separate widget — only the heading icon
+ * and per-row sparkle glyph signal the AI lane. */
+.search-overlay__assistant-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-overlay__heading--assistant {
+  margin: 0 0 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-overlay__assistant-heading-icon {
+  flex: 0 0 auto;
+  color: #6b7280;
+}
+
+.search-overlay__assistant-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Mirrors `.search-overlay__recent-item` so the assistant lane reads as
+ * part of the same rail (only the per-row sparkle glyph differentiates
+ * it). Any styling tweaks to the recent item should be mirrored here. */
+.search-overlay__assistant-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 8px;
+  margin: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: #1f2937;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.search-overlay__assistant-row:hover {
+  background: var(--secondary, #f3f4f6);
+}
+
+.search-overlay__assistant-row:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 1px;
+  background: var(--secondary, #f3f4f6);
+}
+
+.search-overlay__assistant-row-icon {
+  flex: 0 0 auto;
+  color: #6b7280;
+}
+
+.search-overlay__assistant-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px;
+}
+
+/* ---------- Match highlighting ----------
+ *
+ * Surfaces inside `.search-overlay__recent-label`. Kept deliberately
+ * subtle — the matched substring picks up a semi-bold weight so it
+ * pops without the visual noise of a colored background. `<mark>`'s
+ * UA default yellow is overridden here.
+ */
+.search-overlay__highlight {
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+
+/* ---------- "Did you mean" prompt ----------
+ *
+ * Two surfaces:
+ *  - `.search-overlay__did-you-mean` (default) lives inline with the
+ *    suggestion list when the recent column is empty.
+ *  - `.search-overlay__did-you-mean--inline` is a wider variant used
+ *    inside the empty-grid card so it visually anchors the
+ *    no-results explanation text above it.
+ */
+.search-overlay__did-you-mean {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 8px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--agentic-text-primary, #111827);
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.search-overlay__did-you-mean:hover {
+  background: var(--secondary, #f3f4f6);
+}
+
+.search-overlay__did-you-mean:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 1px;
+  background: var(--secondary, #f3f4f6);
+}
+
+.search-overlay__did-you-mean-prefix {
+  color: #6b7280;
+}
+
+.search-overlay__did-you-mean-term {
+  color: #2f7df6;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.search-overlay__no-results {
+  margin: 12px 0 0;
+  padding: 16px 20px;
+  border: 1px solid var(--agentic-input-border, #e5e7eb);
+  border-radius: 8px;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.search-overlay__no-results-line {
+  margin: 0;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.search-overlay__did-you-mean--inline {
+  padding: 4px 0;
+  font-size: 15px;
+}
+
+/* ---------- Bestsellers grid ---------- */
+
+/* ProductCard has a fixed `width: 260px` (see ProductCard.css
+ * `--pc-card-width`). We size the grid tracks to that exact value so
+ * each tier is a stable, definite-width rectangle — using `1fr` here
+ * would collapse to 0 inside the `fit-content` parent column and the
+ * cards would overlap.
+ *
+ * The grid always renders 10 cards into the DOM; each breakpoint
+ * trims the trailing rows via `:nth-child(n+N) { display: none }` so
+ * the perceived layout is a perfect rectangle (5x2, 4x2, 3x2, 2x2,
+ * 1x4) without needing any JS resize listener. */
+.search-overlay__grid {
+  /* ProductCard now exposes `--pc-card-width: 100%` globally for list pages.
+   * Search overlay needs fixed-size tiles, so pin a local width token here. */
+  --pc-card-width: 260px;
+  display: grid;
+  grid-template-columns: repeat(5, var(--pc-card-width, 260px));
+  gap: 24px;
+}
+
+@media (max-width: 1919.98px) {
+  .search-overlay__grid {
+    grid-template-columns: repeat(4, var(--pc-card-width, 260px));
+  }
+  .search-overlay__grid > :nth-child(n + 9) {
+    display: none;
+  }
+}
+
+@media (max-width: 1599.98px) {
+  .search-overlay__grid {
+    grid-template-columns: repeat(3, var(--pc-card-width, 260px));
+  }
+  .search-overlay__grid > :nth-child(n + 7) {
+    display: none;
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .search-overlay__grid {
+    grid-template-columns: repeat(2, var(--pc-card-width, 260px));
+  }
+  .search-overlay__grid > :nth-child(n + 5) {
+    display: none;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .search-overlay__grid {
+    --pc-card-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .search-overlay__grid > :nth-child(n + 5) {
+    display: none;
+  }
+
+  .search-overlay__grid .figma-product-card__image-wrap {
+    padding: 16px;
+  }
+
+  .search-overlay__grid .figma-product-card__content {
+    padding: 10px 12px 14px;
+    gap: 6px;
+  }
+
+  .search-overlay__grid .figma-product-card__title,
+  .search-overlay__grid .figma-product-card__price {
+    font-size: 15px;
+  }
+}
+
+/* "View all results" CTA shown below the live results grid. */
+.search-overlay__view-all {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Mirrors Figma node 33245:50164 — borderless text + arrow-right link.
+ * No pill background or border; opacity hover keeps the affordance subtle
+ * since the source design only specifies the resting state. */
+.search-overlay__view-all-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--agentic-foreground, #17171b);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.search-overlay__view-all-btn:hover {
+  opacity: 0.7;
+}
+
+.search-overlay__view-all-btn:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Compact product card variant for the search dropdown.
+ * The dropdown is a quick-pick surface — we hide swatches, brand/category
+ * meta, long-form description, the gallery hover icon-buttons, the hover
+ * "View details" CTA, and the prev/next carousel arrows so each tile only
+ * shows image, badge, title, rating, price. The whole card is already
+ * clickable, so the hover affordances would just add visual noise. */
+.search-overlay__grid .figma-product-card__swatches,
+.search-overlay__grid .figma-product-card__meta,
+.search-overlay__grid .figma-product-card__description,
+.search-overlay__grid .figma-product-card__actions,
+.search-overlay__grid .figma-product-card__hover-cta,
+.search-overlay__grid .figma-product-card__carousel-btn {
+  display: none;
+}
+
+/* With swatches and brand/category meta hidden in the dropdown variant,
+ * the 24px top padding leaves an awkward gap between the image and the
+ * title. Collapse it so the title sits flush against the media. The
+ * bottom padding is restored to 24px so the card has breathing room
+ * beneath the title within the search results grid. */
+.search-overlay__grid .figma-product-card__content {
+  padding-top: 0;
+  padding-bottom: 24px;
+}
+
+/* ---------- Assistant promo strip ---------- */
+
+.search-overlay__promo {
+  /* Housed inside the dropdown body — its horizontal margins mirror
+   * the `.search-overlay__body` padding tiers, and the 1920px cap
+   * keeps the strip aligned with the centered body content area at
+   * extra-wide viewports. Border-radius + full border turn the strip
+   * into a card (per Figma 33354:69307) instead of a flush footer
+   * band.
+   *
+   * The background is a two-layer stack: a left-to-right white→transparent
+   * gradient on top of the decorative graphic. The gradient holds solid
+   * white under the icon + copy on the left, then fades so the graphic
+   * reads clearly on the right half of the strip. Stops are tuned so the
+   * title + subtitle (~40% of the strip at the widest breakpoint) always
+   * sit on opaque white for legibility. */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 auto 32px;
+  width: calc(100% - 128px);
+  max-width: calc(1920px - 128px);
+  padding: 16px 24px;
+  border: 1px solid var(--agentic-input-border, #e5e7eb);
+  border-radius: 0px;
+  /* Mirrors Figma node 33432:104871 ("Agentic Bar"). Two-layer stack:
+   *   1. A white→transparent gradient (white solid 0–33.17%, fades to
+   *      transparent at 100%) — same stops as the Figma design so the
+   *      icon + title + subtitle always sit on opaque white.
+   *   2. The decorative blue-wave graphic, anchored to the bottom-right
+   *      and scaled with `cover` so the dense band of waves lands in
+   *      the trailing portion of the strip (the upper half of the
+   *      source PNG is mostly empty white, which is fine — the gradient
+   *      masks it out anyway).
+   */
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(
+      to right,
+      #ffffff 0%,
+      #ffffff 33.17%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    url("/assistant-promo-bg.png");
+  background-repeat: no-repeat, no-repeat;
+  background-position: center, bottom right;
+  background-size: 100% 100%, cover;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+@media (max-width: 1599.98px) {
+  .search-overlay__promo {
+    width: calc(100% - 96px);
+  }
+}
+
+@media (max-width: 1279.98px) {
+  .search-overlay__promo {
+    width: calc(100% - 64px);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .search-overlay__promo {
+    width: calc(100% - 32px);
+    margin-bottom: 24px;
+  }
+}
+
+.search-overlay__promo:hover {
+  /* `background-color` only — using the `background` shorthand here would
+   * wipe out the gradient + decorative image layered by `.search-overlay__promo`.
+   * The tint sits below the gradient; on the opaque-white left half it's
+   * masked, and on the right half the decorative image covers it. */
+  background-color: var(--secondary, #f7f7f8);
+  border-color: #d1d5db;
+}
+
+.search-overlay__promo:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 2px;
+}
+
+.search-overlay__promo-icon {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1px;
+  background: #131315;
+  color: #ffffff;
+}
+
+.search-overlay__promo-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-overlay__promo-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.search-overlay__promo-sub {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.search-overlay__promo-close {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #33373d;
+}
+
+/* Demo mobile viewport parity: force the compact overlay layout even when
+ * the browser window itself is wider than the mobile frame. */
+html[data-demo-viewport="mobile"] .search-overlay__panel {
+  --demo-mobile-frame-left: max((100vw - min(430px, 100vw)) / 2, 0px);
+  width: min(430px, 100vw);
+  margin-left: var(--demo-mobile-frame-left);
+  max-height: calc(100dvh - var(--app-topbar-height, 56px));
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__input-row {
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  height: 80px;
+  min-height: 80px;
+  align-items: center;
+  padding: 0 max(16px, var(--safe-area-right, 0px)) 0
+    max(16px, var(--safe-area-left, 0px));
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__brand {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__field {
+  width: 100%;
+  max-width: none;
+  justify-self: stretch;
+  min-height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__body {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 24px;
+  padding: 16px max(16px, var(--safe-area-left, 0px))
+    calc(24px + var(--safe-area-bottom, 0px))
+    max(16px, var(--safe-area-right, 0px));
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__col--recent {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: none;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__col--bestsellers {
+  width: 100%;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__grid {
+  --pc-card-width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__grid > :nth-child(n + 5) {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__grid .figma-product-card__image-wrap {
+  padding: 16px;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__grid .figma-product-card__content {
+  padding: 10px 12px 14px;
+  gap: 6px;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__grid .figma-product-card__title,
+html[data-demo-viewport="mobile"] .search-overlay__grid .figma-product-card__price {
+  font-size: 15px;
+}
+
+html[data-demo-viewport="mobile"] .search-overlay__promo {
+  width: calc(100% - 32px);
+  margin-bottom: 24px;
+}

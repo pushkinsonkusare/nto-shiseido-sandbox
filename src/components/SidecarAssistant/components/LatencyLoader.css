@@ -1,0 +1,51 @@
+/* ---------- Latency loader ---------- */
+/* Mirrors the Figma "Latency Loader" component (node-id 32933:112416 family). */
+
+.agent-loader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--agentic-card-bg);
+  border: 1px solid var(--agentic-card-border);
+  font-family: var(--font-family-base);
+  box-sizing: border-box;
+}
+
+.agent-loader__spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--agentic-foreground);
+}
+
+.agent-loader__spinner > svg {
+  animation: agent-loader-spin 1s linear infinite;
+}
+
+@keyframes agent-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-loader__spinner > svg {
+    animation: none;
+  }
+}
+
+.agent-loader__label {
+  flex: 1 1 auto;
+  font-size: 16px;
+  font-weight: var(--font-weight-medium, 500);
+  line-height: 24px;
+  color: var(--agentic-foreground);
+}

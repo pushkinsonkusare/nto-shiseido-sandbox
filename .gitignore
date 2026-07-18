@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Vite cache / temp
+.vite/
+*.timestamp-*.mjs
+
+# dev-watch.sh runtime PID file
+.dev-watch.pid
+
+# Local env files (NEVER commit — these hold API keys)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Wrangler / Cloudflare Workers tmp + state
+.wrangler/
+.dev.vars
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
