@@ -303,7 +303,7 @@
   display: flex;
   flex-direction: column;
   gap: 48px;
-  background: #ffffff;
+  background: rgba(255, 0, 0, 1);
   border: 1px solid #e3e3e3;
   border-radius: 20px;
   box-shadow: 0 10px 34px rgba(15, 15, 20, 0.08);
