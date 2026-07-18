@@ -417,6 +417,10 @@
     box-shadow 220ms ease;
 }
 
+.wingman-page__input-shell--touched {
+  background-color: rgba(255, 0, 149, 1);
+}
+
 /* text-entry — has user content. Softened to gray-600 (#4b5563): one
  * step lighter than near-black `--agentic-foreground` so the touched
  * state still reads as active against the resting #d1d5db, but the
