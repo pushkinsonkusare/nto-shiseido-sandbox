@@ -23,14 +23,14 @@ export type RecentSearch = {
 };
 
 export const RECENT_SEARCHES: ReadonlyArray<RecentSearch> = [
-  { label: "Mavic 4 Pro", kind: "assistant" },
-  { label: "Wireless mic for podcasts", kind: "assistant" },
-  { label: "Helmet mount", kind: "assistant" },
-  { label: "Gear for moto vlogging", kind: "assistant" },
-  { label: "Action camera for diving", kind: "assistant" },
-  { label: "Beginner drone under $500", kind: "assistant" },
-  { label: "Osmo Pocket 3", kind: "assistant" },
-  { label: "FPV starter kit", kind: "assistant" },
-  { label: "Mini 4 Pro Fly More Combo", kind: "assistant" },
-  { label: "ND filter for Mavic 4 Pro", kind: "assistant" },
+  { label: "Ultimune Power Infusing Serum", kind: "assistant" },
+  { label: "Serum for dark spots", kind: "assistant" },
+  { label: "Vital Perfection eye cream", kind: "assistant" },
+  { label: "Routine for dry skin", kind: "assistant" },
+  { label: "Sunscreen for oily skin", kind: "assistant" },
+  { label: "Anti-aging moisturizer under $90", kind: "assistant" },
+  { label: "Benefiance day cream", kind: "assistant" },
+  { label: "Cleanser for sensitive skin", kind: "assistant" },
+  { label: "Future Solution LX", kind: "assistant" },
+  { label: "Refillable skincare", kind: "assistant" },
 ];

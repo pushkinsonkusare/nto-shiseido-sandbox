@@ -1,7 +1,5 @@
-import { useAgentMode } from "../../components/AgentModeBar/AgentModeContext";
 import { useCatalog } from "../../catalog/CatalogContext";
 import { toProductCardProps } from "../../catalog/catalog";
-import { ImmersiveHeader } from "../../components/ImmersiveHeader/ImmersiveHeader";
 import ProductCard from "../../components/ProductCard/ProductCard";
 import { UnifiedTopHeader } from "../../components/UnifiedTopHeader/UnifiedTopHeader";
 import {
@@ -11,22 +9,17 @@ import {
 import { useSearchOverlay } from "../../components/SearchOverlay/SearchOverlayContext";
 import { ROUTES, usePrototypeNavigation } from "../../prototypeRoutes";
 import { PRIMARY_NAV_ITEMS, SITE_BRAND, SITE_FOOTER_COPY } from "../../siteContent";
-import coverImg from "../../assets/storefront-cover.webp";
+import bannerUltimune from "../../assets/banner-ultimune.webp";
 import "./StorefrontPage.css";
 
 export default function StorefrontPage() {
-  const { featuredProducts, heroProduct, promoProducts, spotlightProducts } = useCatalog();
+  const { featuredProducts, promoProducts, spotlightProducts } = useCatalog();
   const { navigate, navigateToProduct } = usePrototypeNavigation();
   const { openSearchOverlay } = useSearchOverlay();
-  const { mode } = useAgentMode();
 
   return (
     <div className="figma-storefront">
-      {mode === "immersive" ? (
-        <ImmersiveHeader />
-      ) : (
-        <UnifiedTopHeader navigate={navigate} openSearchOverlay={openSearchOverlay} />
-      )}
+      <UnifiedTopHeader navigate={navigate} openSearchOverlay={openSearchOverlay} />
 
       <main className="figma-storefront__page-inner">
         <section className="figma-storefront__hero">
@@ -39,17 +32,17 @@ export default function StorefrontPage() {
           <div className="figma-storefront__hero-overlay">
             <div className="figma-storefront__hero-content">
               <div className="figma-storefront__hero-copy">
-                <h1>DJI LITO SERIES</h1>
-                <p>beginner friendly drones</p>
+                <h1>Ultimune</h1>
+                <p>Power Infusing Serum</p>
               </div>
-              <button type="button" onClick={() => navigateToProduct(heroProduct.slug)}>Explore now</button>
+              <button type="button" onClick={() => navigate(ROUTES.productListing, { series: ["ultimune"] })}>Explore now</button>
             </div>
           </div>
-          <img src={coverImg} alt={heroProduct.imageAlt} className="figma-storefront__hero-image" />
+          <img src={bannerUltimune} alt="Shiseido Ultimune Power Infusing Serum" className="figma-storefront__hero-image" />
         </section>
 
         <section className="figma-storefront__section">
-          <h2>Featured DJI Gear</h2>
+          <h2>Featured Skincare</h2>
           <div className="figma-storefront__featured-grid">
             {featuredProducts.map((product) => (
               <ProductCard key={product.slug} {...toProductCardProps(product)} onSelect={() => navigateToProduct(product.slug)} />
@@ -57,7 +50,7 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        <section className="figma-storefront__promo-grid" aria-label="DJI category highlights">
+        <section className="figma-storefront__promo-grid" aria-label="Shiseido category highlights">
           {promoProducts.map((product) => (
             <article key={product.slug} className="figma-storefront__promo-card">
               <div className="figma-storefront__promo-card-image-shell">
@@ -73,8 +66,8 @@ export default function StorefrontPage() {
         </section>
 
         <section className="figma-storefront__section">
-          <h2>Creator Essentials</h2>
-          <p className="figma-storefront__subtitle">Explore DJI favorites for aerial, action, and handheld capture.</p>
+          <h2>Bestselling Rituals</h2>
+          <p className="figma-storefront__subtitle">Explore Shiseido favorites for cleansing, treating, and protecting your skin.</p>
           <div className="figma-storefront__steps-grid">
             {spotlightProducts.map((product) => (
               <article key={product.slug} className="figma-storefront__step-card">
@@ -90,7 +83,7 @@ export default function StorefrontPage() {
           </div>
         </section>
 
-        <section className="figma-storefront__promo-grid" aria-label="More DJI recommendations">
+        <section className="figma-storefront__promo-grid" aria-label="More Shiseido recommendations">
           {featuredProducts.slice(0, 2).map((product) => (
             <article key={`bottom-${product.slug}`} className="figma-storefront__promo-card">
               <div className="figma-storefront__promo-card-image-shell">
@@ -108,9 +101,9 @@ export default function StorefrontPage() {
 
       <section className="figma-storefront__newsletter">
         <h3>Stay Updated</h3>
-        <p>Be first to hear about DJI launches, creator tips, and limited-time bundles.</p>
+        <p>Be first to hear about Shiseido launches, skincare tips, and limited-time sets.</p>
         <form>
-          <input type="email" value="creator@dji-demo.com" readOnly aria-label="Email address" />
+          <input type="email" value="hello@shiseido-demo.com" readOnly aria-label="Email address" />
           <button type="button">Join</button>
         </form>
       </section>
@@ -120,7 +113,7 @@ export default function StorefrontPage() {
           <strong>{SITE_BRAND}</strong>
           <div className="figma-storefront__footer-links">
             <a href={ROUTES.about} onClick={(event) => { event.preventDefault(); navigate(ROUTES.about); }}>About Us</a>
-            <a href="#">DJI Care Refresh</a>
+            <a href="#">Loyalty & Rewards</a>
             <a href="#">Privacy Policy</a>
             <a href="#">Support</a>
           </div>

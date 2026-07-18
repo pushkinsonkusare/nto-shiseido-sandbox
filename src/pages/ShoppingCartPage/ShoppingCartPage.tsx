@@ -180,7 +180,7 @@ export default function ShoppingCartPage() {
             title={(
               <>
                 <span>Pickup at </span>
-                <strong>DJI Mission Store</strong>
+                <strong>Shiseido Boutique</strong>
                 <span> - {pickupItems.length} items</span>
               </>
             )}
@@ -213,7 +213,7 @@ export default function ShoppingCartPage() {
               <ChevronDownIcon width={24} height={24} className="figma-cart__promo-chevron" />
             </button>
             <div className="figma-cart__applied">
-              <span className="figma-cart__promo-badge">Creator Bundle Savings</span>
+              <span className="figma-cart__promo-badge">Set & Bundle Savings</span>
               <span className="figma-cart__applied-amt">-{formatPrice(promotionValue)}</span>
             </div>
           </div>
@@ -255,7 +255,7 @@ export default function ShoppingCartPage() {
             <div className="figma-cart__footer-left">
               <strong className="figma-cart__footer-logo">{SITE_BRAND}</strong>
               <div className="figma-cart__footer-links">
-                <a href="#">DJI Care Refresh</a>
+                <a href="#">Loyalty & Rewards</a>
                 <a href="#">Privacy Policy</a>
                 <a href="#">Support</a>
               </div>

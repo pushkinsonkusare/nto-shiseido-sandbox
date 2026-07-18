@@ -154,8 +154,8 @@ function OverviewPage() {
           <div className="figma-overview__content">
             <section className="figma-overview__panel figma-overview__welcome">
               <div>
-                <h2>Welcome back, Creator!</h2>
-                <p>Manage your DJI gear, track shipments, and discover creator-ready recommendations.</p>
+                <h2>Welcome back!</h2>
+                <p>Manage your Shiseido routine, track shipments, and discover tailored recommendations.</p>
               </div>
             </section>
 
@@ -176,7 +176,7 @@ function OverviewPage() {
               <div className="figma-overview__section-head">
                 <div>
                   <h2>Recent Orders</h2>
-                  <p>Your latest DJI orders and shipment updates</p>
+                  <p>Your latest Shiseido orders and shipment updates</p>
                 </div>
                 <button type="button" className="figma-overview__secondary-button">View All</button>
               </div>
@@ -226,7 +226,7 @@ function OverviewPage() {
               <div className="figma-overview__section-head">
                 <div>
                   <h2>Curated for You</h2>
-                  <p>Recommended DJI gear based on your latest creator setup</p>
+                  <p>Recommended Shiseido products based on your latest routine</p>
                 </div>
                 <button type="button" className="figma-overview__secondary-button">View More</button>
               </div>
@@ -295,7 +295,7 @@ function OverviewPage() {
             <div className="figma-overview__footer-left">
               <strong>{SITE_BRAND}</strong>
               <div className="figma-overview__footer-links">
-                <a href="#">DJI Care Refresh</a>
+                <a href="#">Loyalty & Rewards</a>
                 <a href="#">Privacy Policy</a>
                 <a href="#">Support</a>
               </div>

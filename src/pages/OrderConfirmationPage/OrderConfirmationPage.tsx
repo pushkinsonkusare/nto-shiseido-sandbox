@@ -14,7 +14,7 @@ import { SITE_ADDRESS, SITE_BRAND, SITE_FOOTER_COPY } from "../../siteContent";
 import "./OrderConfirmationPage.css";
 
 const helpLinks = ["FAQ", "Contact Us", "Return Policy"];
-const footerLinks = ["DJI Care Refresh", "Privacy Policy", "Support"];
+const footerLinks = ["Loyalty & Rewards", "Privacy Policy", "Support"];
 
 export default function OrderConfirmationPage() {
   const { cartLines, getProductBySlug, orderHistory, recommendedProducts } = useCatalog();
@@ -69,14 +69,14 @@ export default function OrderConfirmationPage() {
           <section className="figma-order-confirmation__card figma-order-confirmation__hero-card">
             <div className="figma-order-confirmation__hero-top">
               <div className="figma-order-confirmation__hero-copy">
-                <h1>Thank you, Creator!</h1>
-                <p>Your DJI order is confirmed.</p>
+                <h1>Thank you!</h1>
+                <p>Your Shiseido order is confirmed.</p>
               </div>
-              <p className="figma-order-confirmation__order-id">Order #: {latestOrder?.id ?? "DJI-41021"}</p>
+              <p className="figma-order-confirmation__order-id">Order #: {latestOrder?.id ?? "SHI-41021"}</p>
             </div>
 
             <p className="figma-order-confirmation__email-copy">
-              We&apos;ve sent a confirmation email to creator@dji-demo.com.
+              We&apos;ve sent a confirmation email to hello@shiseido-demo.com.
             </p>
 
             <div className="figma-order-confirmation__help-row">
@@ -97,7 +97,7 @@ export default function OrderConfirmationPage() {
             </div>
             <div className="figma-order-confirmation__fulfillment-column">
               <h2>Shipping Address</h2>
-              <p>DJI Creator</p>
+              <p>Shiseido Member</p>
               <p>{SITE_ADDRESS}</p>
               <p>United States</p>
             </div>
@@ -160,7 +160,7 @@ export default function OrderConfirmationPage() {
 
           <section className="figma-order-confirmation__card figma-order-confirmation__signup-card">
             <div className="figma-order-confirmation__signup-copy">
-              <p>Get launch alerts, creator stories, and 10% off your next DJI accessory order.</p>
+              <p>Get launch alerts, skincare tips, and 10% off your next Shiseido order.</p>
               <label className="figma-order-confirmation__signup-field">
                 <span className="figma-order-confirmation__sr-only">Email address</span>
                 <input type="email" placeholder="Email address" />
@@ -201,7 +201,7 @@ export default function OrderConfirmationPage() {
           </section>
 
           <section className="figma-order-confirmation__card figma-order-confirmation__share-card">
-            <p>Show us what you create next! #ShotOnDJI</p>
+            <p>Share your ritual with us! #ShiseidoSkincare</p>
           </section>
         </div>
       </main>
@@ -210,7 +210,7 @@ export default function OrderConfirmationPage() {
         <div className="figma-order-confirmation__footer-inner">
           <div className="figma-order-confirmation__footer-row">
             <div className="figma-order-confirmation__footer-left">
-              <a href="#" className="figma-order-confirmation__footer-brand" aria-label="DJI home">
+              <a href="#" className="figma-order-confirmation__footer-brand" aria-label="Shiseido home">
                 <span className="figma-order-confirmation__footer-logo">{SITE_BRAND}</span>
               </a>
               <div className="figma-order-confirmation__footer-links">

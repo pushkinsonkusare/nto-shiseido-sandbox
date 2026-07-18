@@ -17,7 +17,7 @@ function LoginPage() {
           <h1 id="login-page-title" className="figma-login__title">
             Sign in to your {SITE_BRAND} account
           </h1>
-          <p className="figma-login__subtitle">Access your gear, orders, and DJI creator support</p>
+          <p className="figma-login__subtitle">Access your routine, orders, and Shiseido beauty concierge</p>
         </header>
 
         <form className="figma-login__card" onSubmit={handleSubmit}>

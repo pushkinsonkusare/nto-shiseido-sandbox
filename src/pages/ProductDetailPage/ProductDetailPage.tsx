@@ -92,7 +92,7 @@ export default function ProductDetailPage() {
           <aside className="figma-pdp__info">
             <p className="figma-pdp__brand">{product.brand}</p>
             <h1>{product.title}</h1>
-            <p className="figma-pdp__sku">SKU: {product.sku ?? product.model ?? "DJI-CATALOG"}</p>
+            <p className="figma-pdp__sku">SKU: {product.sku ?? product.model ?? "SHISEIDO-CATALOG"}</p>
             <p className="figma-pdp__stars">
               {product.rating ? `${product.rating.toFixed(1)} / 5` : "New release"}
               {product.reviewCount ? ` (${product.reviewCount} reviews)` : ""}
@@ -119,8 +119,8 @@ export default function ProductDetailPage() {
                 <small>Fast shipping in 2-4 business days</small>
               </div>
               <div>
-                <p>Creator support included</p>
-                <small>DJI Care, setup resources, and support available.</small>
+                <p>Beauty concierge included</p>
+                <small>Complimentary samples, routine advice, and support available.</small>
               </div>
             </div>
 
@@ -188,7 +188,7 @@ export default function ProductDetailPage() {
           <div className="figma-pdp__footer-left">
             <strong>{SITE_BRAND}</strong>
             <div className="figma-pdp__footer-links">
-              <a href="#">DJI Care Refresh</a>
+              <a href="#">Loyalty & Rewards</a>
               <a href="#">Privacy Policy</a>
               <a href="#">Support</a>
             </div>

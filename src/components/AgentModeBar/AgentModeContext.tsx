@@ -4,14 +4,12 @@ import type { ReactNode } from "react";
 export type AgentMode =
   | "assistant-only"
   | "side-by-side"
-  | "immersive"
   | "basic-website";
 
 export const AGENT_MODES: { id: AgentMode; label: string }[] = [
   { id: "basic-website", label: "Native Storefront" },
   { id: "assistant-only", label: "Sidecar assistant" },
   { id: "side-by-side", label: "Side by side assistant" },
-  { id: "immersive", label: "Immersive" },
 ];
 
 export type DemoViewportMode = "desktop" | "mobile";
@@ -26,12 +24,10 @@ type AgentModeContextValue = {
 const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefined);
 
 /* Hard defaults for every page load. By design, refreshing the
- * page ALWAYS resets the experience switcher to Immersive + Desktop
- * regardless of what the shopper picked in the previous session.
- * If you change these defaults, also update
- * `.cursor/rules/agent-mode-defaults.mdc` so future agents pick up
- * the new convention. */
-const DEFAULT_AGENT_MODE: AgentMode = "immersive";
+ * page ALWAYS resets the experience switcher to Native Storefront +
+ * Desktop regardless of what the shopper picked in the previous
+ * session. */
+const DEFAULT_AGENT_MODE: AgentMode = "basic-website";
 const DEFAULT_VIEWPORT_MODE: DemoViewportMode = "desktop";
 
 export function AgentModeProvider({ children }: { children: ReactNode }) {

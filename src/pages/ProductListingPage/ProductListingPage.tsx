@@ -386,7 +386,7 @@ export function ProductListingPage() {
     const baseHeading =
       (singleActiveCategory ? matchingNavItem?.label : null) ??
       singleActiveCategory ??
-      (isGenericAccessoriesHandoff ? "Accessories" : "DJI Catalog");
+      (isGenericAccessoriesHandoff ? "Accessories" : "Shiseido Catalog");
     const filterSuffix = [
       ...(multiCategorySuffix ? [multiCategorySuffix] : []),
       ...(tierSuffix ? [tierSuffix] : []),
@@ -591,7 +591,7 @@ export function ProductListingPage() {
         {
           title: "Shop by Availability",
           kind: "static",
-          options: ["In stock", "Creator bundles", "Top rated"].map((label) => ({ label })),
+          options: ["In stock", "Gift sets", "Top rated"].map((label) => ({ label })),
         },
         {
           title: "Shop by Price",
@@ -604,7 +604,7 @@ export function ProductListingPage() {
         {
           title: "Shop by Availability",
           kind: "static",
-          options: ["In stock", "Creator bundles", "Top rated"].map((label) => ({ label })),
+          options: ["In stock", "Gift sets", "Top rated"].map((label) => ({ label })),
         },
         {
           title: "Shop by Price",
@@ -656,7 +656,7 @@ export function ProductListingPage() {
               <>
                 <span>Products</span>
                 <span className="figma-plp__sep"><ChevronRightIcon width={14} height={14} /></span>
-                <span>DJI Catalog</span>
+                <span>Shiseido Catalog</span>
               </>
             )}
           </nav>
@@ -843,7 +843,7 @@ export function ProductListingPage() {
           <div className="figma-plp__footer-left">
             <strong>{SITE_BRAND}</strong>
             <div className="figma-plp__footer-links">
-              <a href="#">DJI Care Refresh</a>
+              <a href="#">Loyalty & Rewards</a>
               <a href="#">Privacy Policy</a>
               <a href="#">Support</a>
             </div>

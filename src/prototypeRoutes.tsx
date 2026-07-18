@@ -11,18 +11,6 @@ export const ROUTES = {
   login: "/login",
   account: "/account",
   about: "/about-us",
-  /** Immersive-only landing page for the Wingman assistant. Defensively
-   * renders as the default storefront in non-immersive modes (handled
-   * in `App.tsx`), so the route is safe to expose globally. */
-  wingman: "/wingman",
-  /**
-   * Immersive-only "Wingman plan" results page. Receives the shopper's
-   * raw query through `?q=<text>` and renders a dynamically curated
-   * page (hero banner + 3 combos + category accordions) on top of the
-   * tagged catalog. Defensively renders as the storefront in
-   * non-immersive modes — same fallback treatment as `/wingman`.
-   */
-  wingmanPlan: "/wingman/plan",
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
@@ -135,14 +123,6 @@ export type NavigateOptions = {
    * (search wins).
    */
   searchQuery?: string;
-  /**
-   * Free-text Wingman query carried as `?q=<text>` on the
-   * `/wingman/plan` route. Independent from the PLP `searchQuery`
-   * because the two routes resolve very different things — PLP runs
-   * the search index, Wingman plan runs the recipe + accessory-bundle
-   * pipeline against the same query.
-   */
-  wingmanQuery?: string;
 };
 
 type NavigationContextValue = {
@@ -183,11 +163,6 @@ type NavigationContextValue = {
    * Empty string when absent.
    */
   currentSearchQuery: string;
-  /**
-   * Active Wingman query parsed from `?q=` when on `/wingman/plan`.
-   * Empty string on every other route or when the param is missing.
-   */
-  currentWingmanQuery: string;
   navigate: (route: StaticRoute, options?: NavigateOptions) => void;
   navigateToProduct: (slug: string) => void;
 };
@@ -224,16 +199,6 @@ function parseCapabilitiesParam(value: string | null): string[] {
 
 function buildBrowserUrl(route: StaticRoute, options?: NavigateOptions) {
   const path = toBrowserPath(route);
-  if (route === ROUTES.wingmanPlan) {
-    // Wingman plan only carries `?q=<query>`. Reusing the same
-    // URLSearchParams plumbing as the PLP keeps the encoding rules
-    // (`+` for space, `%`-escaped specials) consistent across routes.
-    const wingmanQuery = options?.wingmanQuery?.trim();
-    if (!wingmanQuery) return path;
-    const params = new URLSearchParams();
-    params.set(SEARCH_QUERY_PARAM, wingmanQuery);
-    return `${path}?${params.toString()}`;
-  }
   if (route !== ROUTES.productListing) return path;
   const params = new URLSearchParams();
   if (options?.category) params.set(CATEGORY_PARAM, options.category);
@@ -308,7 +273,6 @@ type RouteState = {
   currentPrimaryActivities: string[];
   currentSlugs: string[];
   currentSearchQuery: string;
-  currentWingmanQuery: string;
 };
 
 const EMPTY_ROUTE_STATE: RouteState = {
@@ -328,7 +292,6 @@ const EMPTY_ROUTE_STATE: RouteState = {
   currentPrimaryActivities: [],
   currentSlugs: [],
   currentSearchQuery: "",
-  currentWingmanQuery: "",
 };
 
 function getRouteState(pathname: string, search: string): RouteState {
@@ -422,10 +385,6 @@ function getRouteState(pathname: string, search: string): RouteState {
   const searchQuery = isPlp
     ? (params.get(SEARCH_QUERY_PARAM)?.trim() || "")
     : "";
-  const isWingmanPlan = route === ROUTES.wingmanPlan;
-  const wingmanQuery = isWingmanPlan
-    ? (params.get(SEARCH_QUERY_PARAM)?.trim() || "")
-    : "";
 
   return {
     currentRoute: route,
@@ -444,28 +403,13 @@ function getRouteState(pathname: string, search: string): RouteState {
     currentPrimaryActivities: primaryActivities,
     currentSlugs: slugs,
     currentSearchQuery: searchQuery,
-    currentWingmanQuery: wingmanQuery,
   };
 }
 
 export function PrototypeNavigationProvider({ children }: { children: ReactNode }) {
   const [routeState, setRouteState] = useState<RouteState>(() => {
     if (typeof window === "undefined") return EMPTY_ROUTE_STATE;
-    const initial = getRouteState(window.location.pathname, window.location.search);
-    /* Hard refresh-default: every reload that lands on the
-     * home/storefront route gets rerouted to /wingman. The Wingman
-     * landing page is the canonical entry point for the immersive
-     * demo; the storefront stays reachable via the DJI brand link
-     * in the header. Implemented as `replaceState` (not `pushState`)
-     * so the back button doesn't bounce the shopper to the empty
-     * "/" they never visited. See
-     * `.cursor/rules/refresh-defaults.mdc` for the broader rule. */
-    if (initial.currentRoute === ROUTES.home) {
-      const wingmanUrl = toBrowserPath(ROUTES.wingman);
-      window.history.replaceState({}, "", wingmanUrl);
-      return getRouteState(wingmanUrl, "");
-    }
-    return initial;
+    return getRouteState(window.location.pathname, window.location.search);
   });
 
   useEffect(() => {
@@ -496,7 +440,6 @@ export function PrototypeNavigationProvider({ children }: { children: ReactNode 
       currentPrimaryActivities: routeState.currentPrimaryActivities,
       currentSlugs: routeState.currentSlugs,
       currentSearchQuery: routeState.currentSearchQuery,
-      currentWingmanQuery: routeState.currentWingmanQuery,
       navigate: (route, options) => {
         const nextBrowserUrl = buildBrowserUrl(route, options);
         const currentBrowserUrl = `${window.location.pathname}${window.location.search}`;
@@ -559,10 +502,6 @@ export function PrototypeNavigationProvider({ children }: { children: ReactNode 
         const cleanSearchQuery = isPlp
           ? options?.searchQuery?.trim() || ""
           : "";
-        const isWingmanPlanRoute = route === ROUTES.wingmanPlan;
-        const cleanWingmanQuery = isWingmanPlanRoute
-          ? options?.wingmanQuery?.trim() || ""
-          : "";
         setRouteState({
           currentRoute: route,
           currentProductSlug: null,
@@ -580,7 +519,6 @@ export function PrototypeNavigationProvider({ children }: { children: ReactNode 
           currentPrimaryActivities: cleanPrimaryActivities,
           currentSlugs: cleanSlugs,
           currentSearchQuery: cleanSearchQuery,
-          currentWingmanQuery: cleanWingmanQuery,
         });
         window.scrollTo(0, 0);
       },
@@ -615,7 +553,6 @@ export function PrototypeNavigationProvider({ children }: { children: ReactNode 
       routeState.currentPrimaryActivities,
       routeState.currentSlugs,
       routeState.currentSearchQuery,
-      routeState.currentWingmanQuery,
     ],
   );
 

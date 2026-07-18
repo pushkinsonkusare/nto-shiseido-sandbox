@@ -74,7 +74,7 @@ function ContactInformationSection() {
       <div className="figma-checkout__contact-fields">
         <label className="figma-checkout__field">
           <span className="figma-checkout__label">Email Address*</span>
-          <input type="email" placeholder="creator@dji-demo.com" aria-label="Email Address" />
+          <input type="email" placeholder="hello@shiseido-demo.com" aria-label="Email Address" />
         </label>
         <div className="figma-checkout__phone-row">
           <label className="figma-checkout__field figma-checkout__field--code">
@@ -174,7 +174,7 @@ function OrderSummary() {
             </button>
           </div>
           <div className="figma-checkout__promo-applied">
-            <span className="figma-checkout__badge">Creator Bundle Savings</span>
+            <span className="figma-checkout__badge">Set & Bundle Savings</span>
             <span>-{formatPrice(promotions)}</span>
           </div>
         </div>

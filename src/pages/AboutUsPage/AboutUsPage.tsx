@@ -8,16 +8,16 @@ import { PRIMARY_NAV_ITEMS, SITE_ADDRESS, SITE_BRAND, SITE_FOOTER_COPY } from ".
 import "./AboutUsPage.css";
 
 const introParagraphs = [
-  "DJI began with a belief that better creative tools unlock entirely new ways to see the world. From first-time flyers to working filmmakers, our goal is to make advanced imaging feel intuitive, portable, and dependable.",
-  "Every product we build is designed around movement: faster setup, smarter stabilization, safer flight, and more confident capture in the moments that matter. Innovation only counts if it makes the next shot easier to create.",
-  "We are building a creative ecosystem, not just devices. Cameras, drones, gimbals, audio, and software all work together so storytellers can go from inspiration to finished footage with less friction.",
+  "Shiseido began in 1872 with a belief that beauty and science together can enrich lives. From first-time routines to devoted skincare rituals, our goal is to make advanced skincare feel intuitive, effective, and kind to every skin type.",
+  "Every formula we create is designed around results you can see and feel: gentle actives, meticulous testing, and sensorial textures that make caring for your skin a moment worth looking forward to.",
+  "We are building complete skincare rituals, not just single products. Cleansers, softeners, serums, moisturizers, and sun care work together so anyone can move from bare skin to radiant, protected skin with less guesswork.",
 ];
 
 const values = [
-  "Innovation with purpose - Every feature should help creators move faster and capture more confidently.",
-  "Technology that feels intuitive - Advanced tools should disappear behind a simple experience.",
-  "Reliability in the field - Our products are built for travel, action, and repeatable performance.",
-  "Creator-first support - Setup, care, and learning resources matter as much as the hardware.",
+  "Innovation with purpose - Every formula should deliver visible results, backed by science.",
+  "Beauty that feels intuitive - Advanced skincare should fit effortlessly into daily life.",
+  "Care for every skin type - Our products are developed and tested for real, diverse skin.",
+  "Ritual-first support - Guidance, samples, and education matter as much as the product.",
 ];
 
 function AboutUsPage() {
@@ -79,7 +79,7 @@ function AboutUsPage() {
         </div>
 
         <section className="figma-about__intro">
-          <h2>Built for creators. Engineered for movement.</h2>
+          <h2>Crafted for skin. Perfected by science.</h2>
           <div className="figma-about__intro-copy">
             {introParagraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
@@ -89,33 +89,33 @@ function AboutUsPage() {
 
         <section className="figma-about__story-grid">
           <article className="figma-about__story-card">
-            <img src={editorialImageOne} alt="DJI featured product" />
+            <img src={editorialImageOne} alt="Shiseido featured product" />
             <div className="figma-about__story-copy">
               <h3>Our Vision</h3>
-              <p>We envision a future where the tools for storytelling are as nimble as the people using them. That means more portable gear, smarter automation, and systems that adapt to creators instead of forcing creators to adapt to the gear.</p>
+              <p>We envision a future where skincare adapts to the person, not the other way around. That means gentler actives, smarter formulations, and rituals that fit seamlessly into everyday life.</p>
             </div>
           </article>
 
           <article className="figma-about__story-card">
-            <img src={editorialImageTwo} alt="DJI creator product" />
+            <img src={editorialImageTwo} alt="Shiseido skincare product" />
             <div className="figma-about__story-copy">
               <h3>Why We Exist</h3>
-              <p>We exist to remove friction between imagination and execution. Whether you&apos;re capturing travel, action, documentary work, or social content, DJI products are meant to help you move from setup to finished shot with confidence.</p>
+              <p>We exist to help everyone feel confident in their skin. Whether you&apos;re building your first routine or refining a devoted ritual, Shiseido products are made to deliver visible, lasting results.</p>
             </div>
           </article>
         </section>
 
         <section className="figma-about__feature-image">
-          <img src={editorialImageTwo} alt="DJI close-up product shot" />
+          <img src={editorialImageTwo} alt="Shiseido close-up product shot" />
         </section>
 
         <section className="figma-about__contact-band">
           <div className="figma-about__contact-card">
             <div className="figma-about__contact-copy">
               <h3>We&apos;re Here to Help</h3>
-              <p>Need help choosing the right drone, setting up a gimbal, or understanding DJI Care options? Our team is here to help creators, hobbyists, and production teams get the most from their gear.</p>
+              <p>Need help choosing the right serum, building a routine, or understanding your skin type? Our beauty concierge is here to help you get the most from your ritual.</p>
               <p>Have a question, feedback, or need support? Our team is ready to assist you.</p>
-              <p className="figma-about__contact-phone">1-800-DJI-DEMO</p>
+              <p className="figma-about__contact-phone">1-800-SHISEIDO</p>
               <p>Monday - Friday: 9am - 10pm EST</p>
               <p>Saturday &amp; Sunday: 10am - 7pm EST</p>
               <p>Visit us at {SITE_ADDRESS}, or send us a note using the form below.</p>
@@ -151,16 +151,16 @@ function AboutUsPage() {
               ))}
             </div>
           </div>
-          <button type="button" className="figma-about__primary-button figma-about__primary-button--compact">Creator Support</button>
+          <button type="button" className="figma-about__primary-button figma-about__primary-button--compact">Beauty Concierge</button>
         </section>
 
         <section className="figma-about__closing-card">
-          <img src={editorialImageOne} alt="DJI product hero" />
+          <img src={editorialImageOne} alt="Shiseido product hero" />
           <div className="figma-about__closing-copy">
-            <h3>Global Innovation, Creator-Level Focus</h3>
-            <p>DJI products are used around the world, but every release is shaped by real moments in the field: a faster setup on location, a safer flight in changing conditions, or cleaner audio in unpredictable environments.</p>
-            <p>Our guiding principle is simple: make advanced capture feel more accessible. The right technology should make creators feel more capable, not more overwhelmed.</p>
-            <button type="button" className="figma-about__primary-button" onClick={() => navigate(ROUTES.home)}>Explore DJI Gear</button>
+            <h3>Global Heritage, Skin-Level Focus</h3>
+            <p>Shiseido products are loved around the world, but every formula is shaped by real skin: a gentler active for sensitive skin, lasting hydration in changing climates, or reliable protection every day.</p>
+            <p>Our guiding principle is simple: make advanced skincare feel more accessible. The right formula should make you feel more confident, not overwhelmed.</p>
+            <button type="button" className="figma-about__primary-button" onClick={() => navigate(ROUTES.home)}>Explore Shiseido Skincare</button>
           </div>
         </section>
       </main>
@@ -170,7 +170,7 @@ function AboutUsPage() {
           <div className="figma-about__footer-left">
             <strong>{SITE_BRAND}</strong>
             <div className="figma-about__footer-links">
-              <a href="#">DJI Care Refresh</a>
+              <a href="#">Loyalty & Rewards</a>
               <a href="#">Privacy Policy</a>
               <a href="#">Support</a>
             </div>

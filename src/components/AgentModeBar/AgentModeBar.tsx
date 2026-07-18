@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Settings, X } from "lucide-react";
 import "./AgentModeBar.css";
-import { ROUTES, usePrototypeNavigation } from "../../prototypeRoutes";
 import { AGENT_MODES, useAgentMode } from "./AgentModeContext";
 import type { AgentMode } from "./AgentModeContext";
 
@@ -15,7 +14,6 @@ const DEMO_THEMES: { id: DemoTheme; label: string }[] = [
 
 export function AgentModeBar() {
   const { mode, setMode, viewportMode, setViewportMode } = useAgentMode();
-  const { navigate } = usePrototypeNavigation();
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [theme, setTheme] = useState<DemoTheme>(() => {
     if (typeof window === "undefined") return "sf-next";
@@ -28,9 +26,6 @@ export function AgentModeBar() {
   const handleModeClick = (nextMode: AgentMode) => {
     if (nextMode === mode) return;
     setMode(nextMode);
-    if (nextMode === "immersive") {
-      navigate(ROUTES.home);
-    }
   };
 
   useEffect(() => {

@@ -9,15 +9,15 @@ export type PrimaryNavItem = {
   category?: string;
 };
 
-export const SITE_BRAND = "DJI";
-export const SITE_ANNOUNCEMENT = "Free shipping on select DJI gear and creator bundles";
-export const SITE_FOOTER_COPY = "© DJI demo storefront experience";
+export const SITE_BRAND = "Shiseido";
+export const SITE_ANNOUNCEMENT = "Complimentary shipping and samples on every skincare order";
+export const SITE_FOOTER_COPY = "© Shiseido demo storefront experience";
 export const SITE_ADDRESS = "415 Mission Street, San Francisco, CA 94105";
 
 export const PRIMARY_NAV_ITEMS: PrimaryNavItem[] = [
-  { label: "Camera Drones", category: "Drones" },
-  { label: "Action Cameras", category: "Action cameras" },
-  { label: "Handheld", category: "Gimbals" },
-  { label: "Accessories", category: "Accessories" },
-  { label: "Sale" },
+  { label: "Cleansers", category: "Cleansers" },
+  { label: "Serums", category: "Serums" },
+  { label: "Moisturizers", category: "Moisturizers" },
+  { label: "Sun Care", category: "Sunscreen" },
+  { label: "Sets & Gifts", category: "Sets" },
 ];
