@@ -76,6 +76,9 @@ export type AgentCartMessage = {
   items: AgentCartItem[];
   lineItems: AgentCartLineItem[];
   cartCoupons?: string[];
+  /** Internal: the promo applied to the cart, retained so totals can be
+   * recomputed when the shopper changes quantities or removes items. */
+  appliedPromo?: { code: string; fraction: number };
 };
 
 export type AgentOrderMessage = {

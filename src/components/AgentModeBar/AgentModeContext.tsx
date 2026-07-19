@@ -24,10 +24,10 @@ type AgentModeContextValue = {
 const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefined);
 
 /* Hard defaults for every page load. By design, refreshing the
- * page ALWAYS resets the experience switcher to Native Storefront +
+ * page ALWAYS resets the experience switcher to Sidecar assistant +
  * Desktop regardless of what the shopper picked in the previous
  * session. */
-const DEFAULT_AGENT_MODE: AgentMode = "basic-website";
+const DEFAULT_AGENT_MODE: AgentMode = "assistant-only";
 const DEFAULT_VIEWPORT_MODE: DemoViewportMode = "desktop";
 
 export function AgentModeProvider({ children }: { children: ReactNode }) {

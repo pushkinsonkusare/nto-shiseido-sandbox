@@ -103,27 +103,50 @@ function toCartItem(product: CatalogProduct, quantity: number): AgentCartItem {
   };
 }
 
-function buildCartLineItems(
-  product: CatalogProduct,
-  quantity: number,
-  promoDiscount = 0,
+function cartItemUnitPrice(item: AgentCartItem): number {
+  return Number(item.price.replace(/[^0-9.]/g, "")) || 0;
+}
+
+/** Recompute cart totals for an arbitrary set of items, honoring an optional
+ * applied promo (stored as a fraction so it survives quantity edits). */
+function recomputeCartLineItems(
+  items: AgentCartItem[],
+  appliedPromo?: { code: string; fraction: number },
 ): AgentCartLineItem[] {
-  const subtotal = (product.price ?? 0) * quantity;
-  const items: AgentCartLineItem[] = [
-    { label: `Subtotal (${quantity} item${quantity === 1 ? "" : "s"})`, value: usd.format(subtotal) },
+  const count = items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = items.reduce(
+    (sum, item) => sum + cartItemUnitPrice(item) * item.quantity,
+    0,
+  );
+  const discount = appliedPromo
+    ? Math.round(subtotal * appliedPromo.fraction * 100) / 100
+    : 0;
+
+  const lines: AgentCartLineItem[] = [
+    {
+      label: `Subtotal (${count} item${count === 1 ? "" : "s"})`,
+      value: usd.format(subtotal),
+    },
   ];
-
-  if (promoDiscount > 0) {
-    items.push({ label: "Promo discount", value: `-${usd.format(promoDiscount)}` });
+  if (discount > 0 && appliedPromo) {
+    lines.push({
+      label: "Coupon",
+      note: appliedPromo.code,
+      value: `-${usd.format(discount)}`,
+    });
   }
-
-  items.push({ label: "Shipping", value: "Calculated at checkout" });
-  items.push({
+  lines.push({ label: "Shipping", value: "Calculated at checkout" });
+  lines.push({
     label: "Estimated total",
-    value: usd.format(Math.max(0, subtotal - promoDiscount)),
+    value: usd.format(Math.max(0, subtotal - discount)),
     emphasis: true,
   });
-  return items;
+  return lines;
+}
+
+function cartSummaryText(items: AgentCartItem[], total: number): string {
+  const count = items.reduce((sum, item) => sum + item.quantity, 0);
+  return `Your cart has ${count} item${count === 1 ? "" : "s"} with a subtotal of ${usd.format(total)}.`;
 }
 
 function buildNbasMessage(
@@ -358,19 +381,58 @@ export function SidecarAssistant({
     (slug: string, quantity: number): string | undefined => {
       const product = getProductBySlug(slug);
       if (!product) return undefined;
+
+      // Accumulate into the shopper's existing cart rather than spawning a
+      // fresh single-item card on every add. We fold the new item into the
+      // most recent cart card, replacing it so only one up-to-date cart shows.
+      const list = messagesRef.current;
+      const previousCart = [...list]
+        .reverse()
+        .find((message): message is Extract<ChatMessage, { kind: "agent_cart" }> =>
+          message.kind === "agent_cart",
+        );
+
+      const newItem = toCartItem(product, quantity);
+      let items: AgentCartItem[];
+      if (previousCart) {
+        const existingIndex = previousCart.items.findIndex(
+          (item) => item.id === newItem.id,
+        );
+        items =
+          existingIndex >= 0
+            ? previousCart.items.map((item, index) =>
+                index === existingIndex
+                  ? { ...item, quantity: item.quantity + quantity }
+                  : item,
+              )
+            : [...previousCart.items, newItem];
+      } else {
+        items = [newItem];
+      }
+
+      const appliedPromo = previousCart?.appliedPromo;
+      const cartCoupons = previousCart?.cartCoupons;
+      const subtotal = items.reduce(
+        (sum, item) => sum + cartItemUnitPrice(item) * item.quantity,
+        0,
+      );
+
+      if (previousCart) removeMessage(previousCart.id);
+
       const id = nextId("cart");
-      const subtotal = (product.price ?? 0) * quantity;
       appendMessage({
         id,
         kind: "agent_cart",
         acknowledgement: `Got it — I added ${product.title} to your cart.`,
-        summary: `Your cart has ${quantity} item${quantity === 1 ? "" : "s"} with a subtotal of ${usd.format(subtotal)}.`,
-        items: [toCartItem(product, quantity)],
-        lineItems: buildCartLineItems(product, quantity),
+        summary: cartSummaryText(items, subtotal),
+        items,
+        lineItems: recomputeCartLineItems(items, appliedPromo),
+        cartCoupons,
+        appliedPromo,
       });
       return id;
     },
-    [appendMessage, getProductBySlug],
+    [appendMessage, getProductBySlug, removeMessage],
   );
 
   const renderRecentOrderSummary = useCallback(() => {
@@ -429,16 +491,20 @@ export function SidecarAssistant({
       let discountAmount = 0;
       updateMessage(cartMessageId, (message) => {
         if (message.kind !== "agent_cart") return message;
-        const subtotal = message.items.reduce((sum, item) => {
-          const price = Number(item.price.replace(/[^0-9.]/g, "")) || 0;
-          return sum + price * item.quantity;
-        }, 0);
+        const subtotal = message.items.reduce(
+          (sum, item) => sum + cartItemUnitPrice(item) * item.quantity,
+          0,
+        );
         discountAmount = Math.round(subtotal * promo.discount * 100) / 100;
-        const product = getProductBySlug(message.items[0]?.id.replace(/^cart-/, ""));
-        if (!product) return message;
+        const appliedPromo = { code: trimmed, fraction: promo.discount };
+        const existingCoupons = (message.cartCoupons ?? []).filter(
+          (existing) => existing !== trimmed,
+        );
         return {
           ...message,
-          lineItems: buildCartLineItems(product, message.items[0].quantity, discountAmount),
+          appliedPromo,
+          cartCoupons: [...existingCoupons, trimmed],
+          lineItems: recomputeCartLineItems(message.items, appliedPromo),
           summary: `Promo applied — your new estimated total is ${usd.format(Math.max(0, subtotal - discountAmount))}.`,
         };
       });
@@ -647,6 +713,93 @@ export function SidecarAssistant({
       runCheckoutFlow(cartMessageId);
     },
     [appendMessage, runCheckoutFlow],
+  );
+
+  const handleCartQuantityChange = useCallback(
+    (cartMessageId: string, itemId: string, quantity: number) => {
+      const nextQuantity = Math.max(1, quantity);
+      updateMessage(cartMessageId, (message) => {
+        if (message.kind !== "agent_cart") return message;
+        const items = message.items.map((item) =>
+          item.id === itemId ? { ...item, quantity: nextQuantity } : item,
+        );
+        const lineItems = recomputeCartLineItems(items, message.appliedPromo);
+        const subtotal = items.reduce(
+          (sum, item) => sum + cartItemUnitPrice(item) * item.quantity,
+          0,
+        );
+        return {
+          ...message,
+          items,
+          lineItems,
+          summary: cartSummaryText(items, subtotal),
+        };
+      });
+    },
+    [updateMessage],
+  );
+
+  const handleRemoveCartItem = useCallback(
+    (cartMessageId: string, itemId: string) => {
+      const cart = messagesRef.current.find((m) => m.id === cartMessageId);
+      if (!cart || cart.kind !== "agent_cart") return;
+      const remaining = cart.items.filter((item) => item.id !== itemId);
+
+      if (remaining.length === 0) {
+        removeMessage(cartMessageId);
+        appendMessage({
+          id: nextId("agent"),
+          kind: "agent_simple",
+          body: "Your cart is empty now. Let me know if you'd like more recommendations.",
+        });
+        return;
+      }
+
+      updateMessage(cartMessageId, (message) => {
+        if (message.kind !== "agent_cart") return message;
+        const items = message.items.filter((item) => item.id !== itemId);
+        const lineItems = recomputeCartLineItems(items, message.appliedPromo);
+        const subtotal = items.reduce(
+          (sum, item) => sum + cartItemUnitPrice(item) * item.quantity,
+          0,
+        );
+        return {
+          ...message,
+          items,
+          lineItems,
+          summary: cartSummaryText(items, subtotal),
+        };
+      });
+    },
+    [appendMessage, removeMessage, updateMessage],
+  );
+
+  const handleRemoveCartCoupon = useCallback(
+    (cartMessageId: string, code: string) => {
+      updateMessage(cartMessageId, (message) => {
+        if (message.kind !== "agent_cart") return message;
+        const cartCoupons = (message.cartCoupons ?? []).filter(
+          (existing) => existing !== code,
+        );
+        const appliedPromo =
+          message.appliedPromo?.code === code
+            ? undefined
+            : message.appliedPromo;
+        const items = message.items;
+        const subtotal = items.reduce(
+          (sum, item) => sum + cartItemUnitPrice(item) * item.quantity,
+          0,
+        );
+        return {
+          ...message,
+          cartCoupons,
+          appliedPromo,
+          lineItems: recomputeCartLineItems(items, appliedPromo),
+          summary: cartSummaryText(items, subtotal),
+        };
+      });
+    },
+    [updateMessage],
   );
 
   /* ---------- OpenAI agent (optional) ---------- */
@@ -1299,7 +1452,13 @@ export function SidecarAssistant({
                 summary={message.summary}
                 items={message.items}
                 lineItems={message.lineItems}
+                cartCoupons={message.cartCoupons}
                 onApplyPromo={(code) => handleApplyPromo(message.id, code)}
+                onRemoveCoupon={(code) => handleRemoveCartCoupon(message.id, code)}
+                onQuantityChange={(itemId, quantity) =>
+                  handleCartQuantityChange(message.id, itemId, quantity)
+                }
+                onRemoveItem={(itemId) => handleRemoveCartItem(message.id, itemId)}
                 onCheckout={() => handleCheckout(message.id)}
                 onApplePay={() => handleCheckout(message.id)}
               />
@@ -1331,9 +1490,12 @@ export function SidecarAssistant({
     [
       handleAddToCart,
       handleApplyPromo,
+      handleCartQuantityChange,
       handleCheckout,
       handleNbaRegenerate,
       handleNbaSelect,
+      handleRemoveCartCoupon,
+      handleRemoveCartItem,
       messages,
     ],
   );
