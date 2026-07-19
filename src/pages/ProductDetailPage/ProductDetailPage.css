@@ -1,6 +1,6 @@
 .figma-pdp {
-  background: #fff;
-  color: #17171b;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-family-base);
   --pdp-space-2xs: 4px;
   --pdp-space-xs: 8px;
@@ -13,7 +13,7 @@
 }
 
 .figma-pdp__header-shell {
-  background: #18181b;
+  background: var(--color-header-bg);
   position: sticky;
   top: var(--sxs-mode-bar-height, var(--app-topbar-height, 56px));
   z-index: 50;
@@ -21,8 +21,8 @@
 
 .figma-pdp__announcement {
   height: 25px;
-  background: #000;
-  color: #fff;
+  background: var(--color-announcement-bg);
+  color: var(--color-announcement-foreground);
   font-size: 12px;
   display: flex;
   align-items: center;

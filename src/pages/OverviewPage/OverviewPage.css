@@ -1,16 +1,16 @@
 :root {
-  --overview-surface: #ffffff;
-  --overview-surface-muted: #f8f8f8;
-  --overview-border: #d1d5db;
-  --overview-border-strong: #9ca3af;
-  --overview-text: #17171b;
-  --overview-heading: #3f3f46;
-  --overview-muted: #35353b;
-  --overview-primary: #131315;
+  --overview-surface: var(--color-surface);
+  --overview-surface-muted: var(--color-surface-muted);
+  --overview-border: var(--color-border);
+  --overview-border-strong: var(--color-border-strong);
+  --overview-text: var(--color-text);
+  --overview-heading: var(--color-heading);
+  --overview-muted: var(--color-text-muted);
+  --overview-primary: var(--color-primary);
   --overview-link: #0176d3;
-  --overview-header-surface: #18181b;
-  --overview-header-foreground: #ffffff;
-  --overview-header-muted: #e5e5e5;
+  --overview-header-surface: var(--color-header-bg);
+  --overview-header-foreground: var(--color-header-foreground);
+  --overview-header-muted: var(--color-header-muted);
   --overview-page-width: 1536px;
   --overview-side-padding: 64px;
   --overview-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.1);

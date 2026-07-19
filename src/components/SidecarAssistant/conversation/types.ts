@@ -75,6 +75,7 @@ export type AgentCartMessage = {
   summary: string;
   items: AgentCartItem[];
   lineItems: AgentCartLineItem[];
+  cartCoupons?: string[];
 };
 
 export type AgentOrderMessage = {

@@ -1,32 +1,22 @@
 import type { AccessoryRole, ProductSeries } from "../../../catalog/catalog";
 
 /* =============================================================
- * Symptom -> accessory mapping for the rule layer.
+ * Skin-concern -> product mapping for the rule layer.
  *
- * Powers the "I have an X, how do I solve Y" branch of the
- * assistant. Each entry maps a symptom phrase the shopper might
- * use (`glare`, `wind noise`, `battery dies`, ...) to:
+ * Powers the "my skin is X, what should I use" branch of the
+ * assistant. Each entry maps a skin symptom the shopper might
+ * describe (`dry`, `dull`, `breakouts`, `dark circles`, ...) to:
  *
- *   - `role`: the canonical AccessoryRole bucket the answer
- *     should live in (so `findAccessoriesFor({role})` returns the
- *     right shelf).
- *   - `subtypes`: optional v6 ProductSubtype tokens for further
- *     narrowing inside that role bucket. e.g. role
- *     `visual_enhancement` + subtype `acc_filter_cpl` surfaces
- *     polarising filters specifically (vs ND or UV variants).
- *   - `capabilities`: optional v6 capability tokens used as an
- *     additional require-any filter — needed for waterproof gear
- *     where the role bucket alone (`general`) is too wide.
- *   - `label`: short human-readable accessory family name used
- *     when composing card titles ("Polarising filters for ...").
+ *   - `role`: retained (AccessoryRole) only for the shared entry
+ *     shape; skincare products don't carry accessory roles, so
+ *     every entry uses "general".
+ *   - `label`: short human-readable product family name used when
+ *     composing card titles ("Hydrating moisturizers for ...").
  *
- * Vocabulary rules:
- *   - Subtype tokens MUST exist in `SUBTYPE_VALUES` in
- *     `catalog.ts`. Capability tokens MUST exist in
- *     `RAW_CAPABILITY_VALUES`. Both are validated at module load
- *     so a typo fails loudly during development.
- *   - The intentionally small (~7) entry list is the point — the
- *     LLM is responsible for the long tail. Keep this curated.
+ * `subtypes` / `capabilities` are intentionally omitted for
+ * skincare (the fields they used to filter carry different data
+ * now). Keep this list small and curated — the LLM handles the
+ * long tail.
  * ============================================================= */
 
 export type SymptomEntry = {
@@ -39,59 +29,58 @@ export type SymptomEntry = {
 
 export const SYMPTOM_PATTERNS: ReadonlyArray<SymptomEntry> = [
   {
-    // CPL-class problems: any non-metallic surface reflection.
-    test: /\b(glare|reflect\w*|shiny|window\s*reflect|mirror\s*reflect|water\s*reflect)\b/i,
-    role: "visual_enhancement",
-    subtypes: ["acc_filter_cpl"],
-    label: "polarising filters",
-  },
-  {
-    // ND-class problems: too much ambient light. We deliberately
-    // avoid "low light" here — that's a sensor/lens problem, not
-    // an ND filter problem.
-    test: /\b(too\s*bright|over\s*expos\w*|overexpos\w*|bright\s*sun|sunny\s*day|harsh\s*light|too\s*much\s*light|blown\s*out)\b/i,
-    role: "visual_enhancement",
-    subtypes: ["acc_filter_nd"],
-    label: "ND filters",
-  },
-  {
-    // Audio problems caused by wind. Maps to mic windscreens (the
-    // canonical v6 subtype is `mic_windscreen`, not `acc_*`).
-    test: /\b(wind\s*noise|windy\s*audio|muffled\s*audio|outdoor\s*audio|crackl\w*\s*audio|noisy\s*outdoor)\b/i,
+    // Dryness / tightness / flaking → hydration.
+    test: /\b(dry|dryness|tight\w*|flak\w*|dehydrat\w*|parched|rough\s*skin)\b/i,
     role: "general",
-    subtypes: ["mic_windscreen"],
-    label: "windscreens",
+    label: "hydrating moisturizers",
   },
   {
-    // Stabilisation. Note: any of "shake", "shaky", "shakes",
-    // "jittery", "wobbly" etc. trigger the gimbal recommendation.
-    test: /\b(shak\w*|jitter\w*|unstable\s*footage|wobbly|smooth\s*footage|need\s*stabili[sz]\w*)\b/i,
-    role: "stabilization",
-    label: "gimbals",
-  },
-  {
-    // Power problems: short runtime, dead battery mid-shoot.
-    test: /\b(battery\s*(dies|drains|short)|short\s*battery|longer\s*recording|extra\s*batter\w*|spare\s*batter\w*|need\s*more\s*power|power\s*bank)\b/i,
-    role: "power",
-    label: "extra batteries",
-  },
-  {
-    // Water/diving — surfaces waterproof cases via the `acc_case`
-    // subtype filtered by the `waterproof` capability tag (so
-    // ordinary carrying cases don't leak in).
-    test: /\b(underwater|scuba|dive|diving|snorkel\w*|swim\w*|wet|rain|splash|kayak|raft\w*)\b/i,
+    // Dullness / uneven tone → brightening.
+    test: /\b(dull\w*|lacklustre|lackluster|uneven\s*tone|sallow|tired[-\s]?looking|no\s*glow)\b/i,
     role: "general",
-    subtypes: ["acc_case"],
-    capabilities: ["waterproof", "underwater"],
-    label: "waterproof gear",
+    label: "brightening serums",
   },
   {
-    // Lens scratch / protection — the UV filter doubles as a
-    // sacrificial protector on every DJI lens we ship.
-    test: /\b(scratch\w*|protect\w*\s*(?:my\s*)?lens|lens\s*protect\w*|lens\s*cap)\b/i,
-    role: "visual_enhancement",
-    subtypes: ["acc_filter_uv"],
-    label: "lens protectors",
+    // Dark spots / pigmentation → targeted brightening treatments.
+    test: /\b(dark\s*spots?|age\s*spots?|sun\s*spots?|hyperpigment\w*|pigmentation|discolou?ration)\b/i,
+    role: "general",
+    label: "dark-spot treatments",
+  },
+  {
+    // Fine lines / wrinkles → anti-aging.
+    test: /\b(wrinkl\w*|fine\s*lines?|crow'?s?\s*feet|crepe\w*|aging|ageing)\b/i,
+    role: "general",
+    label: "anti-aging treatments",
+  },
+  {
+    // Loss of firmness / sagging → firming.
+    test: /\b(sag\w*|loss\s*of\s*firmness|not\s*firm|loose\s*skin|lack\s*of\s*bounce|elasticity)\b/i,
+    role: "general",
+    label: "firming treatments",
+  },
+  {
+    // Oiliness / shine / large pores → oil control.
+    test: /\b(oily|greasy|shine|shiny|large\s*pores?|enlarged\s*pores?|blackheads?|breakouts?|acne|blemish\w*)\b/i,
+    role: "general",
+    label: "pore-refining products",
+  },
+  {
+    // Under-eye concerns → eye care.
+    test: /\b(dark\s*circles?|puffiness|puffy\s*eyes|under[-\s]?eye|eye\s*bags?)\b/i,
+    role: "general",
+    label: "eye creams",
+  },
+  {
+    // Sensitivity / redness → gentle, soothing care.
+    test: /\b(sensitive|redness|irritat\w*|reactive\s*skin|stinging)\b/i,
+    role: "general",
+    label: "gentle, soothing products",
+  },
+  {
+    // Sun protection.
+    test: /\b(sun\s*protect\w*|sunburn|uv\s*damage|spf|sunscreen)\b/i,
+    role: "general",
+    label: "daily sunscreen",
   },
 ];
 
@@ -111,21 +100,13 @@ export const HOWTO_PATTERN =
   /\b(how\s+(do|can|should)\s+i|how\s+to|what\s+(do|should|can)\s+i\s+(use|get|need|do)|recommend|suggest|best\s+way|help\s+(?:me\s+)?(?:reduce|fix|solve|stop))\b/i;
 
 /* =============================================================
- * Bare-model "family" detector.
+ * Bare-collection "family" detector.
  *
- * Existing `MODEL_PATTERNS` in flow.ts all require a version
- * number ("Mavic 4 Pro", "Osmo Action 5 Pro"). When the shopper
- * says "my osmo action" / "i have a mavic" without a version,
- * we still want to scope the recommendation to that family.
- *
- * `series` aligns with `ProductSeries` in catalog.ts so callers
- * can `catalog.filter(p => p.series === fam.series)`. The
- * `titleFragment` is the natural-language phrase used in card
- * titles ("Polarising filters for your Osmo Action").
- *
- * Patterns are ordered most-specific-first; the negative
- * lookahead `(?!\s*\d)` ensures we never beat a versioned
- * MODEL_PATTERNS match.
+ * Skincare products are chosen by concern / skin type / category
+ * rather than a versioned model line, so there is no family
+ * detection. Kept as an empty list (with the shared `ModelFamily`
+ * shape) so `detectModelFamily` stays a no-op without a wider
+ * refactor of its callers.
  * ============================================================= */
 
 export type ModelFamily = {
@@ -134,47 +115,7 @@ export type ModelFamily = {
   titleFragment: string;
 };
 
-export const MODEL_FAMILY_PATTERNS: ReadonlyArray<ModelFamily> = [
-  // Two-word families first so "osmo action" doesn't get partially
-  // captured by a bare "osmo".
-  {
-    test: /\bosmo\s*action\b(?!\s*\d)/i,
-    series: "osmo_action",
-    titleFragment: "Osmo Action",
-  },
-  {
-    test: /\bosmo\s*pocket\b(?!\s*\d)/i,
-    series: "osmo_pocket",
-    titleFragment: "Osmo Pocket",
-  },
-  {
-    test: /\bosmo\s*mobile\b(?!\s*\d)/i,
-    series: "osmo_mobile",
-    titleFragment: "Osmo Mobile",
-  },
-  {
-    test: /\bosmo\s*nano\b(?!\s*\d)/i,
-    series: "osmo_nano",
-    titleFragment: "Osmo Nano",
-  },
-  {
-    test: /\bosmo\s*360\b/i,
-    series: "osmo_360",
-    titleFragment: "Osmo 360",
-  },
-  // Single-word families. "mini" / "air" are common English words
-  // so they require ownership/howto context to fire (the caller
-  // already gates on OWNS/HOWTO patterns before consulting these).
-  { test: /\bmavic\b(?!\s*\d)/i,    series: "mavic",         titleFragment: "Mavic" },
-  { test: /\bmini\b(?!\s*\d)/i,     series: "mini",          titleFragment: "Mini" },
-  { test: /\bair\b(?!\s*\d)/i,      series: "air",           titleFragment: "Air" },
-  { test: /\bavata\b(?!\s*\d)/i,    series: "avata",         titleFragment: "Avata" },
-  { test: /\bneo\b(?!\s*\d)/i,      series: "neo",           titleFragment: "Neo" },
-  { test: /\binspire\b(?!\s*\d)/i,  series: "inspire",       titleFragment: "Inspire" },
-  { test: /\b(ronin|rs)\b(?!\s*\d)/i, series: "ronin_rs",    titleFragment: "Ronin" },
-  { test: /\b(dji\s*mic|mic\s*\d)\b/i, series: "dji_mic",    titleFragment: "DJI Mic" },
-  { test: /\bgoggles?\b/i,          series: "fpv_goggles",   titleFragment: "FPV Goggles" },
-];
+export const MODEL_FAMILY_PATTERNS: ReadonlyArray<ModelFamily> = [];
 
 export function detectModelFamily(query: string): ModelFamily | undefined {
   for (const fam of MODEL_FAMILY_PATTERNS) {

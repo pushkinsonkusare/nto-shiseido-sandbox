@@ -13,7 +13,7 @@ import {
   type OpenAIAgent,
 } from "../../SidecarAssistant/agent/openaiAgent";
 import {
-  DJI_HELP_CENTER_URL,
+  HELP_CENTER_URL,
   POLICY_BODIES,
   buildPlpIntro,
   buildStageNbas,
@@ -46,10 +46,10 @@ import { isLlmConfigured } from "../../../lib/openaiClient";
 const RESPONSE_LATENCY_MS = 900;
 
 const GREETING_BODY =
-  "I'm your DJI Personal Assistant. I can help you find the right gear, compare specs, and bundle the right accessories. What are you shopping for?";
+  "I'm your Shiseido personal beauty advisor. I can help you build a routine, find products for your skin concerns, compare formulas, and put together the right regimen. What are you shopping for?";
 
 /** Per-topic label for the variant-1 external-link CTA inside the
- * AgentPdpUtterance card. Always points at DJI_HELP_CENTER_URL. */
+ * AgentPdpUtterance card. Always points at HELP_CENTER_URL. */
 const HYGIENE_CTA_LABEL: Record<HygieneTopic, string> = {
   return: "Detailed return policy",
   replacement: "Replacement service details",
@@ -94,7 +94,8 @@ function buildResultTitle(query: string, intent?: Intent): string {
     // semantically meaningful. Accessory rows ("filters", "mounts",
     // "cases") aren't tier-graded — keep them clean.
     const FLAGSHIP_LABELS = new Set([
-      "drones", "action cameras", "gimbals", "microphones", "cameras",
+      "serums & treatments", "moisturizers", "sunscreen", "cleansers",
+      "eye & lip care",
     ]);
     // When the shopper named a specific model, anchor the title on it
     // so the card reads "Filters for Mavic 4 Pro" instead of just
@@ -105,8 +106,8 @@ function buildResultTitle(query: string, intent?: Intent): string {
       return `${capitalized} for ${model}`;
     }
     if (FLAGSHIP_LABELS.has(base)) {
-      if (intent.tier === "pro") return `Pro ${base}`;
-      if (intent.tier === "beginner") return `Beginner-friendly ${base}`;
+      if (intent.tier === "pro") return `Prestige ${base}`;
+      if (intent.tier === "beginner") return `Everyday ${base}`;
     }
     return capitalized;
   }
@@ -167,13 +168,15 @@ function buildSymptomResultTitle(intent: SymptomAccessoryIntent): string {
  * losing the symptom context, but at least won't fail.
  */
 const SYMPTOM_CHIP_PREFIX: Record<string, string> = {
-  "polarising filters": "Reduce glare",
-  "ND filters": "Tame bright sun",
-  windscreens: "Cut wind noise",
-  gimbals: "Stabilize shaky footage",
-  "extra batteries": "Extra battery",
-  "waterproof gear": "Take it underwater",
-  "lens protectors": "Protect against scratches",
+  "hydrating moisturizers": "Hydrate dry skin",
+  "brightening serums": "Brighten dull skin",
+  "dark-spot treatments": "Fade dark spots",
+  "anti-aging treatments": "Smooth fine lines",
+  "firming treatments": "Firm & lift",
+  "pore-refining products": "Refine pores",
+  "eye creams": "Treat dark circles",
+  "gentle, soothing products": "Soothe sensitive skin",
+  "daily sunscreen": "Protect from the sun",
 };
 
 function symptomChipPrefix(intent: SymptomAccessoryIntent): string {
@@ -225,16 +228,12 @@ function buildPdpFaqGroundedPrompt(
 ): string {
   const facts: string[] = [];
 
-  // Product taxonomy + canonical capability tags. These were missing
-  // from the v1 preamble, which left the LLM unable to confidently
-  // answer definitive yes/no questions ("is this waterproof?", "is
-  // this rugged?", "good for travel?") for SKUs whose answer depends
-  // on the curated capability tag rather than a verbatim spec row —
-  // e.g. drones like the Mini 5 Pro have no waterproof spec line, so
-  // the LLM would deflect with "I don't have that detail" even though
-  // the catalog clearly tags them as NOT waterproof. Surfacing the
-  // tags + a derived `Waterproof: Yes/No` line lets the LLM answer
-  // assertively with catalog-grounded confidence.
+  // Product taxonomy + canonical capability tags. Surfacing the
+  // category, the fused capability tags (skin type / concern /
+  // collection / SPF), and an explicit skin-type suitability line lets
+  // the LLM answer definitive questions ("is this good for oily skin?",
+  // "does this have SPF?") assertively with catalog-grounded confidence
+  // instead of deflecting with "I don't have that detail".
   const productTypeLabel = product.productTypeGroup
     ? product.productTypeGroup.replace(/_/g, " ")
     : product.category;
@@ -244,22 +243,19 @@ function buildPdpFaqGroundedPrompt(
   if (product.useCaseTags.length > 0) {
     facts.push(`- Capabilities: ${product.useCaseTags.join(", ")}.`);
   }
-  // Explicit waterproof line — the most common definitive yes/no FAQ
-  // and the one the LLM consistently gets wrong without it. The
-  // assertive phrasing on each branch lets the model paraphrase
-  // directly without hedging.
-  if (product.useCaseTags.includes("waterproof")) {
+  // Explicit skin-type suitability line — the most common definitive
+  // FAQ ("is this good for oily / dry / sensitive skin?"). The
+  // assertive phrasing lets the model paraphrase directly without
+  // hedging. Skin types live in `subtypes` (dry / oily / combination /
+  // normal / all) on skincare products.
+  if (product.subtypes.length > 0) {
     facts.push(
-      `- Waterproof: Yes — this product is rated for water use. Cite the IP rating / depth from specs or feature highlights when present.`,
-    );
-  } else {
-    facts.push(
-      `- Waterproof: No — this product is NOT water-rated. Drones especially should not be flown in rain or near water; recommend a protective housing or a waterproof-tagged alternative.`,
+      `- Suitable skin types: ${product.subtypes.join(", ")}. State this directly when asked whether it suits a given skin type.`,
     );
   }
 
   if (product.inTheBox.length > 0) {
-    facts.push(`- In the box: ${product.inTheBox.join("; ")}.`);
+    facts.push(`- What's included: ${product.inTheBox.join("; ")}.`);
   }
 
   // Cap specs to the first 12 label/value pairs so the preamble stays
@@ -388,26 +384,18 @@ function buildBroadSubTopics(
  * intro instead of the generic "curated a few directions for you".
  */
 const ACTIVITY_BODY_TEXT: Record<string, string> = {
-  motorcycle: "I have curated a set of gear that you would need for moto vlogging. Let me know if you have anything specific in mind.",
-  cycling: "Here's a set of cycling-ready gear across categories. Pick a row to explore, or tell me more about your ride.",
-  skiing_snowboarding: "I've pulled together gear that holds up on the mountain. Pick a row to explore, or share more about the conditions you're shooting in.",
-  surfing: "Here's a set of waterproof gear for surf sessions. Pick a row to dive in, or tell me more about your setup.",
-  watersports: "Here's a set of waterproof gear for watersports. Pick a row to explore, or tell me more about what you'll be shooting.",
-  hiking_outdoor: "I've curated outdoor-ready gear across categories. Pick a row to explore, or share more about your trail plans.",
-  travel: "I've pulled together travel-ready picks across categories. Tap one to dive in, or share more about your trip.",
-  vlog: "I've curated a vlogger's kit across categories. Pick a row to explore, or tell me more about your style.",
-  podcast: "Here's a podcasting-ready kit. Pick a row to explore, or tell me more about your setup.",
-  interview: "Here's a kit suited for interviews. Pick a row to explore, or share more about the format.",
-  livestream: "I've pulled together livestream-ready gear. Pick a row to explore, or share more about your stream.",
-  wedding: "I've curated a wedding videographer's kit. Pick a row to explore, or tell me more about the shoot.",
-  real_estate_aerial: "Here's a real-estate aerial kit. Pick a row to explore, or tell me more about the property.",
-  news_journalism: "I've curated gear for journalism work. Pick a row to explore, or tell me more about your beat.",
-  concert_event: "Here's a concert/event kit. Pick a row to explore, or share more about the venue.",
-  theatre: "I've curated gear suited for theatre productions. Pick a row to explore.",
-  indoor_sports: "Here's a kit for indoor-sports coverage. Pick a row to explore.",
-  family: "Here's a set of family-friendly gear. Pick a row to explore, or tell me more about how you'll use it.",
-  beginner_creator: "Here are some beginner-friendly starting points. Pick a row to explore, or tell me more about what you'll shoot.",
-  professional_filmmaker: "Here's a professional filmmaker's kit. Pick a row to explore, or tell me more about your project.",
+  "anti-aging": "I've put together an anti-aging routine across steps. Pick a row to explore, or tell me more about your concerns.",
+  brightening: "Here's a brightening routine to help even tone and add radiance. Pick a row to explore, or tell me more about your skin.",
+  hydration: "I've curated a hydration-focused routine across steps. Pick a row to dive in, or share more about how your skin feels.",
+  firming: "Here's a firming and lifting routine across steps. Pick a row to explore, or tell me more about your goals.",
+  "pore-control": "I've pulled together products to refine pores and balance oil. Pick a row to explore, or tell me more about your skin.",
+  sensitive: "Here's a gentle, soothing routine for sensitive skin. Pick a row to explore, or share more about what irritates your skin.",
+  men: "I've curated a men's skincare routine across steps. Pick a row to explore, or tell me more about your routine.",
+  "sun-protection": "Here's a sun-protection set for daily wear. Pick a row to explore, or tell me more about your needs.",
+  dryness: "I've put together a routine to relieve dryness. Pick a row to explore, or share more about how your skin feels.",
+  dullness: "Here's a routine to revive dull, tired-looking skin. Pick a row to explore, or tell me more about your skin.",
+  beginner_creator: "Here are some easy, everyday essentials to start with. Pick a row to explore, or tell me more about your skin.",
+  routine: "I've curated a complete daily routine across steps. Pick a row to explore, or tell me more about your skin.",
 };
 
 function buildBroadBodyText(query: string, intent: Intent): string {
@@ -416,31 +404,26 @@ function buildBroadBodyText(query: string, intent: Intent): string {
     return "I've curated a few starting points. Pick one to explore, or tell me a bit more about what you're shopping for.";
   }
   const tags = intent.requiredTags ?? [];
-  // v6 activity-aware body text runs FIRST so compound queries like
-  // "gear for travel vlogging" pick up the travel-flavoured copy
-  // (matches the routing change in `pickRecipeForIntent` that now
-  // prefers the activity scanner over the `vlogging` tag).
+  // Skin-goal-aware body text runs FIRST so queries like "a routine for
+  // brightening" pick up the concern-flavoured copy.
   const activities = extractActivitiesFromQuery(query);
   if (activities.length > 0) {
     const copy = ACTIVITY_BODY_TEXT[activities[0]];
     if (copy) return copy;
   }
-  if (tags.includes("vlogging")) {
-    // Selfie/creator-tag fallthrough — no activity matched, so the
-    // residual VLOGGING_RECIPE is what the picker returned. Keep the
-    // legacy moto-vlogging copy here so existing recipe stays exact.
-    return ACTIVITY_BODY_TEXT.motorcycle;
+  if (tags.includes("spf")) {
+    return ACTIVITY_BODY_TEXT["sun-protection"];
   }
-  if (tags.includes("rugged")) {
-    return "Here's a set of rugged-ready gear across categories. Tap a row to dive in, or tell me more about your shoot.";
+  if (tags.includes("dry")) {
+    return ACTIVITY_BODY_TEXT.dryness;
+  }
+  if (tags.includes("oily")) {
+    return ACTIVITY_BODY_TEXT["pore-control"];
   }
   if (intent.tier === "beginner") {
     return ACTIVITY_BODY_TEXT.beginner_creator;
   }
-  if (tags.includes("compact") || tags.includes("travel")) {
-    return ACTIVITY_BODY_TEXT.travel;
-  }
-  return "I've curated a few directions for you. Pick one to explore, or tell me a bit more about what you're after.";
+  return "I've curated a few directions for you. Pick one to explore, or tell me a bit more about your skin.";
 }
 
 /**
@@ -468,10 +451,10 @@ export type SeeResultsPayload = {
  * across both branches.
  */
 const WELCOME_NBA_LABELS: ReadonlyArray<string> = [
-  "Beginner drone for landscape photography under $500",
-  "Gear for moto vlogging",
-  "Wireless mic for podcasts",
-  "Help me pick gear for my New Zealand trip",
+  "A brightening serum for dark spots under $150",
+  "Build a routine for dry skin",
+  "Daily sunscreen for the face",
+  "Help me pick a regimen for anti-aging",
 ];
 
 /**
@@ -485,7 +468,7 @@ function buildWelcomeMessages(): SxsMessage[] {
       id: nextId("greeting"),
       kind: "greeting",
       imageUrl: "/Welcome_cover.jpeg",
-      imageAlt: "Welcome to the DJI store",
+      imageAlt: "Welcome to the Shiseido store",
       greeting: "Hello!",
       body: GREETING_BODY,
     },
@@ -637,7 +620,7 @@ export function useSideBySideAgent() {
             const chipPrefix = symptomChipPrefix(symptomIntent);
             const chipLabels = hostCandidates.map(
               (host) =>
-                `${chipPrefix} on my ${host.title.replace(/^DJI\s+/i, "")}`,
+                `${chipPrefix} with my ${host.title.replace(/^Shiseido\s+/i, "")}`,
             );
             appendMessage({
               id: nextId("nbas"),
@@ -678,7 +661,7 @@ export function useSideBySideAgent() {
         appendMessage({
           id: nextId("agent"),
           kind: "agent_text",
-          body: "Tell me a bit more — are you shopping for a drone, an action camera, a gimbal, or accessories?",
+          body: "Tell me a bit more — are you shopping for a cleanser, a serum, a moisturizer, sunscreen, or a full routine?",
         });
         const probing = buildStageNbas({ stage: "probing", intent });
         appendMessage({
@@ -1267,7 +1250,7 @@ export function useSideBySideAgent() {
           body: POLICY_BODIES[topic],
           cta: {
             label: HYGIENE_CTA_LABEL[topic],
-            href: DJI_HELP_CENTER_URL,
+            href: HELP_CENTER_URL,
           },
         });
         return;

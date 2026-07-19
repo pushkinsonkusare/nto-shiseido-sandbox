@@ -1,36 +1,39 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SparkleIcon } from "../icons/StorefrontIcons";
 import { useAgentMode } from "../AgentModeBar/AgentModeContext";
-import { SideBySideAssistant } from "./SideBySideAssistant";
-import {
-  SideBySidePanelProvider,
-  useSideBySidePanel,
-} from "./SideBySidePanelContext";
-import type { AskAssistantEventDetail } from "../../pages/ProductDetailPage/PdpNbaPanel";
-import "./SideBySideLayout.css";
+import { SidecarAssistant } from "./SidecarAssistant";
+// Reuse the proven SideBySide docking shell so the Sidecar docks *exactly*
+// like the SideBySide assistant: a CSS grid (1fr | panel) that reflows the
+// storefront and a `position: sticky` full-height column pinned under the
+// storefront header, rather than a floating fixed overlay card.
+import "../SideBySideAssistant/SideBySideLayout.css";
 
 type Props = {
   children: ReactNode;
 };
 
-// Stagger the FAB so it doesn't pop in over the closing panel. Tuned to
-// match the keyframe / transition durations in SideBySideLayout.css.
+// Stagger the FAB so it doesn't pop in over the closing panel. Matches the
+// keyframe / transition durations in SideBySideLayout.css.
 const FAB_REVEAL_DELAY_MS = 280;
 
-function SideBySideLayoutInner({ children }: Props) {
-  const { panelOpen, openPanel, closePanel, setPendingPrompt } = useSideBySidePanel();
+export function SidecarDockLayout({ children }: Props) {
   const { viewportMode } = useAgentMode();
   const isMobileViewport = viewportMode === "mobile";
+
+  const [panelOpen, setPanelOpen] = useState(false);
+  // Once the assistant mounts we keep it in the tree for the rest of the
+  // session so the chat history survives a close -> reopen. The close
+  // transition is driven entirely by CSS (grid collapses to 0px and the panel
+  // slides out via `--closing`).
+  const [panelMounted, setPanelMounted] = useState(false);
+  const [fabVisible, setFabVisible] = useState(true);
+
   const panelRef = useRef<HTMLElement | null>(null);
   const swipeStartXRef = useRef<number | null>(null);
   const swipeStartYRef = useRef<number | null>(null);
-  // Once the assistant mounts we keep it in the tree for the rest of the
-  // session so the chat history (owned by useSideBySideAgent inside it)
-  // survives a close → reopen. The close transition is driven entirely by
-  // CSS — the grid collapses to 0px and the panel slides out via the
-  // `--closing` class, so an unmounted assistant is not required to hide it.
-  const [panelMounted, setPanelMounted] = useState(panelOpen);
-  const [fabVisible, setFabVisible] = useState(!panelOpen);
+
+  const openPanel = () => setPanelOpen(true);
+  const closePanel = () => setPanelOpen(false);
 
   useEffect(() => {
     if (panelOpen) {
@@ -42,41 +45,21 @@ function SideBySideLayoutInner({ children }: Props) {
       () => setFabVisible(true),
       FAB_REVEAL_DELAY_MS,
     );
-    return () => {
-      window.clearTimeout(fabTimer);
-    };
+    return () => window.clearTimeout(fabTimer);
   }, [panelOpen]);
 
+  // Open on the same storefront events the sidecar/SxS assistants listen for.
+  // The `agentic:ask-assistant` prompt itself is seeded by SidecarAssistant's
+  // own listener; here we only need to open the panel so the grid reflows.
   useEffect(() => {
-    const onOpenAssistant = () => {
-      openPanel();
+    const onOpen = () => openPanel();
+    document.addEventListener("agentic:open-assistant", onOpen);
+    document.addEventListener("agentic:ask-assistant", onOpen);
+    return () => {
+      document.removeEventListener("agentic:open-assistant", onOpen);
+      document.removeEventListener("agentic:ask-assistant", onOpen);
     };
-    document.addEventListener("agentic:open-assistant", onOpenAssistant);
-    return () =>
-      document.removeEventListener("agentic:open-assistant", onOpenAssistant);
-  }, [openPanel]);
-
-  useEffect(() => {
-    const onAskAssistant = (event: Event) => {
-      const detail = (event as CustomEvent<AskAssistantEventDetail>).detail;
-      const prompt = detail?.prompt?.trim();
-      if (!prompt) return;
-      // Stash the prompt so the SxS assistant can dispatch it as soon as it
-      // mounts (the assistant is unmounted while the panel is collapsed),
-      // then open the panel. The PDP forwards `productSlug` + `pillKind`
-      // when a NBA pill fires the event so the assistant can render the
-      // product-context header and route to the matching utterance variant.
-      setPendingPrompt({
-        prompt,
-        productSlug: detail?.productSlug,
-        pillKind: detail?.pillKind,
-      });
-      openPanel();
-    };
-    document.addEventListener("agentic:ask-assistant", onAskAssistant);
-    return () =>
-      document.removeEventListener("agentic:ask-assistant", onAskAssistant);
-  }, [openPanel, setPendingPrompt]);
+  }, []);
 
   useEffect(() => {
     if (!isMobileViewport) return;
@@ -179,7 +162,11 @@ function SideBySideLayoutInner({ children }: Props) {
               window.setTimeout(() => resetSwipeTransform(), 190);
             }}
           >
-            <SideBySideAssistant />
+            <SidecarAssistant
+              docked
+              open={panelOpen}
+              onRequestClose={closePanel}
+            />
           </aside>
         ) : null}
       </div>
@@ -190,11 +177,7 @@ function SideBySideLayoutInner({ children }: Props) {
           aria-label="Open Personal Assistant"
           onClick={openPanel}
         >
-          <SparkleIcon
-            width={22}
-            height={22}
-            className="sxs-layout__fab-icon"
-          />
+          <SparkleIcon width={22} height={22} className="sxs-layout__fab-icon" />
           <span className="sxs-layout__fab-label" aria-hidden="true">
             glow with me
           </span>
@@ -204,12 +187,4 @@ function SideBySideLayoutInner({ children }: Props) {
   );
 }
 
-export function SideBySideLayout({ children }: Props) {
-  return (
-    <SideBySidePanelProvider>
-      <SideBySideLayoutInner>{children}</SideBySideLayoutInner>
-    </SideBySidePanelProvider>
-  );
-}
-
-export default SideBySideLayout;
+export default SidecarDockLayout;

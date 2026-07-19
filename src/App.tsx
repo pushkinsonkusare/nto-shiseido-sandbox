@@ -12,7 +12,7 @@ import { SearchOverlay } from "./components/SearchOverlay/SearchOverlay";
 import { SearchOverlayProvider } from "./components/SearchOverlay/SearchOverlayContext";
 import ShoppingCartPage from "./pages/ShoppingCartPage/ShoppingCartPage";
 import { SideBySideLayout } from "./components/SideBySideAssistant/SideBySideLayout";
-import { SidecarAssistant } from "./components/SidecarAssistant/SidecarAssistant";
+import { SidecarDockLayout } from "./components/SidecarAssistant/SidecarDockLayout";
 import StorefrontPage from "./pages/StorefrontPage/StorefrontPage";
 import { PrototypeNavigationProvider, ROUTES, usePrototypeNavigation } from "./prototypeRoutes";
 
@@ -42,16 +42,6 @@ function RoutedApp() {
   }
 }
 
-function ModeAwareSurfaces() {
-  const { mode } = useAgentMode();
-
-  if (mode === "assistant-only") {
-    return <SidecarAssistant />;
-  }
-
-  return null;
-}
-
 function ModeAwareRoot() {
   const { mode } = useAgentMode();
 
@@ -63,12 +53,15 @@ function ModeAwareRoot() {
     );
   }
 
-  return (
-    <>
-      <RoutedApp />
-      <ModeAwareSurfaces />
-    </>
-  );
+  if (mode === "assistant-only") {
+    return (
+      <SidecarDockLayout>
+        <RoutedApp />
+      </SidecarDockLayout>
+    );
+  }
+
+  return <RoutedApp />;
 }
 
 function App() {

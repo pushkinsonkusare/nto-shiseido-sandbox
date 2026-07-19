@@ -21,6 +21,7 @@ import {
 import ProductCard from "../ProductCard/ProductCard";
 import PrototypeBrandLink from "../PrototypeBrandLink";
 import { SITE_BRAND } from "../../siteContent";
+import shiseidoLogo from "../../assets/shiseido-logo.png";
 import { RECENT_SEARCHES, type RecentSearch } from "./recentSearches";
 import { useSearchOverlay } from "./SearchOverlayContext";
 import { useAgentMode } from "../AgentModeBar/AgentModeContext";
@@ -410,7 +411,7 @@ export function SearchOverlay() {
          */}
         <form className="search-overlay__input-row" onSubmit={handleSubmit}>
           <PrototypeBrandLink className="search-overlay__brand">
-            {SITE_BRAND}
+            <img src={shiseidoLogo} alt={SITE_BRAND} className="search-overlay__brand-logo" />
           </PrototypeBrandLink>
           <label className="search-overlay__field" aria-label="Search input">
             <span className="search-overlay__input-icon" aria-hidden="true">

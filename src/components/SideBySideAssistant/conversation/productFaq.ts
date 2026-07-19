@@ -3,11 +3,11 @@ import type { CatalogProduct } from "../../../catalog/catalog";
 /**
  * Programmatic FAQ floor for PDP-origin shopper questions.
  *
- * The `faq` NBA pills (e.g. "What's in the box?", "Is this
- * beginner-friendly?", "Walk me through the key specs") prefer the
- * OpenAI agent's free-text reply when an API key is configured. When
- * the key is absent — or the agent fails / yields no usable text — we
- * fall back to this resolver, which derives an answer from the
+ * The `faq` NBA pills (e.g. "What's included?", "Is this good for
+ * beginners?", "Walk me through the key benefits") prefer the OpenAI
+ * agent's free-text reply when an API key is configured. When the key
+ * is absent — or the agent fails / yields no usable text — we fall
+ * back to this resolver, which derives an answer from the
  * authoritative catalog metadata so the assistant always responds with
  * something product-aware (rather than the broad-card category
  * suggestion the rule-based engine would otherwise emit).
@@ -19,9 +19,9 @@ import type { CatalogProduct } from "../../../catalog/catalog";
  */
 
 const TIER_LABEL: Record<CatalogProduct["tier"], string> = {
-  beginner: "first-time creators",
-  intermediate: "weekend creators",
-  pro: "professional creators",
+  beginner: "everyday essentials",
+  intermediate: "daily-care skincare",
+  pro: "prestige, advanced care",
 };
 
 function joinSentences(parts: string[]): string {
@@ -91,273 +91,343 @@ function specsMatchingLabel(
 }
 
 function inTheBoxAnswer(product: CatalogProduct): string {
-  // Prefer the curated `In_The_Box` list scraped from the JB Hi-Fi PDP
-  // ("What's in the Box?" section) — it's the authoritative, fully
-  // itemised inventory. Falls back to a heuristic featureBlocks scan
-  // for SKUs whose source PDP was a stub / delisted at scrape time.
-  if (product.inTheBox.length > 0) {
-    return joinSentences([
-      `Here's what ships with the ${product.title}:`,
-      product.inTheBox.join("; ") + ".",
-    ]);
-  }
+  // `inTheBox` is empty at runtime for the skincare catalog, so we go
+  // straight to a featureBlocks scan for "what's included" copy —
+  // useful for Sets & Bundles where the set contents are described in
+  // the key-benefit blocks.
   const block = findFeatureBlockMatching(product, [
-    /\bin the box\b/i,
+    /\bincludes?\b/i,
     /\bwhat's? included\b/i,
-    /\bwhat's? in the box\b/i,
-    /\bships?\s+with\b/i,
+    /\bset (?:of|contains|includes)\b/i,
+    /\bcomes? with\b/i,
+    /\bkit\b/i,
   ]);
-  if (block) {
+  if (product.isBundle) {
+    if (block) {
+      return joinSentences([
+        `Here's what the ${product.title} set includes:`,
+        block,
+      ]);
+    }
+    const sizes = specByLabel(product, [/sizes?/i]);
     return joinSentences([
-      `Here's what ships with the ${product.title}:`,
-      block,
+      `The ${product.title} is a curated set.`,
+      sizes ? `${sizes}.` : "",
+      "See the full contents in the product details on this page.",
     ]);
   }
-  return `The ${product.title} ships with the standard accessories listed in the product details on this page — open the gallery for the full unboxing shot.`;
+  if (block) {
+    return joinSentences([`With the ${product.title} —`, block]);
+  }
+  const sizes = specByLabel(product, [/sizes?/i]);
+  if (sizes) {
+    return `The ${product.title} comes in the following options — ${sizes}. Full details are on this page.`;
+  }
+  return `The ${product.title} comes as a single product — the size options and details are listed on this page.`;
 }
 
 function beginnerAnswer(product: CatalogProduct): string {
   if (product.tier === "beginner") {
-    return `Yes — the ${product.title} is tuned for ${TIER_LABEL.beginner}. Simple controls, intelligent automation, and a forgiving learning curve.`;
+    return `Yes — the ${product.title} is a great pick for ${TIER_LABEL.beginner}. Approachable, easy to work into any routine, and gentle enough to start with.`;
   }
   if (product.tier === "intermediate") {
-    return `It can be — the ${product.title} sits in the intermediate band. Beginners can grow into it, but you'll get more out of it once you're comfortable with the basics.`;
+    return `It can be — the ${product.title} sits in the ${TIER_LABEL.intermediate} band. Newcomers can absolutely use it, though you'll get the most from it once you have the basics of a routine down.`;
   }
-  return `Not really — the ${product.title} is built for ${TIER_LABEL.pro}. If you're just starting out, consider a beginner-friendly option from the same family first.`;
+  return `The ${product.title} is ${TIER_LABEL.pro} — a more advanced, targeted formula. If you're just starting out, an everyday-essentials product from the same collection is a gentler first step.`;
 }
 
 function specsAnswer(product: CatalogProduct): string {
   const summary = listSpecs(product, 5);
   if (summary) {
-    return `Top specs at a glance for the ${product.title}: ${summary}.`;
+    return `Key details at a glance for the ${product.title}: ${summary}.`;
   }
   if (product.shortDescription) {
     return product.shortDescription;
   }
-  return `Detailed specs for the ${product.title} are listed on this page.`;
+  return `Full details for the ${product.title} are listed on this page.`;
 }
 
 function travelAnswer(product: CatalogProduct): string {
-  const tags = new Set(product.useCaseTags.map((t) => t.toLowerCase()));
-  const hits = ["travel", "compact", "portable", "lightweight"].filter((t) =>
-    tags.has(t),
-  );
-  if (hits.length > 0) {
-    return `Yes — the ${product.title} is tagged for ${hits.join(", ")}, so it's a solid travel companion.`;
+  // Repurposed from the legacy "good for travel?" pill to an
+  // everyday-vs-advanced positioning answer keyed off `tier`.
+  if (product.tier === "beginner") {
+    return `The ${product.title} is one of our ${TIER_LABEL.beginner} — an easy daily-care pick you can reach for every morning or evening.`;
   }
-  return `The ${product.title} isn't specifically optimised for travel; if portability is your priority, check the compact/travel-tagged options in the same category.`;
+  if (product.tier === "intermediate") {
+    return `The ${product.title} is solid ${TIER_LABEL.intermediate} — a step up for a routine you're ready to invest a little more in.`;
+  }
+  return `The ${product.title} is ${TIER_LABEL.pro} — a prestige, results-focused formula for when you want the most targeted treatment.`;
 }
 
 function resolutionAnswer(product: CatalogProduct): string {
-  const spec = specByLabel(product, [
-    /resolution/i,
-    /video/i,
-    /\b4k\b/i,
-    /\b8k\b/i,
-  ]);
-  if (spec) {
-    return `Capture details for the ${product.title} — ${spec}.`;
+  // Answers "what does this target / what are the key benefits?" —
+  // sourced from the Targets spec and featureBlocks.
+  const targets = specByLabel(product, [/targets?/i, /concerns?/i]);
+  if (targets) {
+    return `What the ${product.title} focuses on — ${targets}.`;
   }
-  if (/\b(4k|5\.1k|6k|8k)\b/i.test(product.title)) {
-    const match = product.title.match(/\b(4k|5\.1k|6k|8k)\b/i);
-    if (match) {
-      return `Yes — the ${product.title} captures ${match[1].toUpperCase()} video.`;
-    }
+  const block = findFeatureBlockMatching(product, [
+    /\bbenefit\b/i,
+    /\bhelps?\b/i,
+    /\btargets?\b/i,
+    /\bimproves?\b/i,
+    /\breduces?\b/i,
+  ]);
+  if (block) {
+    return joinSentences([`Key benefit of the ${product.title} —`, block]);
   }
   return product.shortDescription
     ? product.shortDescription
-    : `Resolution details for the ${product.title} are listed in the specs section on this page.`;
+    : `The key benefits of the ${product.title} are listed in the details section on this page.`;
 }
 
 /* ============================================================
- * v2 builders — added when the original 5 patterns weren't
- * enough to keep unknown-question answers from dumping
- * `shortDescription` (which the user perceived as "all product
- * specs thrown at me randomly"). Each helper consults
- * `useCaseTags` first (highest-fidelity signal), then a
- * spec/featureBlock scan, then a tight neutral string —
- * never the verbose shortDescription.
+ * v2 builders — added when the original patterns weren't enough to
+ * keep unknown-question answers from dumping `shortDescription`
+ * (which the user perceived as "everything thrown at me randomly").
+ * Each helper consults `useCaseTags` / `subtypes` first (highest-
+ * fidelity signal), then a spec/featureBlock scan, then a tight
+ * neutral string — never the verbose shortDescription.
  * ============================================================ */
 
 function waterproofAnswer(product: CatalogProduct): string {
-  const isTagged = product.useCaseTags.includes("waterproof");
+  // Answers "is this suitable for sensitive skin / gentle enough?" —
+  // based on the skin-type tokens, fused tags, and any soothing/gentle
+  // feature copy.
+  const skinTypes = new Set(product.subtypes.map((s) => s.toLowerCase()));
+  const suitsAll = skinTypes.has("all");
   const specRows = specsMatchingLabel(
     product,
     [
-      /environmental\s*protection/i,
-      /water[-\s]?proof/i,
-      /water\s*resistan/i,
-      /\bIP\s?\d{2}\b/i,
-      /submer/i,
-      /\bdive|diving|depth\b/i,
+      /skin\s*type/i,
+      /sensitive/i,
+      /gentle/i,
+      /soothing/i,
+      /fragrance[-\s]?free/i,
+      /non[-\s]?comedogenic/i,
     ],
     2,
   );
-  if (isTagged && specRows.length > 0) {
-    return `Yes — the ${product.title} is rated for water use. ${specRows.join("; ")}.`;
+  const gentleBlock = findFeatureBlockMatching(product, [
+    /\bsensitive\b/i,
+    /\bgentle\b/i,
+    /\bsooth\w*/i,
+    /\bfragrance[-\s]?free\b/i,
+    /\bnon[-\s]?comedogenic\b/i,
+    /\bhypoallergenic\b/i,
+  ]);
+  if (suitsAll && (specRows.length > 0 || gentleBlock)) {
+    return joinSentences([
+      `Yes — the ${product.title} is formulated for all skin types, so it's a gentle choice for sensitive skin.`,
+      gentleBlock ?? (specRows.length > 0 ? `${specRows.join("; ")}.` : ""),
+    ]);
   }
-  if (isTagged) {
-    return `Yes — the ${product.title} is rated waterproof. Check the specs section for the rated depth or housing requirements.`;
+  if (suitsAll) {
+    return `Yes — the ${product.title} is suited to all skin types, which makes it a safe pick for sensitive skin. If your skin reacts easily, patch-test first and check the ingredient list on this page.`;
+  }
+  if (gentleBlock) {
+    return joinSentences([`On sensitivity for the ${product.title} —`, gentleBlock]);
   }
   if (specRows.length > 0) {
-    return `Per the specs for the ${product.title}: ${specRows.join("; ")}.`;
+    return `Per the details for the ${product.title}: ${specRows.join("; ")}. Patch-test first if your skin is easily irritated.`;
   }
-  // Negative branch — pivot the recommendation on product type. Drones
-  // don't take protective housings; "pair with a housing" was misleading
-  // advice for any non-camera SKU. Action cameras and pocket cameras do
-  // accept waterproof housings, so the original phrasing stays for them.
-  if (product.productTypeGroup === "drone") {
-    return `No — the ${product.title} is not water-rated and shouldn't be flown in rain or over water. For wet conditions, look at DJI's waterproof action cameras (Osmo Action / Osmo 360) instead.`;
+  const skinTypeSpec = specByLabel(product, [/skin\s*type/i]);
+  if (skinTypeSpec) {
+    return `The ${product.title} is formulated for these skin types — ${skinTypeSpec}. For sensitive skin, patch-test first and review the ingredient list on this page.`;
   }
-  if (
-    product.productTypeGroup === "action_camera" ||
-    product.productTypeGroup === "camera"
-  ) {
-    return `Not on this listing — the ${product.title} isn't water-rated by itself. Pair it with a protective housing for wet conditions, or pick one of DJI's IP-rated action cameras (Osmo Action / Osmo 360).`;
-  }
-  return `Not specifically — the ${product.title} isn't water-rated on this listing. Check the specs section or look at a waterproof-tagged alternative for wet conditions.`;
+  return `The ${product.title} doesn't call out a specific sensitive-skin claim on this listing. Patch-test first, or look at an all-skin-types formula in the same collection if your skin is easily irritated.`;
 }
 
 function batteryAnswer(product: CatalogProduct): string {
+  // Answers "how long does it last / how do I use it?" — sourced from
+  // the Sizes and Routine specs plus any usage feature copy.
   const rows = specsMatchingLabel(
     product,
     [
-      /\bbattery\b/i,
-      /\bflight\s*time\b/i,
-      /\bruntime\b/i,
-      /\brun\s*time\b/i,
-      /\brecording\s*time\b/i,
-      /\bcharging\b/i,
-      /\bcharge\s*time\b/i,
+      /sizes?/i,
+      /\bml\b/i,
+      /volume/i,
+      /routine/i,
+      /\bam\b|\bpm\b/i,
+      /morning|evening|night/i,
+      /how\s*to\s*use/i,
+      /apply|application/i,
     ],
     2,
   );
   if (rows.length > 0) {
-    return `Battery details for the ${product.title} — ${rows.join("; ")}.`;
+    return `Usage details for the ${product.title} — ${rows.join("; ")}.`;
   }
-  return `I don't have battery details for the ${product.title} on file. Check the specs section on this page for runtime and charging info.`;
+  const block = findFeatureBlockMatching(product, [
+    /\bapply\b/i,
+    /\bmorning\b/i,
+    /\bevening\b/i,
+    /\bdaily\b/i,
+    /\broutine\b/i,
+  ]);
+  if (block) {
+    return joinSentences([`How to use the ${product.title} —`, block]);
+  }
+  return `I don't have usage-timing details for the ${product.title} on file. Check the details section on this page for size options and how to work it into your routine.`;
 }
 
 function dimensionsAnswer(product: CatalogProduct): string {
+  // Repurposed from "dimensions / weight" to "what size / volume does
+  // it come in?" — sourced from the Sizes spec.
   const rows = specsMatchingLabel(
     product,
     [
-      // Weight rows on DJI listings: "Product Weight (kg)", "Weight",
-      // "Takeoff Weight", "Item weight". `\bweight\b` covers them all.
-      /\bweight\b/i,
-      // Physical dimensions rows: "Dimensions", "Folded size",
-      // "Unfolded size", "Product size". Bare `/\bsize\b/i` is
-      // intentionally NOT included — it false-matches "Device screen
-      // size", "Internal memory size", "Battery size", etc.
-      /\bdimension/i,
-      /\b(?:folded|unfolded|product|item)\s+size\b/i,
-      /\b(?:height|width|length|depth)\b/i,
+      /sizes?/i,
+      /\bml\b/i,
+      /\bg\b/i,
+      /volume/i,
+      /capacity/i,
     ],
     3,
   );
   if (rows.length > 0) {
-    return `Dimensions for the ${product.title} — ${rows.join("; ")}.`;
+    return `Available sizes for the ${product.title} — ${rows.join("; ")}.`;
   }
-  return `I don't have size or weight details for the ${product.title} on file. Check the specs section on this page for the measurements.`;
+  return `I don't have size or volume details for the ${product.title} on file. Check the details section on this page for the available options.`;
 }
 
 function rangeAnswer(product: CatalogProduct): string {
+  // Repurposed from "transmission range" to "which collection is this
+  // from / where does it sit in the lineup?" — sourced from the
+  // Collection spec.
   const rows = specsMatchingLabel(
     product,
     [
-      /\brange\b/i,
-      /\btransmission\b/i,
-      /\bdistance\b/i,
-      /\bvideo\s*range\b/i,
+      /collection/i,
+      /line/i,
+      /range/i,
     ],
     2,
   );
   if (rows.length > 0) {
-    return `Range for the ${product.title} — ${rows.join("; ")}.`;
+    return `The ${product.title} is part of — ${rows.join("; ")}.`;
   }
-  return `I don't have a transmission-range figure for the ${product.title} on file. Check the specs section on this page for the rated range.`;
+  if (product.model) {
+    return `The ${product.title} belongs to the ${product.model} collection. Explore the rest of the line from the collection page.`;
+  }
+  return `I don't have collection details for the ${product.title} on file. Check the details section on this page.`;
 }
 
 function audioAnswer(product: CatalogProduct): string {
+  // Repurposed from the legacy "what should I pair this with?" pill to
+  // "how do I layer this?" — recommends the next routine step based on
+  // the product's category.
+  const category = product.category.toLowerCase();
   const block = findFeatureBlockMatching(product, [
-    /\baudio\b/i,
-    /\bmicrophone\b/i,
-    /\bnoise/i,
+    /\blayer\b/i,
+    /\bfollow\s*with\b/i,
+    /\bpair\b/i,
+    /\bafter\s*cleans/i,
+    /\bbefore\s*moistur/i,
   ]);
   if (block) {
-    return joinSentences([`Audio on the ${product.title} —`, block]);
+    return joinSentences([`Layering the ${product.title} —`, block]);
   }
-  const rows = specsMatchingLabel(
-    product,
-    [/\bmic|microphone|audio|noise\b/i],
-    2,
-  );
-  if (rows.length > 0) {
-    return `Audio for the ${product.title} — ${rows.join("; ")}.`;
+  let nextStep: string;
+  if (category.includes("cleanser")) {
+    nextStep = "Follow it with a softener to prep skin, then your serum and moisturizer.";
+  } else if (category.includes("softener")) {
+    nextStep = "Apply it after cleansing, then layer your serum, eye care, and moisturizer.";
+  } else if (category.includes("serum") || category.includes("treatment")) {
+    nextStep = "Smooth it on after your softener and before your moisturizer to seal it in.";
+  } else if (category.includes("eye") || category.includes("lip")) {
+    nextStep = "Gently pat it around the eye and lip area after your serum, before moisturizer.";
+  } else if (category.includes("moisturizer")) {
+    nextStep = "Use it as the last step of your routine — after serum — and add sunscreen over the top in the morning.";
+  } else if (category.includes("sunscreen")) {
+    nextStep = "Apply it as the final morning step, after your moisturizer, before makeup.";
+  } else if (category.includes("mask")) {
+    nextStep = "Use it a few times a week after cleansing; follow with serum and moisturizer.";
+  } else {
+    nextStep = "Layer it in your usual order — cleanser, softener, serum, eye care, moisturizer, then sunscreen in the morning.";
   }
-  return `I don't have a dedicated audio breakdown for the ${product.title} on file. Pair it with a DJI Mic for clean voiceover.`;
+  return `The ${product.title} pairs best with the rest of your routine — ${nextStep}`;
 }
 
 function stabilizationAnswer(product: CatalogProduct): string {
+  // Repurposed from the legacy "stabilization" pill to "what's the
+  // texture / finish / how does it absorb?" — sourced from texture
+  // feature copy and the Type spec.
   const block = findFeatureBlockMatching(product, [
-    /\bstabili[sz]/i,
-    /\bRockSteady\b/i,
-    /\bHorizonSteady\b/i,
-    /\bHorizonBalancing\b/i,
-    /\b(?:E|O)IS\b/,
+    /\btexture\b/i,
+    /\bfinish\b/i,
+    /\babsorb\w*/i,
+    /\blightweight\b/i,
+    /\bcream\b/i,
+    /\bgel\b/i,
+    /\blotion\b/i,
+    /\bemulsion\b/i,
+    /\bfeel\b/i,
   ]);
   if (block) {
-    return joinSentences([`Stabilization on the ${product.title} —`, block]);
+    return joinSentences([`Texture & finish of the ${product.title} —`, block]);
   }
   const rows = specsMatchingLabel(
     product,
-    [/\bstabili[sz]/i],
+    [/type/i, /texture/i, /finish/i],
     1,
   );
   if (rows.length > 0) {
-    return `Stabilization for the ${product.title} — ${rows.join("; ")}.`;
+    return `Texture for the ${product.title} — ${rows.join("; ")}.`;
   }
-  return `I don't have explicit stabilization details for the ${product.title} on file. Check the specs section for the rated mode.`;
+  return `I don't have a texture note for the ${product.title} on file. Check the details section on this page for the format and finish.`;
 }
 
 function connectivityAnswer(product: CatalogProduct): string {
+  // Repurposed from "connectivity / app" to "which skin types is this
+  // for?" — sourced from the Skin type spec and subtype tokens.
   const rows = specsMatchingLabel(
     product,
     [
-      /\bwi[-\s]?fi\b/i,
-      /\bbluetooth\b/i,
-      /\bapp\b/i,
-      /\bnfc\b/i,
-      /\busb\b/i,
+      /skin\s*type/i,
+      /\bdry\b/i,
+      /\boily\b/i,
+      /\bcombination\b/i,
+      /\bnormal\b/i,
+      /all\s*skin/i,
     ],
     3,
   );
   if (rows.length > 0) {
-    return `Connectivity for the ${product.title} — ${rows.join("; ")}.`;
+    return `Skin types for the ${product.title} — ${rows.join("; ")}.`;
   }
-  return `I don't have connectivity details for the ${product.title} on file. Check the specs section on this page for Wi-Fi / Bluetooth / USB info.`;
+  if (product.subtypes.length > 0) {
+    return `The ${product.title} is formulated for ${product.subtypes.join(", ")} skin. Full details are on this page.`;
+  }
+  return `I don't have skin-type details for the ${product.title} on file. Check the details section on this page for who it's best suited to.`;
 }
 
 function lowLightAnswer(product: CatalogProduct): string {
+  // Repurposed from "low-light performance" to "what results can I
+  // expect / what are the key ingredients?" — sourced from key-benefit
+  // feature copy and the Targets spec.
   const block = findFeatureBlockMatching(product, [
-    /\blow[-\s]?light\b/i,
-    /\bnight\s*mode\b/i,
-    /\bSuperNight\b/i,
-    /\bdynamic\s*range\b/i,
-    /\bISO\b/,
+    /\bingredient\b/i,
+    /\bresult\w*/i,
+    /\bproven\b/i,
+    /\bweeks?\b/i,
+    /\bvisibl\w*/i,
+    /\bcomplex\b/i,
+    /\bextract\b/i,
+    /\bacid\b/i,
   ]);
   if (block) {
-    return joinSentences([`Low-light on the ${product.title} —`, block]);
+    return joinSentences([`Key ingredients & results for the ${product.title} —`, block]);
   }
   const rows = specsMatchingLabel(
     product,
-    [/\bISO\b|\blow[-\s]?light\b|\bdynamic\s*range\b/i],
+    [/targets?/i, /concerns?/i, /ingredient/i],
     2,
   );
   if (rows.length > 0) {
-    return `Low-light for the ${product.title} — ${rows.join("; ")}.`;
+    return `What the ${product.title} works on — ${rows.join("; ")}.`;
   }
-  return `I don't have a curated low-light note for the ${product.title} on file. Check the gallery or specs section for sensor details.`;
+  return `I don't have a curated ingredient/results note for the ${product.title} on file. Check the details section on this page.`;
 }
 
 /** Stopwords + question words to strip when extracting content tokens
@@ -402,10 +472,10 @@ function fuzzyMatchSpec(
  * Resolve a programmatic FAQ answer for a `(product, prompt)` pair.
  *
  * The classifier inspects the prompt against canonical NBA-pill copy
- * patterns ("what's in the box?", "is this beginner-friendly?", "walk
- * me through specs", "will this work for travel?", "is this 4K?") and
- * picks the matching builder. Unknown prompts fall back to the
- * product's short description so the answer is at least
+ * patterns ("what's included?", "is this good for beginners?", "walk
+ * me through the benefits", "which skin type is this for?", "what does
+ * it target?") and picks the matching builder. Unknown prompts fall
+ * back to a concise spec snippet so the answer is at least
  * product-relevant.
  */
 export function resolveProductFaq(
@@ -414,57 +484,61 @@ export function resolveProductFaq(
 ): string {
   const q = prompt.toLowerCase();
 
-  if (/\bin\s+the\s+box\b|\bwhat'?s?\s+included\b|\bbox\s+contents?\b/.test(q)) {
+  if (/\bwhat'?s?\s+included\b|\bincludes?\b|\bin\s+the\s+set\b|\bset\s+contents?\b|\bcomes?\s+with\b/.test(q)) {
     return inTheBoxAnswer(product);
   }
-  if (/\bbeginner|first[-\s]?time|easy\s+to\s+use|starter|entry[-\s]?level\b/.test(q)) {
+  if (/\bbeginner|first[-\s]?time|easy\s+to\s+use|starter|entry[-\s]?level|new\s+to\s+skincare\b/.test(q)) {
     return beginnerAnswer(product);
   }
-  if (/\b(spec|specs|specification|key\s+specs?)\b/.test(q)) {
+  if (/\b(spec|specs|specification|key\s+specs?|details)\b/.test(q)) {
     return specsAnswer(product);
   }
-  if (/\btravel|trip|on[-\s]?the[-\s]?go|portable|backpack\b/.test(q)) {
+  if (/\beveryday|daily\s+use|prestige|advanced\s+care|luxur\w*|splurge\b/.test(q)) {
     return travelAnswer(product);
   }
-  if (/\b4k|5\.1k|6k|8k|resolution|video\s+quality\b/.test(q)) {
+  if (/\btarget\w*|concern\w*|benefit\w*|what\s+does\s+it\s+do|good\s+for\b/.test(q)) {
     return resolutionAnswer(product);
   }
 
   // v2 patterns — high-fidelity question shapes that previously fell
   // through to the shortDescription dump.
-  if (/\b(waterproof|water[-\s]?proof|water\s*resistan|underwater|submer\w*|dive|diving|scuba|swim\w*|wet|rain)\b/.test(q)) {
+  if (/\b(sensitive|gentle|fragrance[-\s]?free|non[-\s]?comedogenic|irritat\w*|reactive|allerg\w*|hypoallergenic)\b/.test(q)) {
     return waterproofAnswer(product);
   }
-  if (/\b(battery|charge|charging|flight\s*time|runtime|how\s*long\s*(does\s+it\s+last|can\s+i\s+(fly|use|record))|hours?\s+of\s+use|recording\s+time)\b/.test(q)) {
+  if (/\b(how\s+to\s+use|how\s+do\s+i\s+use|apply|application|routine|morning|evening|night|am\b|pm\b|how\s+often|how\s+long\s+(does\s+it\s+last|will\s+it\s+last)|last)\b/.test(q)) {
     return batteryAnswer(product);
   }
-  if (/\b(weight|weighs|how\s*heavy|dimension|dimensions|size|how\s*big|how\s*small|fold(ed)?\s*size|height|width|length)\b/.test(q)) {
+  if (/\b(size|sizes|volume|ml\b|how\s+much\s+product|how\s+big|capacity|how\s+many\s+ml)\b/.test(q)) {
     return dimensionsAnswer(product);
   }
-  if (/\b(range|how\s*far|transmission|signal\s*range|distance|video\s*range)\b/.test(q)) {
+  if (/\b(collection|line\b|lineup|which\s+range|part\s+of)\b/.test(q)) {
     return rangeAnswer(product);
   }
-  if (/\b(audio|microphone|mic\b|sound\s*quality|noise|wind\s*noise)\b/.test(q)) {
+  if (/\b(layer|pair\s+with|what\s+to\s+use\s+with|combine|goes\s+with|next\s+step|order\s+of|before\s+or\s+after)\b/.test(q)) {
     return audioAnswer(product);
   }
-  if (/\b(stabili[sz]ation|stabili[sz]ed|stable|shaky|rocksteady|horizonsteady|gimbal\s*lock|electronic\s*stabili|optical\s*stabili)\b/.test(q)) {
+  if (/\b(texture|finish|absorb\w*|greasy|sticky|feel\b|lightweight|rich\b|cream\b|gel\b|lotion\b|emulsion\b|consistency)\b/.test(q)) {
     return stabilizationAnswer(product);
   }
-  if (/\b(wi[-\s]?fi|bluetooth|app|connect\w*|stream|live\s*stream|usb)\b/.test(q)) {
+  if (/\b(skin\s*type|dry\s+skin|oily\s+skin|combination\s+skin|normal\s+skin|all\s+skin|who\s+is\s+it\s+for|suitable\s+for)\b/.test(q)) {
     return connectivityAnswer(product);
   }
-  if (/\b(low[-\s]?light|night\s*mode|night\s+shooting|night\s+vision|iso|dark|dim|sunset|sunrise|astro)\b/.test(q)) {
+  if (/\b(ingredient\w*|result\w*|does\s+it\s+work|effective\w*|proven|how\s+long\s+to\s+see|what'?s?\s+in\s+it|active\w*|retinol|vitamin|hyaluronic)\b/.test(q)) {
     return lowLightAnswer(product);
+  }
+  if (/\b(spf|sunscreen|sun\s+protect\w*|uv\b|sunblock)\b/.test(q)) {
+    // Sunscreens are best answered with their benefit/target copy.
+    return resolutionAnswer(product);
   }
 
   // Unknown question — try a single concise spec snippet that mentions
   // a content word from the prompt before deflecting to a one-liner.
   // Critically, we no longer return `product.shortDescription` here:
   // that's a multi-paragraph feature-block dump that read like
-  // "all product specs thrown at me randomly".
+  // "everything thrown at me randomly".
   const fuzzy = fuzzyMatchSpec(product, q);
   if (fuzzy) {
-    return `Per the specs for the ${product.title}: ${fuzzy.label}: ${fuzzy.value}.`;
+    return `Per the details for the ${product.title}: ${fuzzy.label}: ${fuzzy.value}.`;
   }
-  return `I don't have a specific answer for that on the ${product.title}. Check the specs section on this page, or pick one of the suggested questions below.`;
+  return `I don't have a specific answer for that on the ${product.title}. Check the details section on this page, or pick one of the suggested questions below.`;
 }

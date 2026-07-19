@@ -1,16 +1,48 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Sen:wght@400;500;600;700;800&display=swap");
 
 :root {
   /* Typography tokens
    * The design system exposes four weights: Light, Regular, Semibold, Bold.
    * (Medium / 500 is still loaded above for backwards compatibility with
    * existing component CSS, but new code should reference one of the four
-   * tokens below.) */
-  --font-family-base: "Open Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+   * tokens below.)
+   *
+   * "market street" (this :root default) uses Sen. The NTO theme
+   * overrides --font-family-base below, so this only affects market
+   * street. Note: Sen ships weights 400–800 (no 300), so the Light
+   * token falls back to the nearest available weight. */
+  --font-family-base: "Sen", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-weight-light: 300;
   --font-weight-regular: 400;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* ----- Storefront theme palette (default = "market street") -----
+   * Central color tokens that define the storefront's look & feel.
+   * Per-page local token blocks (--plp-*, --cart-*, etc.) and the
+   * storefront chrome reference these. The Theme switcher swaps the
+   * whole look by redefining these under
+   * `html[data-demo-theme="consumer-electronics"]` (NTO) below —
+   * "market street" simply inherits these :root defaults. */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8f8f8;
+  --color-text: #17171b;
+  --color-text-muted: #35353b;
+  --color-heading: #3f3f46;
+  --color-secondary-fg: #33373d;
+  --color-border: #d1d5db;
+  --color-border-strong: #9ca3af;
+  --color-primary: #131315;
+  --color-primary-foreground: #ffffff;
+  --color-header-bg: #18181b;
+  --color-header-foreground: #ffffff;
+  --color-header-muted: #e5e5e5;
+  --color-announcement-bg: #000000;
+  --color-announcement-foreground: #ffffff;
 
   --prototype-brand-width: 139px;
   --prototype-brand-height: 19px;
@@ -23,15 +55,15 @@
    * SidecarAssistant chat panel (PLP card, PDP card, cart, order summary,
    * agent utterances, NBA pills, etc.).  They mirror the variables
    * referenced in the Figma design system. */
-  --agentic-card-bg: #ffffff;
-  --agentic-card-border: #d1d5db;
-  --agentic-card-foreground: #3f3f46;
-  --agentic-foreground: #17171b;
-  --agentic-muted-foreground: #35353b;
-  --agentic-secondary-bg: #f8f8f8;
-  --agentic-secondary-foreground: #33373d;
-  --agentic-primary-bg: #131315;
-  --agentic-primary-foreground: #ffffff;
+  --agentic-card-bg: var(--color-surface);
+  --agentic-card-border: var(--color-border);
+  --agentic-card-foreground: var(--color-heading);
+  --agentic-foreground: var(--color-text);
+  --agentic-muted-foreground: var(--color-text-muted);
+  --agentic-secondary-bg: var(--color-surface-muted);
+  --agentic-secondary-foreground: var(--color-secondary-fg);
+  --agentic-primary-bg: var(--color-primary);
+  --agentic-primary-foreground: var(--color-primary-foreground);
   --agentic-accent-bg: #ececec;
   --agentic-message-input: #dbeafe;
   --agentic-input-bg: #ffffff;
@@ -63,6 +95,78 @@
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+/* ----- "NTO" theme override -----
+ * Selected via the Theme switcher (data-demo-theme="consumer-electronics").
+ * Redefining these central tokens re-skins the entire storefront while
+ * leaving layout, logo, and banner imagery untouched. All values live in
+ * this single block, so the palette/type can be tuned in one place. */
+html[data-demo-theme="consumer-electronics"] {
+  --font-family-base: "Source Sans Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2f2f2;
+  --color-text: #333333;
+  --color-text-muted: #6f6f6f;
+  --color-heading: #333333;
+  --color-secondary-fg: #4a4a4a;
+  --color-border: #e0e0e0;
+  --color-border-strong: #b8b8b8;
+  --color-primary: #077fb4;
+  --color-primary-foreground: #ffffff;
+  --color-header-bg: #077fb4;
+  --color-header-foreground: #ffffff;
+  --color-header-muted: #6dccee;
+  --color-announcement-bg: #6dccee;
+  --color-announcement-foreground: #08344a;
+}
+
+/* ----- "NTO" theme — component accent overrides -----
+ * The storefront ships with several hard-coded Shiseido accent colors
+ * (green "Add to Cart", yellow/orange rating stars, blue PLP links, and
+ * dark selected chips) that never read from the palette tokens above, so
+ * a token-only reskin leaves them unchanged. The rules below re-point
+ * those accents at the NTO palette (--color-primary teal). They are
+ * prefixed with the theme attribute selector, so they out-specify the
+ * component defaults regardless of stylesheet import order and leave the
+ * "market street" theme completely untouched. */
+html[data-demo-theme="consumer-electronics"] {
+  --plp-accent: var(--color-primary);
+  --plp-success: var(--color-primary);
+  --pc-desc-color: var(--color-text-muted);
+}
+
+/* Primary CTA — PDP "Add to Cart" (default hard-coded green #1cb167). */
+html[data-demo-theme="consumer-electronics"] .figma-pdp__cta {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* Selected size / variant chip (default hard-coded #131315). */
+html[data-demo-theme="consumer-electronics"] .figma-pdp__chips .is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* Rating stars — PDP + product cards (default orange/yellow). */
+html[data-demo-theme="consumer-electronics"] .figma-pdp__stars,
+html[data-demo-theme="consumer-electronics"] .figma-product-card__stars {
+  color: var(--color-primary);
+}
+
+/* Product-card promo badge (default hard-coded #131315). */
+html[data-demo-theme="consumer-electronics"] .figma-product-card__badge {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* PDP product title — lighter weight for the NTO theme (default bold 700). */
+html[data-demo-theme="consumer-electronics"] .figma-pdp__info h1 {
+  font-weight: 500;
 }
 
 *,

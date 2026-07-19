@@ -1,9 +1,9 @@
 :root {
-  --login-surface: #ffffff;
-  --login-text: #17171b;
-  --login-muted: #35353b;
-  --login-border: #d1d5db;
-  --login-primary: #131315;
+  --login-surface: var(--color-surface);
+  --login-text: var(--color-text);
+  --login-muted: var(--color-text-muted);
+  --login-border: var(--color-border);
+  --login-primary: var(--color-primary);
   --login-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 

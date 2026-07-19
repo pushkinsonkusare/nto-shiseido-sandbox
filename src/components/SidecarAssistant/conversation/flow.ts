@@ -39,110 +39,78 @@ const CATEGORY_PATTERNS: Array<{
   categories: string[];
   label: string;
 }> = [
-  // Accessory categories come FIRST so "ND filter for Mavic 4 Pro"
-  // routes to filters (not drones). The drone pattern below would
-  // otherwise capture the "Mavic" mention and wrongly assign a
-  // drone-pro intent to an accessory query.
+  // Product categories are listed FIRST (most specific), then
+  // concern-driven routing. This ordering means "hydrating cream"
+  // resolves to Moisturizers (a product type) rather than the generic
+  // "hydration" concern bucket below.
   {
-    test: /\b(nd\s*filter\w*|cpl|polariz\w*|uv\s*filter|filter\s*set|filter\s*kit|lens\s*filter\w*|magnetic\s*filter)\b/i,
-    categories: ["Lens filters", "Drone accessories"],
-    label: "filters",
+    test: /\b(sunscreens?|sun\s*screens?|spf|sunblock|sun\s*block|sun\s*protect\w*|uv\s*protect\w*|uv\s*filter)\b/i,
+    categories: ["Sunscreen"],
+    label: "sunscreen",
   },
   {
-    test: /\b(helmet\s*mount|handlebar\s*mount|suction\s*mount|chest\s*strap|wrist\s*strap|head\s*band|magnetic\s*mount|tripod\s*mount|adapter\s*mount|mounting\s*accessor\w*)\b/i,
-    categories: ["Action camera mounts", "Drone accessories", "Accessory kits"],
-    label: "mounts",
+    test: /\b(cleansers?|cleansing|cleanse|face\s*wash|facial\s*wash|makeup\s*removers?|micellar|cleansing\s*(oil|milk|foam|water)|foaming\s*wash)\b/i,
+    categories: ["Cleansers"],
+    label: "cleansers",
   },
   {
-    test: /\b(intelligent\s*flight\s*battery|extra\s*batter\w*|spare\s*batter\w*|batter(y|ies)\b)\b/i,
-    categories: ["Camera batteries", "Drone accessories"],
-    label: "batteries",
+    test: /\b(softeners?|toners?|essences?|first\s*treatment|balancing\s*lotion)\b/i,
+    categories: ["Softeners"],
+    label: "softeners",
   },
   {
-    test: /\b(charging\s*hub|charger\w*|charging\s*case)\b/i,
-    categories: ["Camera Chargers", "Drone accessories"],
-    label: "chargers",
+    test: /\b(eye\s*(creams?|care|masks?|contour)|dark\s*circles?|puffiness|puffy\s*eyes|under[-\s]?eye|lip\s*(care|balms?|treatments?|masks?)|crow'?s?\s*feet)\b/i,
+    categories: ["Eye & Lip Care"],
+    label: "eye & lip care",
   },
   {
-    test: /\b(carrying\s*case|hard\s*case|protective\s*case|safety\s*case|backpack\w*|shoulder\s*bag|action\s*camera\s*case)\b/i,
-    categories: ["Camera cases, bags and backpacks", "Drone accessories", "Accessory kits"],
-    label: "cases",
+    test: /\b(masks?|sheet\s*masks?|face\s*masks?|sleeping\s*masks?|overnight\s*masks?)\b/i,
+    categories: ["Masks"],
+    label: "masks",
   },
   {
-    test: /\b(propeller\w*|prop\s*guard|landing\s*gear)\b/i,
-    categories: ["Drone accessories"],
-    label: "propellers",
+    test: /\b(serums?|treatments?|concentrates?|ampoules?|boosters?|facial\s*oils?)\b/i,
+    categories: ["Serums & Treatments"],
+    label: "serums & treatments",
   },
   {
-    test: /\b(remote\s*control\w*|controller\w*|gps\s*remote)\b/i,
-    categories: ["Camera Remote Controls"],
-    label: "remotes",
+    test: /\b(moisturi[sz]ers?|moisturi[sz]ing|face\s*creams?|day\s*creams?|night\s*creams?|gel\s*creams?|emulsions?|hydrating\s*creams?|\bcreams?\b)\b/i,
+    categories: ["Moisturizers"],
+    label: "moisturizers",
   },
   {
-    test: /\b(tripod\w*|monopod\w*|selfie\s*stick\w*|extension\s*rod\w*)\b/i,
-    categories: ["Tripods and monopods", "Camera grips & sticks"],
-    label: "tripods",
+    test: /\b(sets?|bundles?|kits?|routines?|regimens?|gift\s*sets?|collections?)\b/i,
+    categories: ["Sets & Bundles"],
+    label: "sets & bundles",
+  },
+  // ---- Concern-driven routing. Skin-concern words map to the product
+  // categories that best address them, because the catalog's structured
+  // concern tags are sparsely populated (relying on them alone would
+  // return near-empty carousels). ----
+  {
+    test: /\b(anti[-\s]?aging|anti[-\s]?ageing|ageing|aging|wrinkl\w*|fine\s*lines?|mature\s*skin|crepe\w*)\b/i,
+    categories: ["Serums & Treatments", "Moisturizers"],
+    label: "anti-aging",
   },
   {
-    test: /\b(wide[- ]?angle\s*lens\w*|lens\s*cover\w*|lens\s*protector\w*)\b/i,
-    categories: ["Wide-angle lenses", "Lens filters"],
-    label: "lenses",
-  },
-  // Generic "accessories" — catches queries like "accessories for
-  // flip drone" / "accessory kit for Mini 5 Pro" that explicitly ask
-  // for the accessory ecosystem of a host product. Placed BEFORE the
-  // drones / cameras patterns so "drone" in "accessories for flip
-  // drone" doesn't capture the query as a flagship-drone listing.
-  // Categories list spans every v6 accessory bucket; the model-compat
-  // filter narrows to the named host product.
-  {
-    test: /\b(accessor(y|ies)|add[- ]ons?)\b/i,
-    categories: [
-      "Drone accessories",
-      "Action camera mounts",
-      "Accessory kits",
-      "Camera grips & sticks",
-      "Camera cases, bags and backpacks",
-      "Lens filters",
-      "Camera batteries",
-      "Camera Chargers",
-      "Camera Adaptors",
-      "Straps",
-      "Camera microphones",
-      "Tripods and monopods",
-      "Wide-angle lenses",
-      "Camera Remote Controls",
-    ],
-    label: "accessories",
+    test: /\b(bright\w*|dark\s*spots?|hyperpigment\w*|pigmentation|dull\w*|radiance|glow\w*|uneven\s*(skin\s*)?tone|even\s*tone|spots?)\b/i,
+    categories: ["Serums & Treatments", "Moisturizers"],
+    label: "brightening",
   },
   {
-    test: /\b(microphones?|mics?|wireless\s*mics?|lavs?|lavaliers?)\b/i,
-    categories: ["Microphones"],
-    label: "microphones",
+    test: /\b(firm\w*|lift\w*|sag\w*|saggy|elasticity|contour\w*|bounce)\b/i,
+    categories: ["Serums & Treatments", "Moisturizers"],
+    label: "firming",
   },
   {
-    test: /\b(gimbals?|stabilizers?|osmo\s*mobile|ronin)\b/i,
-    categories: ["Gimbals"],
-    label: "gimbals",
+    test: /\b(hydrat\w*|dry\s*skin|dryness|dehydrat\w*|moisture|plump\w*)\b/i,
+    categories: ["Moisturizers", "Serums & Treatments"],
+    label: "hydration",
   },
   {
-    test: /\b(action\s*cams?|action\s*cameras?|gopro|osmo\s*action)\b/i,
-    categories: ["Action cameras"],
-    label: "action cameras",
-  },
-  {
-    test: /\b(drones?|mavic|avata|mini|air|neo|fpv|quadcopters?|aerial)\b/i,
-    categories: ["Drones", "4K drones"],
-    label: "drones",
-  },
-  // Plain "camera/cameras" maps to action + handheld cameras only.
-  // Drones live under their own pattern above. Phrases like
-  // "filmmaking drone" / "cinematic 4K aerial" still hit the drones
-  // pattern earlier in the list.
-  {
-    test: /\b(cameras?|videos?|footage|handheld\s*cameras?)\b/i,
-    categories: ["Action cameras"],
-    label: "cameras",
+    test: /\b(pores?|pore[-\s]?minimi\w*|oily\s*skin|oil\s*control|shine|shiny|blackheads?|breakouts?|acne|blemish\w*)\b/i,
+    categories: ["Cleansers", "Softeners"],
+    label: "pore & oil care",
   },
 ];
 
@@ -161,19 +129,18 @@ const BROAD_PATTERNS: RegExp[] = [
  * `waterproof`).
  */
 const USE_CASE_PATTERNS: Array<{ test: RegExp; tag: string }> = [
+  // Only well-populated tags are used as HARD filters here (skin type,
+  // SPF, best-seller). Skin-concern routing is handled through
+  // CATEGORY_PATTERNS instead, because concern tags are sparse.
+  { test: /\b(dry|dryness|dehydrated)\b/i, tag: "dry" },
+  { test: /\b(oily|oil[-\s]?control|greasy)\b/i, tag: "oily" },
+  { test: /\b(combination|combo\s*skin)\b/i, tag: "combination" },
+  { test: /\b(normal\s*skin)\b/i, tag: "normal" },
+  { test: /\b(spf|sunscreen|sun\s*protect\w*|\buv\b)\b/i, tag: "spf" },
   {
-    test: /\b(dive|diving|scuba|snorkel\w*|underwater|submer\w*|swim\w*|ocean|sea|surf\w*|beach|kayak|raft\w*|pool|wet|rain|wash)\b/i,
-    tag: "waterproof",
+    test: /\b(best[-\s]?sell\w*|bestseller|most\s*popular|popular|top[-\s]?rated)\b/i,
+    tag: "best-seller",
   },
-  {
-    test: /\b(rugged|extreme|cold|harsh|adventure|outdoor|hiking|skiing|biking|mountain)\b/i,
-    tag: "rugged",
-  },
-  { test: /\b(vlog\w*|content\s*creat\w*|selfie|creator)\b/i, tag: "vlogging" },
-  { test: /\b(360|panoramic|all-?around)\b/i, tag: "360" },
-  { test: /\b(travel|trip|backpack\w*|portable|compact|lightweight)\b/i, tag: "compact" },
-  { test: /\b(low[-\s]?light|night\s*shoot\w*|dim|sunset|sunrise|astro)\b/i, tag: "lowlight" },
-  { test: /\b(fpv|first[-\s]?person|race|racing)\b/i, tag: "fpv" },
 ];
 
 function inferUseCaseTags(text: string): string[] {
@@ -185,36 +152,39 @@ function inferUseCaseTags(text: string): string[] {
 }
 
 /**
- * Vocabulary -> shopper expertise tier.
- * Used by both `classifyIntent` (rule-based fallback) and the OpenAI
- * agent's prompt so we never recommend the DJI Neo to someone who said
- * "expert" or "cinematic".
+ * Vocabulary -> price tier. For skincare, `tier` is a price band
+ * (prestige / mid / everyday) derived from price in catalog.ts, so
+ * "prestige"/"advanced" language floors the results at the higher-end
+ * SKUs and "everyday"/"affordable" language keeps them entry-level.
  */
 const TIER_PATTERNS: Array<{ test: RegExp; tier: ProductTier }> = [
   {
-    test: /\b(pro|professional|expert|cinematic|cinema|filmmak\w*|serious|commercial|enterprise|broadcast|production)\b/i,
+    test: /\b(prestige|luxury|luxe|premium|high[-\s]?end|advanced|intensive|concentrated|clinical|expert|best\s*results|splurge|top[-\s]?tier|most\s*effective)\b/i,
     tier: "pro",
   },
   {
-    test: /\b(beginner|first\s*drone|starter|easy|kid|gift|casual|just\s*trying|new\s*to|entry\s*level)\b/i,
+    test: /\b(affordable|budget|cheap|inexpensive|entry[-\s]?level|starter|everyday|basic|first[-\s]?time|new\s*to\s*skincare|gift)\b/i,
     tier: "beginner",
   },
   {
-    test: /\b(hobbyist|weekend|enthusiast|mid\s*range|midrange|intermediate|prosumer)\b/i,
+    test: /\b(mid[-\s]?range|midrange|daily|regular|core|staple)\b/i,
     tier: "intermediate",
   },
 ];
 
 /**
  * Per-category price floor we apply when the shopper signals a `pro`
- * tier, so entry-level gear doesn't dominate the carousel.
+ * (prestige) tier, so entry-level products don't dominate the carousel.
  */
 const PRO_PRICE_FLOOR_BY_CATEGORY: Record<string, number> = {
-  Drones: 1000,
-  "4K drones": 1000,
-  "Action cameras": 400,
-  Microphones: 250,
-  Gimbals: 400,
+  "Serums & Treatments": 150,
+  Moisturizers: 120,
+  "Eye & Lip Care": 90,
+  Masks: 60,
+  Sunscreen: 45,
+  Cleansers: 40,
+  Softeners: 55,
+  "Sets & Bundles": 150,
 };
 
 function inferTierFromText(text: string): ProductTier | undefined {
@@ -223,34 +193,37 @@ function inferTierFromText(text: string): ProductTier | undefined {
 }
 
 export type LandingNbaLane =
-  | "droneDiscovery"
+  | "productDiscovery"
   | "categoryGuidance"
   | "decisionSupport"
   | "supportIntent";
 
 const LANDING_LANES: LandingNbaLane[] = [
-  "droneDiscovery",
+  "productDiscovery",
   "categoryGuidance",
   "decisionSupport",
   "supportIntent",
 ];
 
 const LANDING_NBA_BASE: Record<LandingNbaLane, string> = {
-  droneDiscovery: "Find the right drone for me",
-  categoryGuidance: "Help me choose a vlogging mic",
-  decisionSupport: "Compare drones under $500",
+  productDiscovery: "Build my skincare routine",
+  categoryGuidance: "Help me choose a serum",
+  decisionSupport: "Find sunscreen under $60",
   supportIntent: "Track my recent order",
 };
 
 const LANDING_NBA_ALTERNATES: Record<LandingNbaLane, readonly string[]> = {
-  droneDiscovery: ["Best drone for beginners", "Travel-friendly drones"],
+  productDiscovery: [
+    "Best products for dry skin",
+    "A routine for brightening",
+  ],
   categoryGuidance: [
-    "Help me choose an action camera",
-    "Find the right gimbal",
+    "Help me choose a moisturizer",
+    "Find the right cleanser",
   ],
   decisionSupport: [
-    "Show top rated drones",
-    "Drone vs action camera for travel",
+    "Show best-selling skincare",
+    "Serum vs treatment — which do I need?",
   ],
   supportIntent: ["Help with returns", "Where is my order"],
 };
@@ -361,57 +334,11 @@ const BUNDLE_QUERY_PATTERN =
  * specific patterns must come BEFORE shorter ones (e.g. "Mavic 4 Pro"
  * before "Mavic 3", "Mini 5 Pro" before "Mini 5").
  */
-const MODEL_PATTERNS: Array<{ test: RegExp; model: string }> = [
-  // Drones — Mavic family
-  { test: /\bmavic\s*4\s*pro\b/i, model: "mavic 4 pro" },
-  { test: /\bmavic\s*3\s*pro\b/i, model: "mavic 3 pro" },
-  { test: /\bmavic\s*3\b/i, model: "mavic 3" },
-  // Drones — Mini family
-  { test: /\bmini\s*5\s*pro\b/i, model: "mini 5 pro" },
-  { test: /\bmini\s*4\s*pro\b/i, model: "mini 4 pro" },
-  { test: /\bmini\s*4k\b/i, model: "mini 4k" },
-  { test: /\bmini\s*3\b/i, model: "mini 3" },
-  { test: /\bmini\s*2\b/i, model: "mini 2" },
-  // Drones — others
-  { test: /\bavata\s*360\b/i, model: "avata 360" },
-  { test: /\bavata\s*2\b/i, model: "avata 2" },
-  { test: /\bavata\b/i, model: "avata" },
-  { test: /\bair\s*3s\b/i, model: "air 3s" },
-  { test: /\bair\s*2s\b/i, model: "air 2s" },
-  { test: /\bneo\s*2\b/i, model: "neo 2" },
-  { test: /\bneo\b/i, model: "neo" },
-  { test: /\bflip\b/i, model: "flip" },
-  { test: /\blito\s*x?\s*1\b/i, model: "lito" },
-  // Action cameras
-  { test: /\bosmo\s*action\s*6\b/i, model: "osmo action 6" },
-  { test: /\bosmo\s*action\s*5\s*pro\b/i, model: "osmo action 5 pro" },
-  { test: /\baction\s*5\s*pro\b/i, model: "osmo action 5 pro" },
-  { test: /\bosmo\s*action\s*4\b/i, model: "osmo action 4" },
-  { test: /\baction\s*4\b/i, model: "osmo action 4" },
-  { test: /\bosmo\s*action\s*3\b/i, model: "osmo action 3" },
-  { test: /\baction\s*3\b/i, model: "osmo action 3" },
-  { test: /\bosmo\s*nano\b/i, model: "osmo nano" },
-  { test: /\bosmo\s*360\b/i, model: "osmo 360" },
-  { test: /\baction\s*2\b/i, model: "action 2" },
-  // Pockets
-  { test: /\bosmo\s*pocket\s*4\b/i, model: "osmo pocket 4" },
-  { test: /\bpocket\s*4\b/i, model: "osmo pocket 4" },
-  { test: /\bosmo\s*pocket\s*3\b/i, model: "osmo pocket 3" },
-  { test: /\bpocket\s*3\b/i, model: "osmo pocket 3" },
-  // Gimbals
-  { test: /\brs\s*5\b/i, model: "rs 5" },
-  { test: /\brs\s*4\s*pro\b/i, model: "rs 4 pro" },
-  { test: /\brs\s*4\s*mini\b/i, model: "rs 4 mini" },
-  { test: /\brs\s*4\b/i, model: "rs 4" },
-  { test: /\bosmo\s*mobile\s*8\b/i, model: "osmo mobile 8" },
-  { test: /\bosmo\s*mobile\s*7p\b/i, model: "osmo mobile 7p" },
-  { test: /\bosmo\s*mobile\s*7\b/i, model: "osmo mobile 7" },
-  { test: /\bosmo\s*mobile\s*se\b/i, model: "osmo mobile se" },
-  // Mics
-  { test: /\bmic\s*3\b/i, model: "mic 3" },
-  { test: /\bmic\s*2\b/i, model: "mic 2" },
-  { test: /\bmic\s*mini\b/i, model: "mic mini" },
-];
+// Skincare products are chosen by category / concern / skin type, not
+// by a versioned model line, so there is no model-family detection.
+// Kept as an empty list so `detectModel` / `stripModelPhrases` remain
+// no-ops without a wider refactor of their callers.
+const MODEL_PATTERNS: Array<{ test: RegExp; model: string }> = [];
 
 function detectModel(text: string): string | undefined {
   for (const rule of MODEL_PATTERNS) {
@@ -451,35 +378,9 @@ function stripModelPhrases(text: string): string {
  * semantics: a product passes if it carries ANY of the listed
  * subtypes.
  */
-const SUBTYPE_HINT_PATTERNS: Array<{ test: RegExp; subtypes: string[] }> = [
-  // Mount-type variants
-  { test: /\bhelmet\s*(mount|chin)\b|\bchin\s*mount\b/i, subtypes: ["mount_helmet"] },
-  { test: /\bhandlebar\b/i, subtypes: ["mount_handlebar"] },
-  { test: /\bsuction\s*(cup|mount)\b/i, subtypes: ["mount_suction"] },
-  { test: /\bchest\s*(strap|mount)\b/i, subtypes: ["mount_chest"] },
-  { test: /\b(hanging\s*)?neck\s*mount\b|\bhanging\s*neck\b/i, subtypes: ["mount_neck"] },
-  { test: /\bwrist\s*(strap|mount|band)\b/i, subtypes: ["mount_wrist"] },
-  { test: /\bmagnetic\s*(ball[- ]?joint|mount)\b|\bball\s*joint\b/i, subtypes: ["mount_magnetic"] },
-  { test: /\btripod\s*mount\b|\bmini\s*tripod\b/i, subtypes: ["mount_tripod"] },
-  { test: /\bclamp\b|\bnato\s*clamp\b/i, subtypes: ["mount_clamp"] },
-  { test: /\bextension\s*rod\b|\bselfie\s*stick\b/i, subtypes: ["mount_extension"] },
-  // Filter-type variants
-  { test: /\bnd\s*\d|\bnd\s*filter\b|\bsplit\s*nd\b/i, subtypes: ["acc_filter_nd"] },
-  { test: /\b(cpl|polariz\w*|circular\s*polarizer)\b/i, subtypes: ["acc_filter_cpl"] },
-  { test: /\buv\s*filter\b/i, subtypes: ["acc_filter_uv"] },
-  // Mic-type variants
-  { test: /\blavalier|lav\s*mic\b/i, subtypes: ["mic_lavalier"] },
-  { test: /\bwireless\s*mic\w*|\bmic\s*\d|\bmic\s*mini\b/i, subtypes: ["mic_wireless"] },
-  // Lens variants
-  { test: /\bwide[- ]?angle\s*lens\b/i, subtypes: ["acc_lens_wide"] },
-  { test: /\blens\s*(cover|protector)\b/i, subtypes: ["acc_lens_macro"] },
-  // Power/storage variants
-  { test: /\b(intelligent\s*flight\s*)?batter(y|ies)\b|\bspare\s*batter\w*\b/i, subtypes: ["acc_battery"] },
-  { test: /\bcharger\w*|charging\s*hub|charging\s*case\b/i, subtypes: ["acc_charger"] },
-  { test: /\b(carrying|protective|safety|hard)\s*case\b|\bbackpack\b/i, subtypes: ["acc_case"] },
-  { test: /\bpropeller\w*|prop\s*guard\b/i, subtypes: ["acc_propeller"] },
-  { test: /\blanding\s*gear\b/i, subtypes: ["acc_landing_gear"] },
-];
+// No accessory-subtype narrowing for skincare (the `subtypes` field now
+// carries skin-type tokens, which are matched via useCaseTags instead).
+const SUBTYPE_HINT_PATTERNS: Array<{ test: RegExp; subtypes: string[] }> = [];
 
 function detectSubtypeHints(text: string): string[] {
   const out: string[] = [];
@@ -501,38 +402,8 @@ function detectSubtypeHints(text: string): string[] {
  * accessories" and would otherwise pass the substring category match
  * + the title-based compatibility filter).
  */
-const SUBTYPES_BY_CATEGORY_LABEL: Record<string, string[]> = {
-  filters: ["acc_filter_nd", "acc_filter_cpl", "acc_filter_uv"],
-  mounts: [
-    "mount_helmet",
-    "mount_handlebar",
-    "mount_suction",
-    "mount_chest",
-    "mount_neck",
-    "mount_wrist",
-    "mount_tripod",
-    "mount_clamp",
-    "mount_magnetic",
-    "mount_extension",
-  ],
-  batteries: ["acc_battery"],
-  chargers: ["acc_charger"],
-  cases: ["acc_case"],
-  propellers: ["acc_propeller", "acc_landing_gear"],
-  remotes: ["acc_remote"],
-  tripods: ["mount_tripod", "mount_extension"],
-  lenses: ["acc_lens_wide", "acc_lens_macro"],
-  microphones: [
-    "mic_wireless",
-    "mic_lavalier",
-    "mic_phone_adapter",
-    "mic_transmitter",
-    "mic_receiver",
-    "mic_windscreen",
-    "mic_charging_case",
-    "mic_kit",
-  ],
-};
+// Skincare categories don't need accessory-subtype narrowing.
+const SUBTYPES_BY_CATEGORY_LABEL: Record<string, string[]> = {};
 
 /** Classify a free-text shopper query into a broad / direct intent. */
 export function classifyIntent(query: string): Intent {
@@ -559,13 +430,13 @@ export function classifyIntent(query: string): Intent {
   const subtypeHintsArr = detectSubtypeHints(trimmed);
   const subtypeHints = subtypeHintsArr.length > 0 ? subtypeHintsArr : undefined;
 
-  // Pro/expert language implies a price floor unless the user
+  // Prestige/advanced language implies a price floor unless the user
   // explicitly capped the budget. Use the first resolved category to
-  // pick a sensible floor; default to drones since the assistant is
-  // drone-first.
+  // pick a sensible floor; default to serums when none matched.
   let priceMin: number | undefined;
   if (tier === "pro" && priceMax === undefined) {
-    const primaryCategory = categoryHit?.categories?.[0] ?? "Drones";
+    const primaryCategory =
+      categoryHit?.categories?.[0] ?? "Serums & Treatments";
     priceMin = PRO_PRICE_FLOOR_BY_CATEGORY[primaryCategory];
   }
 
@@ -605,26 +476,9 @@ export function classifyIntent(query: string): Intent {
     includeBundles ||
     requiredTags
   ) {
-    // Defensive fallback: if the shopper signalled a tier or budget but
-    // no category was resolved, anchor to drones (the assistant's
-    // primary domain) so a "pro-tier" filter doesn't leak unrelated
-    // SKUs like robotic vacuums into the carousel.
-    if (tier !== undefined && priceMax === undefined && !includeBundles) {
-      return {
-        kind: "direct",
-        rawQuery: trimmed,
-        activities: detectedActivities,
-        categoryLabel: "drones",
-        categories: ["Drones", "4K drones"],
-        priceMax,
-        priceMin: priceMin ?? PRO_PRICE_FLOOR_BY_CATEGORY.Drones,
-        tier,
-        includeBundles,
-        requiredTags,
-        compatibleWith,
-        subtypeHints,
-      };
-    }
+    // The whole catalog is skincare, so a tier / budget / use-case
+    // signal without an explicit category can safely search across
+    // every category rather than anchoring to one.
     return {
       kind: "direct",
       rawQuery: trimmed,
@@ -1039,7 +893,7 @@ export function pickRecommendations(
 
 export const WELCOME_TITLE = "Hello!";
 export const WELCOME_BODY =
-  "I'm your DJI personal assistant. I can help you find the right gear, answer questions about products, and track your orders. How can I help you today?";
+  "I'm your Shiseido personal beauty advisor. I can help you build a routine, find the right products for your skin, answer skincare questions, and track your orders. How can I help you today?";
 
 export const WELCOME_NBAS = buildWelcomeNbas(0);
 
@@ -1047,24 +901,23 @@ export const PROBING_FALLBACK_BODY =
   "Got it — could you tell me a bit more so I can find the perfect match? Here are a few common things shoppers narrow down by:";
 
 export const PROBING_NBAS = [
-  "Drones for travel",
-  "Action cameras under $400",
-  "Best mic for vlogging",
+  "Products for dry skin",
+  "Best serum for brightening",
+  "Sunscreen under $60",
   "Show me what's new",
 ] as const;
 
-/* ---------- DJI Help-Center hygiene knowledge base ---------- */
-// Source of truth for return / replacement / warranty / shipping copy
-// surfaced by the assistant. Grounded against DJI's published policy at
-// https://store.dji.com/au/pages/help-center-aftersales — keep this
-// module in lockstep with that page when policy changes. Imported by
+/* ---------- Shiseido customer-care hygiene knowledge base ---------- */
+// Source of truth for return / replacement / guarantee / shipping copy
+// surfaced by the assistant. Keep this module in lockstep with
+// Shiseido's published customer-care policy when it changes. Imported by
 // `openaiAgent.ts` (the `lookup_policy` tool) and by both rule-based
 // dispatchers (Sidecar + SideBySide), so policy answers stay
 // consistent across every path the shopper can take.
 
-/** Public help-center URL we cite when shoppers ask about policy. */
-export const DJI_HELP_CENTER_URL =
-  "https://store.dji.com/au/pages/help-center-aftersales";
+/** Public customer-care URL we cite when shoppers ask about policy. */
+export const HELP_CENTER_URL =
+  "https://www.shiseido.com/us/en/customer-service.html";
 
 /** Hygiene topics the assistant can answer with grounded policy text. */
 export type HygieneTopic = "return" | "replacement" | "warranty" | "shipping";
@@ -1105,51 +958,43 @@ export function classifyHygieneTopic(query: string): HygieneTopic | null {
  */
 export const POLICY_BODIES: Record<HygieneTopic, string> = {
   return:
-    "DJI's Return & Refund window is 30 days from the day after you " +
-    "receive the product, for camera drones, enterprise products, " +
-    "handheld imaging devices, and power stations. The item must be " +
-    "unactivated, unused, and include all original packaging, " +
-    "accessories, gifts, and manuals — or have a manufacturing defect. " +
-    "Refunds are issued back to the original payment method and " +
-    "typically clear in 7–14 business days. For bundles, refunds are " +
-    "processed for the entire order only, and customers cover return " +
-    "shipping unless the issue is a performance fault. " +
-    `Full policy: ${DJI_HELP_CENTER_URL}`,
+    "Shiseido accepts returns within 30 days of delivery for a full " +
+    "refund. Products should be gently used or unopened — if a product " +
+    "doesn't work for your skin, you can still return it within the " +
+    "window. Include your order details, and refunds are issued back to " +
+    "the original payment method and typically clear in 7–14 business " +
+    "days. Free returns are provided for most orders. " +
+    `Full policy: ${HELP_CENTER_URL}`,
   replacement:
-    "Replacement Service is available within 30 days of receiving the " +
-    "product if it arrived damaged in transit (with carrier proof of " +
-    "damage), doesn't match its original description in a significant " +
-    "way, or has a manufacturing defect. DJI covers the two-way " +
-    "replacement freight when the issue is a performance fault. The " +
-    "product must be sent back within 7 calendar days of replacement " +
-    `confirmation. Details: ${DJI_HELP_CENTER_URL}`,
+    "If your order arrived damaged, leaking, or you received the wrong " +
+    "item, we'll send a free replacement. Let us know within 30 days of " +
+    "delivery and, where possible, share a photo of the issue so we can " +
+    "resolve it quickly — there's no need to return a damaged item " +
+    `first in most cases. Details: ${HELP_CENTER_URL}`,
   warranty:
-    "DJI products are covered by a limited warranty against performance " +
-    "failures for the effective warranty period — you can apply for " +
-    "warranty service or self-service repair from the DJI support site. " +
-    "Before sending in your product, back up your SD card, remove " +
-    "personal data, detach any non-warranty parts, and have your " +
-    "passwords ready. DJI Care Refresh is a separate paid plan that " +
-    "extends coverage and adds accidental-damage replacements. " +
-    `Warranty info: ${DJI_HELP_CENTER_URL}`,
+    "Every Shiseido product is backed by our satisfaction guarantee. If " +
+    "a product is defective or you experience a reaction, contact " +
+    "customer care for a replacement or refund. Store products away from " +
+    "direct heat and sunlight, and check the period-after-opening symbol " +
+    "on the packaging for how long a product stays at its best once " +
+    `opened. Guarantee info: ${HELP_CENTER_URL}`,
   shipping:
-    "Shipping times and fees vary by region and ship-to address — DJI " +
-    "confirms both at checkout. You can track your order from the DJI " +
-    "Store account once it has shipped. Inspect the parcel before " +
-    "signing, and keep carrier proof of any transit damage so you can " +
-    "request a replacement if needed. " +
-    `Shipping & logistics FAQ: ${DJI_HELP_CENTER_URL}`,
+    "Shipping times and fees vary by region and ship-to address — we " +
+    "confirm both at checkout, and standard orders typically arrive in " +
+    "2–4 business days. Complimentary shipping is available on qualifying " +
+    "orders, and you can track your order from your Shiseido account once " +
+    `it has shipped. Shipping FAQ: ${HELP_CENTER_URL}`,
 };
 
 /**
  * @deprecated Prefer `POLICY_BODIES.return`. Kept as an export so older
  * code paths continue to compile, but always resolves to the canonical
- * return-policy body sourced from the DJI Help Center.
+ * return-policy body sourced from Shiseido customer care.
  */
 export const RETURN_POLICY_BODY = POLICY_BODIES.return;
 
 export const TRACK_ORDER_BODY =
-  "I can help track your latest DJI order. I pulled up your most recent purchase details below.";
+  "I can help track your latest Shiseido order. I pulled up your most recent purchase details below.";
 
 export const PLP_FOLLOWUP_NBAS = [
   "Compare top picks",
@@ -1243,43 +1088,53 @@ const COMPLEMENTS_BY_CATEGORY: Record<
   string,
   Array<{ label: string; targetCategory: string }>
 > = {
-  Drones: [
-    { label: "Add ND filter set", targetCategory: "Accessories" },
-    { label: "Add an extra battery", targetCategory: "Accessories" },
-    { label: "Add a vlogging mic", targetCategory: "Microphones" },
+  Cleansers: [
+    { label: "Add a softener", targetCategory: "Softeners" },
+    { label: "Add a serum", targetCategory: "Serums & Treatments" },
+    { label: "Add a moisturizer", targetCategory: "Moisturizers" },
   ],
-  "4K drones": [
-    { label: "Add ND filter set", targetCategory: "Accessories" },
-    { label: "Add an extra battery", targetCategory: "Accessories" },
-    { label: "Add a vlogging mic", targetCategory: "Microphones" },
+  Softeners: [
+    { label: "Add a serum", targetCategory: "Serums & Treatments" },
+    { label: "Add a moisturizer", targetCategory: "Moisturizers" },
+    { label: "Add a cleanser", targetCategory: "Cleansers" },
   ],
-  "Action cameras": [
-    { label: "Add a mounting kit", targetCategory: "Accessories" },
-    { label: "Add a wireless mic", targetCategory: "Microphones" },
-    { label: "Add a gimbal", targetCategory: "Gimbals" },
+  "Serums & Treatments": [
+    { label: "Add a moisturizer", targetCategory: "Moisturizers" },
+    { label: "Add an eye cream", targetCategory: "Eye & Lip Care" },
+    { label: "Add daily sunscreen", targetCategory: "Sunscreen" },
   ],
-  Microphones: [
-    { label: "Add a wind muff", targetCategory: "Accessories" },
-    { label: "Find an action camera", targetCategory: "Action cameras" },
-    { label: "Find a vlogging drone", targetCategory: "Drones" },
+  Moisturizers: [
+    { label: "Add daily sunscreen", targetCategory: "Sunscreen" },
+    { label: "Add a serum", targetCategory: "Serums & Treatments" },
+    { label: "Add an eye cream", targetCategory: "Eye & Lip Care" },
   ],
-  Gimbals: [
-    { label: "Find an action camera", targetCategory: "Action cameras" },
-    { label: "Add a vlogging mic", targetCategory: "Microphones" },
+  "Eye & Lip Care": [
+    { label: "Add a moisturizer", targetCategory: "Moisturizers" },
+    { label: "Add a serum", targetCategory: "Serums & Treatments" },
   ],
-  Accessories: [
-    { label: "Find a drone", targetCategory: "Drones" },
-    { label: "Find an action camera", targetCategory: "Action cameras" },
+  Masks: [
+    { label: "Add a serum", targetCategory: "Serums & Treatments" },
+    { label: "Add a moisturizer", targetCategory: "Moisturizers" },
+  ],
+  Sunscreen: [
+    { label: "Add a moisturizer", targetCategory: "Moisturizers" },
+    { label: "Add a cleanser", targetCategory: "Cleansers" },
+  ],
+  "Sets & Bundles": [
+    { label: "Add a serum", targetCategory: "Serums & Treatments" },
+    { label: "Add daily sunscreen", targetCategory: "Sunscreen" },
   ],
 };
 
 const CATEGORY_HUMAN: Record<string, string> = {
-  Drones: "drones",
-  "4K drones": "4K drones",
-  "Action cameras": "action cameras",
-  Microphones: "mics",
-  Gimbals: "gimbals",
-  Accessories: "accessories",
+  Cleansers: "cleansers",
+  Softeners: "softeners",
+  "Serums & Treatments": "serums",
+  Moisturizers: "moisturizers",
+  "Eye & Lip Care": "eye & lip care",
+  Masks: "masks",
+  Sunscreen: "sunscreen",
+  "Sets & Bundles": "sets & bundles",
 };
 
 function humanCategory(category: string | undefined): string {
@@ -1288,11 +1143,11 @@ function humanCategory(category: string | undefined): string {
 }
 
 function nextPriceLadder(currentMax: number | undefined): number {
-  if (!currentMax) return 500;
-  if (currentMax > 1000) return 1000;
-  if (currentMax > 500) return 500;
-  if (currentMax > 250) return 250;
-  return 200;
+  if (!currentMax) return 100;
+  if (currentMax > 300) return 300;
+  if (currentMax > 150) return 150;
+  if (currentMax > 100) return 100;
+  return 60;
 }
 
 function dedupeLabels(items: StageNbaItem[]): StageNbaItem[] {
@@ -1311,35 +1166,35 @@ function buildProbingNbas(intent: Intent | undefined): StageNbaItem[] {
   const category = intent?.categoryLabel;
   const items: StageNbaItem[] = [];
 
-  if (category === "drones" || !category) {
+  if (category === "serums & treatments" || !category) {
     items.push(
-      { label: "Drones for travel & vlogging", lane: "capture" },
-      { label: "Best drone for beginners", lane: "capture" },
-      { label: "Drones under $500", lane: "capture" },
+      { label: "Serums for brightening", lane: "capture" },
+      { label: "Best serum for fine lines", lane: "capture" },
+      { label: "Hydrating treatments under $150", lane: "capture" },
     );
-  } else if (category === "microphones") {
+  } else if (category === "moisturizers") {
     items.push(
-      { label: "Best mic for vlogging", lane: "capture" },
-      { label: "Wireless mics under $200", lane: "capture" },
-      { label: "Help me choose a mic for interviews", lane: "capture" },
+      { label: "Moisturizers for dry skin", lane: "capture" },
+      { label: "Lightweight creams for oily skin", lane: "capture" },
+      { label: "Anti-aging moisturizers", lane: "capture" },
     );
-  } else if (category === "action cameras") {
+  } else if (category === "sunscreen") {
     items.push(
-      { label: "Action cameras for travel", lane: "capture" },
-      { label: "4K action cameras under $400", lane: "capture" },
-      { label: "Best action cam for vlogging", lane: "capture" },
+      { label: "Daily sunscreen for the face", lane: "capture" },
+      { label: "Sunscreen under $60", lane: "capture" },
+      { label: "Lightweight sunscreen for oily skin", lane: "capture" },
     );
-  } else if (category === "gimbals") {
+  } else if (category === "cleansers") {
     items.push(
-      { label: "Gimbals for smartphones", lane: "capture" },
-      { label: "Gimbals for mirrorless cameras", lane: "capture" },
-      { label: "Gimbals under $200", lane: "capture" },
+      { label: "Gentle cleansers for sensitive skin", lane: "capture" },
+      { label: "Foaming cleansers for oily skin", lane: "capture" },
+      { label: "Cleansing oils & makeup removers", lane: "capture" },
     );
   } else {
     items.push(
-      { label: "Drones for travel & vlogging", lane: "capture" },
-      { label: "Best mic for vlogging", lane: "capture" },
-      { label: "Action cameras under $400", lane: "capture" },
+      { label: "Build a full routine", lane: "capture" },
+      { label: "Best serum for brightening", lane: "capture" },
+      { label: "Moisturizers for dry skin", lane: "capture" },
     );
   }
 
@@ -1361,21 +1216,21 @@ function buildPlpNbas(
     lane: "refinement",
   });
 
-  if (intent.categories?.includes("Drones") || intent.categories?.includes("4K drones")) {
-    items.push({ label: "4K drones only", lane: "refinement" });
-    items.push({ label: "Drones for travel", lane: "capture" });
-  } else if (intent.categories?.includes("Microphones")) {
-    items.push({ label: "Wireless mics only", lane: "refinement" });
-    items.push({ label: "Best mic for vlogging", lane: "capture" });
-  } else if (intent.categories?.includes("Action cameras")) {
-    items.push({ label: "Top rated action cameras", lane: "refinement" });
-    items.push({ label: "Action cameras for travel", lane: "capture" });
-  } else if (intent.categories?.includes("Gimbals")) {
-    items.push({ label: "Gimbals for smartphones", lane: "refinement" });
-    items.push({ label: "Gimbals for mirrorless cameras", lane: "capture" });
+  if (intent.categories?.includes("Sunscreen")) {
+    items.push({ label: "Top rated sunscreen", lane: "refinement" });
+    items.push({ label: "Lightweight for oily skin", lane: "capture" });
+  } else if (intent.categories?.includes("Serums & Treatments")) {
+    items.push({ label: "Best sellers only", lane: "refinement" });
+    items.push({ label: "Serums for brightening", lane: "capture" });
+  } else if (intent.categories?.includes("Moisturizers")) {
+    items.push({ label: "Top rated moisturizers", lane: "refinement" });
+    items.push({ label: "Best for dry skin", lane: "capture" });
+  } else if (intent.categories?.includes("Cleansers")) {
+    items.push({ label: "Gentle cleansers only", lane: "refinement" });
+    items.push({ label: "Best for oily skin", lane: "capture" });
   } else {
     items.push({ label: `Top rated ${category}`, lane: "refinement" });
-    items.push({ label: "Best for travel & vlogging", lane: "capture" });
+    items.push({ label: "Best for my skin type", lane: "capture" });
   }
 
   // Bundle upsell — only when the current PLP is showing core SKUs
@@ -1479,7 +1334,7 @@ function buildCartNbas(
     }
   }
 
-  items.push({ label: "Apply promo FLY10", lane: "conversion" });
+  items.push({ label: "Apply promo GLOW10", lane: "conversion" });
   items.push({ label: "Continue shopping", lane: "escape" });
 
   if (items.filter((item) => item.lane === "crossSell").length === 0) {
@@ -1537,7 +1392,7 @@ function buildOrderNbas(
   }
 
   if (items.length < 2) {
-    items.push({ label: "Discover top vlogging mics", lane: "crossSell" });
+    items.push({ label: "Discover best-selling serums", lane: "crossSell" });
   }
 
   items.push({ label: "Start a new search", lane: "newJourney" });
@@ -1594,13 +1449,13 @@ export function buildStageNbas(context: StageNbaContext): StageNbaItem[] {
  * ============================================================= */
 
 const ACCESSORY_ROLE_LABELS: Record<AccessoryRole, string> = {
-  power: "extra battery",
-  mounting: "mounting kit",
-  stabilization: "gimbal kit",
-  visual_enhancement: "ND filter set",
-  storage: "carrying case",
-  general: "accessory",
-  fpv_component: "FPV gear",
+  power: "complementary product",
+  mounting: "complementary product",
+  stabilization: "complementary product",
+  visual_enhancement: "complementary product",
+  storage: "complementary product",
+  general: "complementary product",
+  fpv_component: "complementary product",
 };
 
 /**
@@ -1624,7 +1479,7 @@ const DEFAULT_ACCESSORY_ROLES: AccessoryRole[] = [
  * these cores we add `fpv_component` cross-sell on top of the normal
  * battery/filter/case/mount triad.
  */
-const FPV_HOST_SERIES = new Set(["avata"]);
+const FPV_HOST_SERIES = new Set<string>([]);
 
 /**
  * Normalize a model token from the CSV's `compatible_with_models`
@@ -1995,13 +1850,12 @@ export function findMatchingBundle(
 }
 
 const USE_CASE_INTRO_FRAGMENT: Record<string, string> = {
-  waterproof: "waterproof",
-  rugged: "rugged",
-  vlogging: "vlogging-ready",
-  "360": "360°",
-  compact: "travel-friendly",
-  lowlight: "low-light",
-  fpv: "FPV",
+  dry: "for dry skin",
+  oily: "for oily skin",
+  combination: "for combination skin",
+  normal: "for normal skin",
+  spf: "sun-protecting",
+  "best-seller": "best-selling",
 };
 
 function useCaseIntro(tags: string[] | undefined): string {
@@ -2026,9 +1880,9 @@ export function buildPlpIntro(query: string, intent: Intent, count: number): str
 
   const tierClause =
     intent.tier === "pro"
-      ? " pro-grade"
+      ? " prestige"
       : intent.tier === "beginner"
-      ? " beginner-friendly"
+      ? " everyday"
       : "";
   const useCaseClause = useCaseIntro(intent.requiredTags);
   const label = intent.categoryLabel ? ` ${intent.categoryLabel}` : "";

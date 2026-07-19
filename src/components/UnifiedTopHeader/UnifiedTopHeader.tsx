@@ -10,6 +10,7 @@ import {
 } from "../icons/StorefrontIcons";
 import { ROUTES, type NavigateOptions } from "../../prototypeRoutes";
 import { PRIMARY_NAV_ITEMS, SITE_BRAND } from "../../siteContent";
+import shiseidoLogo from "../../assets/shiseido-logo.png";
 import "./UnifiedTopHeader.css";
 
 type NavigateFn = (
@@ -56,7 +57,9 @@ export function UnifiedTopHeader({
           >
             {isMobileMenuOpen ? <CloseIcon width={18} height={18} /> : <TableOfContentsIcon width={18} height={18} />}
           </button>
-          <PrototypeBrandLink className="unified-top-header__brand-mark">{SITE_BRAND}</PrototypeBrandLink>
+          <PrototypeBrandLink className="unified-top-header__brand-mark">
+            <img src={shiseidoLogo} alt={SITE_BRAND} className="unified-top-header__brand-logo" />
+          </PrototypeBrandLink>
           <nav className="unified-top-header__quick-links" aria-label="Top navigation">
             {PRIMARY_NAV_ITEMS.map((item) => (
               <a

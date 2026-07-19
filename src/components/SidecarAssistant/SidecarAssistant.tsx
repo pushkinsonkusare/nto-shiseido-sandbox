@@ -50,7 +50,7 @@ import { isLlmConfigured } from "../../lib/openaiClient";
 import "./SidecarAssistant.css";
 
 const PLACEHOLDER_INPUT =
-  "Ask anything about DJI gear, orders, or recommendations…";
+  "Ask anything about skincare, routines, orders, or recommendations…";
 
 const NUDGE_INTERVAL_MS = 90_000;
 const NUDGE_DURATION_MS = 2500;
@@ -233,9 +233,34 @@ function buildAgentFailureMessage(error: unknown): string {
   return "I hit a hiccup reaching the model — falling back to local recommendations.";
 }
 
-export function SidecarAssistant() {
+type SidecarAssistantProps = {
+  /** When true, the assistant renders as a flush docked panel that fills its
+   * container (see SidecarDockLayout) instead of a floating fixed overlay.
+   * In this mode open/close is owned by the layout via `open`/`onRequestClose`
+   * and the component skips its overlay-only behaviors (backdrop, own FAB,
+   * page scroll-lock, outside-click / Escape to close). */
+  docked?: boolean;
+  /** Open state, only consulted when `docked`. */
+  open?: boolean;
+  /** Close request from the docked panel's header button. */
+  onRequestClose?: () => void;
+};
+
+export function SidecarAssistant({
+  docked = false,
+  open = false,
+  onRequestClose,
+}: SidecarAssistantProps = {}) {
   const { products, heroProduct, getProductBySlug, orderHistory } = useCatalog();
   const [isOpen, setIsOpen] = useState(false);
+
+  // When docked, the surrounding layout owns open/close; mirror it into the
+  // internal `isOpen` so all the open-driven effects (welcome seeding, etc.)
+  // keep working unchanged.
+  useEffect(() => {
+    if (!docked) return;
+    setIsOpen(open);
+  }, [docked, open]);
   const [hasUserOpenedFab, setHasUserOpenedFab] = useState(false);
   const [isNudging, setIsNudging] = useState(false);
   const [inputValue, setInputValue] = useState("");
@@ -387,8 +412,8 @@ export function SidecarAssistant() {
       if (!trimmed) return;
 
       const PROMO_DB: Record<string, { discount: number; label: string }> = {
-        FLY10: { discount: 0.1, label: "10% off" },
-        DJI20: { discount: 0.2, label: "20% off" },
+        GLOW10: { discount: 0.1, label: "10% off" },
+        GLOW20: { discount: 0.2, label: "20% off" },
       };
 
       const promo = PROMO_DB[trimmed];
@@ -396,7 +421,7 @@ export function SidecarAssistant() {
         appendMessage({
           id: nextId("agent"),
           kind: "agent_simple",
-          body: `I couldn't find a promo named "${trimmed}". Try FLY10 or DJI20.`,
+          body: `I couldn't find a promo named "${trimmed}". Try GLOW10 or GLOW20.`,
         });
         return;
       }
@@ -450,7 +475,7 @@ export function SidecarAssistant() {
           const subtotal = (product.price ?? 0) * firstItem.quantity;
           const tax = Math.round(subtotal * 0.0875 * 100) / 100;
           const total = subtotal + tax;
-          const orderNumber = `DJI-${Math.floor(40000 + Math.random() * 9999)}`;
+          const orderNumber = `SHI-${Math.floor(40000 + Math.random() * 9999)}`;
 
           appendMessage({
             id: nextId("order"),
@@ -976,6 +1001,9 @@ export function SidecarAssistant() {
   /* ---------- lifecycle ---------- */
 
   useEffect(() => {
+    // A docked panel lives inside the page flow (like SideBySide), so Escape
+    // must not tear it down — the layout owns close.
+    if (docked) return;
     if (!isOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -984,10 +1012,13 @@ export function SidecarAssistant() {
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen]);
+  }, [isOpen, docked]);
 
   // Lock background page scroll while the sidecar panel is open.
+  // Skipped when docked: the docked panel reflows the page (grid column) and
+  // sticks while the storefront scrolls, matching SideBySide.
   useEffect(() => {
+    if (docked) return;
     if (!isOpen) return;
     const previousBodyOverflow = document.body.style.overflow;
     const previousDocumentOverflow = document.documentElement.style.overflow;
@@ -997,10 +1028,12 @@ export function SidecarAssistant() {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousDocumentOverflow;
     };
-  }, [isOpen]);
+  }, [isOpen, docked]);
 
   // Close the sidecar when the shopper clicks outside the panel.
+  // Docked panels stay open regardless of outside clicks (layout owns close).
   useEffect(() => {
+    if (docked) return;
     if (!isOpen) return;
     const onPointerDownCapture = (event: PointerEvent) => {
       const panel = panelRef.current;
@@ -1016,7 +1049,7 @@ export function SidecarAssistant() {
     document.addEventListener("pointerdown", onPointerDownCapture, true);
     return () =>
       document.removeEventListener("pointerdown", onPointerDownCapture, true);
-  }, [isOpen]);
+  }, [isOpen, docked]);
 
   useEffect(() => {
     const onOpenRequested = () => setIsOpen(true);
@@ -1042,6 +1075,9 @@ export function SidecarAssistant() {
   }, [dispatchShopperMessage]);
 
   useEffect(() => {
+    // The docked layout renders its own FAB, so the sidecar's own nudge
+    // animation is not applicable there.
+    if (docked) return;
     if (isOpen || hasUserOpenedFab) return;
 
     const prefersReducedMotion =
@@ -1062,7 +1098,7 @@ export function SidecarAssistant() {
       if (collapseTimer) window.clearTimeout(collapseTimer);
       setIsNudging(false);
     };
-  }, [isOpen, hasUserOpenedFab]);
+  }, [isOpen, hasUserOpenedFab, docked]);
 
   // Seed the welcome card the first time the panel opens.
   useEffect(() => {
@@ -1080,7 +1116,7 @@ export function SidecarAssistant() {
         title: WELCOME_TITLE,
         body: WELCOME_BODY,
         imageUrl: "/Welcome_cover.jpeg",
-        imageAlt: "Welcome to the DJI store",
+        imageAlt: "Welcome to the Shiseido store",
       },
       {
         id: welcomeNbasId,
@@ -1302,6 +1338,85 @@ export function SidecarAssistant() {
     ],
   );
 
+  const handleCloseClick = () => {
+    if (docked) {
+      onRequestClose?.();
+      return;
+    }
+    setIsOpen(false);
+  };
+
+  const panelBody = (
+    <>
+      <header className="sidecar-assistant__header">
+        <div className="sidecar-assistant__header-title">
+          <span className="sidecar-assistant__header-icon" aria-hidden="true">
+            <SparkleIcon width={20} height={20} />
+          </span>
+          <span className="sidecar-assistant__header-label">Personal Assistant</span>
+        </div>
+        <div className="sidecar-assistant__header-actions">
+          <button
+            type="button"
+            className="sidecar-assistant__header-btn"
+            aria-label="More options"
+          >
+            <EllipsisVerticalIcon width={20} height={20} />
+          </button>
+          <button
+            type="button"
+            className="sidecar-assistant__header-btn"
+            aria-label="Close assistant"
+            onClick={handleCloseClick}
+          >
+            <CloseIcon width={20} height={20} />
+          </button>
+        </div>
+      </header>
+
+      <div className="sidecar-assistant__chat" ref={chatRef}>
+        {renderedMessages}
+      </div>
+
+      <form className="sidecar-assistant__input-bar" onSubmit={handleSubmit}>
+        <div className="sidecar-assistant__input-shell">
+          <input
+            type="text"
+            className="sidecar-assistant__input"
+            placeholder={PLACEHOLDER_INPUT}
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            aria-label="Ask the personal assistant"
+          />
+          <button
+            type="submit"
+            className="sidecar-assistant__send"
+            aria-label="Send message"
+            disabled={!inputValue.trim()}
+          >
+            <SendHorizontalIcon width={20} height={20} />
+          </button>
+        </div>
+      </form>
+    </>
+  );
+
+  // Docked mode: fill the panel supplied by SidecarDockLayout. No floating
+  // overlay, no backdrop, no self-owned FAB — the layout drives open/close and
+  // the grid reflow, so we always render the panel body here.
+  if (docked) {
+    return (
+      <aside
+        ref={panelRef}
+        className="sidecar-assistant sidecar-assistant--docked"
+        role="complementary"
+        aria-label="Personal Assistant"
+      >
+        {panelBody}
+      </aside>
+    );
+  }
+
   if (!isOpen) {
     return (
       <button
@@ -1320,7 +1435,7 @@ export function SidecarAssistant() {
           className="sidecar-assistant__fab-icon"
         />
         <span className="sidecar-assistant__fab-label" aria-hidden="true">
-          fly with me
+          glow with me
         </span>
       </button>
     );
@@ -1340,56 +1455,7 @@ export function SidecarAssistant() {
         role="complementary"
         aria-label="Personal Assistant"
       >
-        <header className="sidecar-assistant__header">
-        <div className="sidecar-assistant__header-title">
-          <span className="sidecar-assistant__header-icon" aria-hidden="true">
-            <SparkleIcon width={20} height={20} />
-          </span>
-          <span className="sidecar-assistant__header-label">Personal Assistant</span>
-        </div>
-        <div className="sidecar-assistant__header-actions">
-          <button
-            type="button"
-            className="sidecar-assistant__header-btn"
-            aria-label="More options"
-          >
-            <EllipsisVerticalIcon width={20} height={20} />
-          </button>
-          <button
-            type="button"
-            className="sidecar-assistant__header-btn"
-            aria-label="Close assistant"
-            onClick={() => setIsOpen(false)}
-          >
-            <CloseIcon width={20} height={20} />
-          </button>
-        </div>
-      </header>
-
-        <div className="sidecar-assistant__chat" ref={chatRef}>
-          {renderedMessages}
-        </div>
-
-        <form className="sidecar-assistant__input-bar" onSubmit={handleSubmit}>
-          <div className="sidecar-assistant__input-shell">
-            <input
-              type="text"
-              className="sidecar-assistant__input"
-              placeholder={PLACEHOLDER_INPUT}
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-              aria-label="Ask the personal assistant"
-            />
-            <button
-              type="submit"
-              className="sidecar-assistant__send"
-              aria-label="Send message"
-              disabled={!inputValue.trim()}
-            >
-              <SendHorizontalIcon width={20} height={20} />
-            </button>
-          </div>
-        </form>
+        {panelBody}
       </aside>
     </>
   );

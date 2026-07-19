@@ -4,12 +4,11 @@ import "./AgentModeBar.css";
 import { AGENT_MODES, useAgentMode } from "./AgentModeContext";
 import type { AgentMode } from "./AgentModeContext";
 
-type DemoTheme = "sf-next" | "consumer-electronics" | "cosmetics";
+type DemoTheme = "sf-next" | "consumer-electronics";
 
 const DEMO_THEMES: { id: DemoTheme; label: string }[] = [
-  { id: "sf-next", label: "SF Next" },
-  { id: "consumer-electronics", label: "Consumer electronics" },
-  { id: "cosmetics", label: "Cosmetics" },
+  { id: "sf-next", label: "market street" },
+  { id: "consumer-electronics", label: "NTO" },
 ];
 
 export function AgentModeBar() {
@@ -18,9 +17,7 @@ export function AgentModeBar() {
   const [theme, setTheme] = useState<DemoTheme>(() => {
     if (typeof window === "undefined") return "sf-next";
     const saved = window.localStorage.getItem("agent-demo-theme");
-    return saved === "consumer-electronics" || saved === "cosmetics"
-      ? saved
-      : "sf-next";
+    return saved === "consumer-electronics" ? saved : "sf-next";
   });
 
   const handleModeClick = (nextMode: AgentMode) => {

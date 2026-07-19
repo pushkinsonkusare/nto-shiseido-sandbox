@@ -1,7 +1,7 @@
 :root {
   /* Figma Product List -> Product Card */
   --pc-card-width: 100%;
-  --pc-card-bg: #ffffff;
+  --pc-card-bg: var(--color-surface);
   --pc-card-shadow: none;
   --pc-card-shadow-hover: none;
   --pc-control-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
@@ -14,8 +14,8 @@
   --pc-swatch-size: 22px;
   --pc-swatch-inner-size: 15px;
 
-  --pc-meta-color: #35353b;
-  --pc-title-color: #3f3f46;
+  --pc-meta-color: var(--color-text-muted);
+  --pc-title-color: var(--color-heading);
   --pc-desc-color: #2e844a;
 }
 
@@ -184,8 +184,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #131315;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;

@@ -1,14 +1,14 @@
 .figma-order-confirmation {
-  --oc-surface: #ffffff;
-  --oc-surface-muted: #f8f8f8;
-  --oc-text: #17171b;
-  --oc-heading: #3f3f46;
-  --oc-muted: #35353b;
-  --oc-border: #d1d5db;
-  --oc-border-strong: #9ca3af;
-  --oc-primary: #131315;
-  --oc-header-surface: #18181b;
-  --oc-header-link: #e5e5e5;
+  --oc-surface: var(--color-surface);
+  --oc-surface-muted: var(--color-surface-muted);
+  --oc-text: var(--color-text);
+  --oc-heading: var(--color-heading);
+  --oc-muted: var(--color-text-muted);
+  --oc-border: var(--color-border);
+  --oc-border-strong: var(--color-border-strong);
+  --oc-primary: var(--color-primary);
+  --oc-header-surface: var(--color-header-bg);
+  --oc-header-link: var(--color-header-muted);
   --oc-header-foreground: #f5f5f5;
   --oc-header-icon: #f5f5f5;
   --oc-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.1);
@@ -63,8 +63,8 @@
 
 .figma-order-confirmation__announcement {
   height: 28px;
-  background: #000;
-  color: #fff;
+  background: var(--color-announcement-bg);
+  color: var(--color-announcement-foreground);
   display: flex;
   align-items: center;
   justify-content: center;

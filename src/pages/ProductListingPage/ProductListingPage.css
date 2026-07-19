@@ -6,10 +6,10 @@
   --plp-grid-gap-y: 40px;
   --plp-filter-width: 260px;
 
-  --plp-surface: #ffffff;
-  --plp-border: #d1d5db;
-  --plp-text-primary: #17171b;
-  --plp-text-muted: #35353b;
+  --plp-surface: var(--color-surface);
+  --plp-border: var(--color-border);
+  --plp-text-primary: var(--color-text);
+  --plp-text-muted: var(--color-text-muted);
   --plp-accent: #0045df;
   --plp-success: #2e844a;
 
@@ -35,7 +35,7 @@
 }
 
 .figma-plp__header-shell {
-  background: #18181b;
+  background: var(--color-header-bg);
   position: sticky;
   top: var(--sxs-mode-bar-height, var(--app-topbar-height, 56px));
   z-index: 50;
@@ -49,8 +49,8 @@
   font-size: 12px;
   line-height: 1;
   letter-spacing: 0.02em;
-  color: #fff;
-  background: #000;
+  color: var(--color-announcement-foreground);
+  background: var(--color-announcement-bg);
 }
 
 .figma-plp__top-nav {

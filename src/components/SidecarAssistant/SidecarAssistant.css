@@ -20,6 +20,31 @@
   animation: sidecar-assistant__panel-in 220ms ease-out;
 }
 
+/* Docked mode: the panel fills the sticky grid column supplied by
+ * SidecarDockLayout instead of floating over the page. This strips the
+ * fixed positioning, floating-card chrome (rounded corners, drop shadow,
+ * gap) and entry animation so it reads as a flush docked column, exactly
+ * like the SideBySide assistant. */
+.sidecar-assistant--docked {
+  position: static;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border: none;
+  border-left: 1px solid #d1d5db;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+  z-index: auto;
+}
+
+html[data-demo-viewport="mobile"] .sidecar-assistant--docked {
+  right: auto;
+  width: 100%;
+}
+
 .sidecar-assistant,
 .sidecar-assistant * {
   box-sizing: border-box;
@@ -138,7 +163,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
   flex-direction: column;
   gap: 16px;
   padding: 16px;
-  background: #ffffff;
+  background: rgba(250, 250, 250, 1);
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
 }
@@ -223,7 +248,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
   background: #dbeafe;
   color: #17171b;
   font-size: 14px;
-  line-height: 24px;
+  line-height: 20px;
   padding: 16px 20px;
   max-width: 300px;
 }
@@ -537,7 +562,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
 
 .sidecar-assistant__input-bar {
   flex: 0 0 auto;
-  background: #ffffff;
+  background: rgba(250, 250, 250, 1);
   padding: 16px 16px 20px;
   box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.06);
 }

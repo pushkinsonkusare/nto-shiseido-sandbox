@@ -445,3 +445,29 @@ export function YoutubeIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M8 5.5v13l11-6.5-11-6.5Z" />
+    </BaseIcon>
+  );
+}
+
+export function PauseIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M9 5v14" />
+      <path d="M15 5v14" />
+    </BaseIcon>
+  );
+}
+
+export function TagIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M3 6.5A3.5 3.5 0 0 1 6.5 3h4.3a2 2 0 0 1 1.42.59l8 8a2 2 0 0 1 0 2.82l-4.3 4.3a2 2 0 0 1-2.82 0l-8-8A2 2 0 0 1 3 9.3V6.5Z" />
+      <circle cx="7.5" cy="7.5" r="1.2" />
+    </BaseIcon>
+  );
+}

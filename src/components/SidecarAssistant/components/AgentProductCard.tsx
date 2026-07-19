@@ -1,7 +1,5 @@
 import {
   ArrowRightIcon,
-  BuildingIcon,
-  HeartIcon,
   PlusIcon,
   StarIcon,
 } from "../../icons/StorefrontIcons";
@@ -103,9 +101,7 @@ export function AgentProductCard({
   description,
   rating,
   swatches,
-  badgeLabel,
   onSelect,
-  onWishlist,
   onStoreInfo,
 }: AgentProductCardProps) {
   return (
@@ -116,33 +112,22 @@ export function AgentProductCard({
     >
       <div className="agent-product-card__gallery">
         <img src={imageUrl} alt={imageAlt} />
-        {badgeLabel ? (
-          <span className="agent-product-card__badge">{badgeLabel}</span>
-        ) : null}
-        <div className="agent-product-card__icon-stack">
-          <button
-            type="button"
-            className="agent-product-card__icon-btn"
-            aria-label="View store availability"
-            onClick={(event) => {
-              event.stopPropagation();
-              onStoreInfo?.();
-            }}
-          >
-            <BuildingIcon width={16} height={16} />
-          </button>
-          <button
-            type="button"
-            className="agent-product-card__icon-btn"
-            aria-label="Add to wishlist"
-            onClick={(event) => {
-              event.stopPropagation();
-              onWishlist?.();
-            }}
-          >
-            <HeartIcon width={16} height={16} />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="agent-product-card__icon-btn agent-product-card__store-btn"
+          aria-label="View store availability"
+          onClick={(event) => {
+            event.stopPropagation();
+            onStoreInfo?.();
+          }}
+        >
+          <input
+            type="checkbox"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={(event) => event.stopPropagation()}
+          />
+        </button>
       </div>
 
       <div className="agent-product-card__content">

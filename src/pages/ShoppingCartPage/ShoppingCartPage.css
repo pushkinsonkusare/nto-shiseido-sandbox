@@ -1,8 +1,8 @@
 /* Tokens aligned to Figma node 25916:65475 — Shopping Cart */
 
 .figma-cart {
-  background: #fff;
-  color: #17171b;
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-family-base);
   --cart-xs: 12px;
   --cart-sm: 14px;
@@ -18,13 +18,13 @@
   --cart-track-md: -0.5px;
   --cart-track-lg: -0.6px;
   --cart-track-title: -0.75px;
-  --cart-border: #d1d5db;
-  --cart-border-strong: #9ca3af;
-  --cart-muted: #35353b;
-  --cart-heading: #3f3f46;
-  --cart-secondary-fg: #33373d;
-  --cart-secondary-bg: #f8f8f8;
-  --cart-primary: #131315;
+  --cart-border: var(--color-border);
+  --cart-border-strong: var(--color-border-strong);
+  --cart-muted: var(--color-text-muted);
+  --cart-heading: var(--color-heading);
+  --cart-secondary-fg: var(--color-secondary-fg);
+  --cart-secondary-bg: var(--color-surface-muted);
+  --cart-primary: var(--color-primary);
   --cart-destructive: #0176d3;
   --cart-shadow-md: 0 0 0 1px rgba(0, 0, 0, 0.1);
   --cart-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.1);
@@ -33,7 +33,7 @@
 }
 
 .figma-cart__header-shell {
-  background: #18181b;
+  background: var(--color-header-bg);
   position: sticky;
   top: var(--sxs-mode-bar-height, var(--app-topbar-height, 56px));
   z-index: 50;
@@ -41,8 +41,8 @@
 
 .figma-cart__announcement {
   height: 25px;
-  background: #000;
-  color: #fff;
+  background: var(--color-announcement-bg);
+  color: var(--color-announcement-foreground);
   display: flex;
   align-items: center;
   justify-content: center;

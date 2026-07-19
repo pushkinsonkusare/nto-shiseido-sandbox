@@ -1,16 +1,16 @@
 :root {
-  --about-surface: #ffffff;
-  --about-surface-muted: #f8f8f8;
-  --about-text: #17171b;
-  --about-heading: #3f3f46;
-  --about-muted: #35353b;
-  --about-border: #9ca3af;
-  --about-border-soft: #d1d5db;
-  --about-primary: #131315;
+  --about-surface: var(--color-surface);
+  --about-surface-muted: var(--color-surface-muted);
+  --about-text: var(--color-text);
+  --about-heading: var(--color-heading);
+  --about-muted: var(--color-text-muted);
+  --about-border: var(--color-border-strong);
+  --about-border-soft: var(--color-border);
+  --about-primary: var(--color-primary);
   --about-link: #2563eb;
-  --about-header-surface: #18181b;
-  --about-header-foreground: #ffffff;
-  --about-header-muted: #e5e5e5;
+  --about-header-surface: var(--color-header-bg);
+  --about-header-foreground: var(--color-header-foreground);
+  --about-header-muted: var(--color-header-muted);
   --about-header-sale: #ebebeb;
   --about-page-width: 1536px;
   --about-side-padding: 64px;
