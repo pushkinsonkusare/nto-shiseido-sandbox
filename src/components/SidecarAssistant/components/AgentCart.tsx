@@ -1,15 +1,15 @@
 import { useState } from "react";
 import {
-  AppleIcon,
   ArrowRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CloseIcon,
+  ExternalLinkIcon,
   MinusIcon,
   PlusIcon,
-  ShoppingCartIcon,
   TagIcon,
 } from "../../icons/StorefrontIcons";
+import applePayMark from "../../../assets/apple-pay.jpg";
 import "./AgentMessageCards.css";
 
 export type AgentCartItem = {
@@ -359,8 +359,11 @@ export function AgentCart({
                   aria-label="Pay with Apple Pay"
                   onClick={onApplePay}
                 >
-                  <AppleIcon width={16} height={16} />
-                  Pay
+                  <img
+                    className="agent-msg__apple-pay-mark"
+                    src={applePayMark}
+                    alt="Apple Pay"
+                  />
                 </button>
               ) : null}
               {onCheckout ? (
@@ -369,7 +372,7 @@ export function AgentCart({
                   className="agent-msg__btn agent-msg__btn--secondary agent-msg__btn--full agent-msg__btn--lg"
                   onClick={onCheckout}
                 >
-                  <ShoppingCartIcon width={16} height={16} />
+                  <ExternalLinkIcon width={16} height={16} />
                   {checkoutLabel}
                 </button>
               ) : null}

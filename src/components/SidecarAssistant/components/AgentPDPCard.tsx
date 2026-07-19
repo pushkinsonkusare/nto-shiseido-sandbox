@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
-  AppleIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   MinusIcon,
   PlusIcon,
+  ShoppingCartIcon,
 } from "../../icons/StorefrontIcons";
+import applePayMark from "../../../assets/apple-pay.jpg";
 import "./AgentMessageCards.css";
 
 export type AgentPDPColorOption = {
@@ -227,13 +228,6 @@ export function AgentPDPCard({
         </div>
 
         <div className="agent-pdp__ctas">
-          <button
-            type="button"
-            className="agent-msg__btn agent-msg__btn--primary agent-msg__btn--full agent-msg__btn--lg"
-            onClick={() => onAddToCart?.({ quantity, colorId, sizeId })}
-          >
-            Add to Cart
-          </button>
           {onApplePay ? (
             <button
               type="button"
@@ -241,10 +235,21 @@ export function AgentPDPCard({
               aria-label="Pay with Apple Pay"
               onClick={onApplePay}
             >
-              <AppleIcon width={16} height={16} />
-              Pay
+              <img
+                className="agent-msg__apple-pay-mark"
+                src={applePayMark}
+                alt="Apple Pay"
+              />
             </button>
           ) : null}
+          <button
+            type="button"
+            className="agent-msg__btn agent-msg__btn--secondary agent-msg__btn--full agent-msg__btn--lg"
+            onClick={() => onAddToCart?.({ quantity, colorId, sizeId })}
+          >
+            <ShoppingCartIcon width={16} height={16} />
+            Add to Cart
+          </button>
         </div>
       </div>
     </article>

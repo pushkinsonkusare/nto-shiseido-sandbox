@@ -133,8 +133,19 @@
   color: #ffffff;
   height: 40px;
   width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-  font-weight: var(--font-weight-semibold);
+  border: none;
+  border-radius: 0px;
+}
+
+.agent-msg__btn--apple:hover:not(:disabled) {
+  background: #1a1a1a;
+}
+
+.agent-msg__apple-pay-mark {
+  height: 22px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }
 
 .agent-msg__btn:focus-visible {
@@ -575,6 +586,10 @@
   flex-direction: column;
   gap: 16px;
   padding: 24px 0;
+  border-top: 1px solid rgb(236, 236, 236);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
 }
 
 .agent-pdp__title {
