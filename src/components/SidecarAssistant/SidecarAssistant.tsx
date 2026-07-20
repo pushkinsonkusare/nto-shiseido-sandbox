@@ -76,11 +76,27 @@ const PLP_PAGE_SIZE = 5;
 const MAX_SELECTED_PRODUCTS = 3;
 
 /** Contextual pills that are NOT product FAQs: they trigger dedicated flows
- * (related-products carousel / comparison table) rather than a local answer. */
-const CONTEXTUAL_ACTION_LABELS = new Set(["Show similar", "Compare"]);
+ * (related-products carousel / comparison table / add-to-cart) rather than a
+ * local answer. */
+const CONTEXTUAL_ACTION_LABELS = new Set(["Show similar", "Compare", "Add to cart"]);
 
 /** Always-present FAQ pill for a single selected product. */
 const INGREDIENTS_FAQ_LABEL = "What are the ingredients?";
+
+/**
+ * Follow-up pills shown after a contextual FAQ answer: the product's other
+ * FAQs (dropping the one just asked so we never repeat it) plus a commit
+ * ("Add to cart") and a lateral ("Show similar") action, so there's always a
+ * next step.
+ */
+function buildContextualFollowupLabels(
+  product: CatalogProduct,
+  askedLabel: string,
+): string[] {
+  const allFaqs = [...buildContextualFaqs(product), INGREDIENTS_FAQ_LABEL];
+  const remaining = allFaqs.filter((label) => label !== askedLabel);
+  return [...remaining, "Add to cart", "Show similar"];
+}
 
 /**
  * Pick the two most relevant FAQ pills for a single selected product. The
@@ -466,6 +482,9 @@ export function SidecarAssistant({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const selectedSet = useMemo(() => new Set(selectedSlugs), [selectedSlugs]);
+  // True once the shopper has asked a contextual FAQ for the current selection:
+  // the follow-up pills then live in-chat, so the tray hides its own pill row.
+  const [contextualThreadActive, setContextualThreadActive] = useState(false);
   // Contextual pills adapt to how many products are selected: a single product
   // offers Show similar + two product-tuned FAQs + the ingredients FAQ, while
   // two or more products collapse to a single Compare action.
@@ -517,11 +536,14 @@ export function SidecarAssistant({
 
   // Selecting a product moves focus to the composer (cursor blinking) so the
   // shopper can immediately ask about it; the placeholder names the product.
+  // A selection change also resets the contextual thread so the tray shows its
+  // entry pills again for the new selection.
   useEffect(() => {
     if (selectedSlugs.length > previousSelectedCountRef.current) {
       inputRef.current?.focus();
     }
     previousSelectedCountRef.current = selectedSlugs.length;
+    setContextualThreadActive(false);
   }, [selectedSlugs]);
 
   /* ---------- mutation helpers ---------- */
@@ -1591,7 +1613,28 @@ export function SidecarAssistant({
             kind: "agent_simple",
             body: resolveProductFaq(firstProduct, label),
           });
+          // Offer an in-chat follow-up row so the shopper can keep exploring
+          // this product (remaining FAQs) or move forward (add / show similar).
+          appendMessage({
+            id: nextId("nbas"),
+            kind: "agent_nbas",
+            contextual: true,
+            regenerateButton: false,
+            nbas: buildNbaItems(
+              buildContextualFollowupLabels(firstProduct, label),
+              "nba-followup",
+            ),
+          });
+          setContextualThreadActive(true);
         });
+        return;
+      }
+
+      if (firstProduct && label === "Add to cart") {
+        handleAddToCart(firstProduct.slug, 1);
+        // Adding ends the contextual thread: clearing the selection closes the
+        // tray and lets the cart-stage NBAs from handleAddToCart show.
+        setSelectedSlugs([]);
         return;
       }
 
@@ -1701,6 +1744,7 @@ export function SidecarAssistant({
       scheduleResponse,
       removeMessage,
       dispatchShopperMessage,
+      handleAddToCart,
     ],
   );
 
@@ -2134,9 +2178,15 @@ export function SidecarAssistant({
                 nbas={message.nbas}
                 regenerateButton={message.regenerateButton}
                 className={
-                  selectedSet.size > 0 ? "agent-nba__set--suppressed" : undefined
+                  selectedSet.size > 0 && !message.contextual
+                    ? "agent-nba__set--suppressed"
+                    : undefined
                 }
-                onSelect={(nba) => handleNbaSelect(message.id, nba.label)}
+                onSelect={(nba) =>
+                  message.contextual
+                    ? handleContextualPill(nba.label)
+                    : handleNbaSelect(message.id, nba.label)
+                }
                 onRegenerate={() => handleNbaRegenerate(message.id)}
               />
             );
@@ -2149,6 +2199,7 @@ export function SidecarAssistant({
       handleApplyPromo,
       handleCartQuantityChange,
       handleCheckout,
+      handleContextualPill,
       handleNbaRegenerate,
       handleNbaSelect,
       handleRemoveCartCoupon,
@@ -2339,11 +2390,13 @@ export function SidecarAssistant({
                 );
               })}
             </div>
-            <AgentNBAs
-              nbas={contextualNbas}
-              regenerateButton={false}
-              onSelect={(nba) => handleContextualPill(nba.label)}
-            />
+            {contextualThreadActive ? null : (
+              <AgentNBAs
+                nbas={contextualNbas}
+                regenerateButton={false}
+                onSelect={(nba) => handleContextualPill(nba.label)}
+              />
+            )}
           </div>
         ) : null}
         <div className="sidecar-assistant__input-shell">

@@ -154,4 +154,8 @@ export type AgentNbasMessage = {
   stage?: NbaStage | "welcome";
   /** Map of label -> semantic lane for telemetry attribution. */
   laneByLabel?: Record<string, NbaLane>;
+  /** When true, this is a selected-product follow-up row: it routes through the
+   * contextual pill handler and stays visible even while a product is selected
+   * (it is exempt from the selection-suppression applied to normal NBA rows). */
+  contextual?: boolean;
 };

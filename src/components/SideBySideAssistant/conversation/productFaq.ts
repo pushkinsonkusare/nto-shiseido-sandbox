@@ -70,27 +70,6 @@ function specByLabel(
 }
 
 /**
- * Return up to `limit` `Label: Value` strings whose label or value matches
- * any of the provided patterns. Empty values are skipped so we never emit
- * a dangling "Some Spec: ".
- */
-function specsMatchingLabel(
-  product: CatalogProduct,
-  patterns: RegExp[],
-  limit = 3,
-): string[] {
-  const out: string[] = [];
-  for (const spec of product.specs) {
-    if (!spec.label || !spec.value) continue;
-    if (patterns.some((p) => p.test(spec.label) || p.test(spec.value))) {
-      out.push(`${spec.label}: ${spec.value}`);
-      if (out.length >= limit) break;
-    }
-  }
-  return out;
-}
-
-/**
  * Join a list of tokens into a natural, Oxford-comma phrase:
  * ["combination", "dry", "oily"] -> "combination, dry, and oily".
  */
@@ -311,7 +290,7 @@ function audioAnswer(product: CatalogProduct): string {
     /\bbefore\s*moistur/i,
   ]);
   if (block) {
-    return joinSentences([`Layering the ${product.title}:`, block]);
+    return block;
   }
   let nextStep: string;
   if (category.includes("cleanser")) {
@@ -433,13 +412,10 @@ function waterResistanceAnswer(product: CatalogProduct): string {
     /\bhumidity\b/i,
   ]);
   if (waterBlock) {
-    return joinSentences([
-      `On water resistance for the ${product.title}:`,
-      waterBlock,
-    ]);
+    return waterBlock;
   }
   if (isSunCare) {
-    return `The ${product.title} is sun care, so it's designed to hold up better against water and sweat than most skincare. For swimming or heavy perspiration, reapply regularly and check the water-resistance note in the product details on this page.`;
+    return `The ${product.title} is sun care, so it's designed to hold up better against water and sweat than most skincare. For swimming or heavy perspiration, reapply regularly.`;
   }
   return `The ${product.title} isn't a waterproof product. It's a leave-on skincare step meant to absorb into the skin rather than sit on top like a barrier. If you need water or sweat resistance, a water-resistant sunscreen is the piece built for that.`;
 }
@@ -555,7 +531,7 @@ export function resolveProductFaq(
   // "everything thrown at me randomly".
   const fuzzy = fuzzyMatchSpec(product, q);
   if (fuzzy) {
-    return `Per the details for the ${product.title}: ${fuzzy.label}: ${fuzzy.value}.`;
+    return `The ${product.title}'s ${fuzzy.label.toLowerCase()} is ${fuzzy.value}.`;
   }
-  return `I don't have a specific answer for that on the ${product.title}. Check the details section on this page, or pick one of the suggested questions below.`;
+  return `I don't have that detail on hand for the ${product.title} — want me to suggest something similar or share the full product page?`;
 }
