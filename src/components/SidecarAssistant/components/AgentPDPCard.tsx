@@ -322,7 +322,7 @@ export function AgentPDPCard({
               onClick={decrement}
               disabled={quantity <= 1}
             >
-              <MinusIcon width={16} height={16} />
+              <MinusIcon width={14} height={14} />
             </button>
             <span className="agent-pdp__qty-value" aria-live="polite">
               {quantity}
@@ -334,7 +334,7 @@ export function AgentPDPCard({
               onClick={increment}
               disabled={quantity >= maxQuantity}
             >
-              <PlusIcon width={16} height={16} />
+              <PlusIcon width={14} height={14} />
             </button>
           </div>
         </div>

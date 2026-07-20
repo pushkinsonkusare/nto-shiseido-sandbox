@@ -1210,39 +1210,52 @@
   box-shadow: 0 0 0 3px var(--agentic-focus);
 }
 
+/* Matches the cart summary stepper design (see .agent-summary__stepper): a
+ * single bordered box wrapping transparent 32x32 buttons and the value. */
 .agent-pdp__qty {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  align-self: flex-start;
+  border: 1px solid var(--agentic-card-border);
+  background: var(--agentic-input-bg);
+  overflow: hidden;
 }
 
 .agent-pdp__qty-btn {
-  height: 36px;
-  width: 36px;
-  border: 1px solid var(--agentic-card-border);
-  background: var(--agentic-secondary-bg);
-  color: var(--agentic-secondary-foreground);
+  appearance: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--agentic-foreground);
   cursor: pointer;
+  transition: background-color 120ms ease;
 }
 
 .agent-pdp__qty-btn:hover:not(:disabled) {
-  background: #ffffff;
+  background: var(--agentic-secondary-bg);
 }
 
 .agent-pdp__qty-btn:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.4;
+}
+
+.agent-pdp__qty-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--agentic-focus);
 }
 
 .agent-pdp__qty-value {
-  min-width: 24px;
+  min-width: 40px;
   text-align: center;
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--agentic-card-foreground);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--agentic-foreground);
 }
 
 .agent-pdp__ctas {

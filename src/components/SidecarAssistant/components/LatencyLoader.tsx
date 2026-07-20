@@ -6,7 +6,8 @@ export type LatencyLoaderVariant =
   | "answering"
   | "fetching_order"
   | "completing_order"
-  | "fetching_payment";
+  | "fetching_payment"
+  | "removing";
 
 const VARIANT_LABELS: Record<LatencyLoaderVariant, string> = {
   thinking: "Working on it…",
@@ -14,6 +15,7 @@ const VARIANT_LABELS: Record<LatencyLoaderVariant, string> = {
   fetching_order: "Fetching your order details…",
   completing_order: "Completing order…",
   fetching_payment: "Fetching your payment details…",
+  removing: "Removing…",
 };
 
 export type LatencyLoaderProps = {

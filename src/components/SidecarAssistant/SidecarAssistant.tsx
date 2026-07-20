@@ -69,19 +69,50 @@ const PLP_PAGE_SIZE = 5;
 /** Maximum number of products a shopper can select at once. */
 const MAX_SELECTED_PRODUCTS = 3;
 
-/** Placeholder contextual NBAs shown beneath selected-product pills. The real
- * action logic is a follow-up; these render the pill UI for now. */
-const CONTEXTUAL_NBA_PLACEHOLDERS = [
-  "Show similar",
-  "Is this waterproof?",
-  "Compare",
-  "Ingredients",
-];
+/** Contextual pills that are NOT product FAQs: they trigger dedicated flows
+ * (related-products carousel / comparison table) rather than a local answer. */
+const CONTEXTUAL_ACTION_LABELS = new Set(["Show similar", "Compare"]);
 
-/** Contextual pills answered locally from catalog data (via
- * `resolveProductFaq`) instead of the OpenAI agent, so they always return a
- * single, product-grounded reply with no model round-trip. */
-const LOCAL_FAQ_PILL_LABELS = new Set(["Is this waterproof?", "Ingredients"]);
+/** Always-present FAQ pill for a single selected product. */
+const INGREDIENTS_FAQ_LABEL = "What are the ingredients?";
+
+/**
+ * Pick the two most relevant FAQ pills for a single selected product. The
+ * phrasings are chosen so `resolveProductFaq` routes each to a product-grounded
+ * answer (e.g. "layer" -> layering copy, "texture" -> texture copy). The
+ * always-on "What are the ingredients?" pill is appended separately by the
+ * caller, so this returns only the two product-tuned questions.
+ */
+function buildContextualFaqs(product: CatalogProduct): [string, string] {
+  const category = product.category.toLowerCase();
+  const tags = product.useCaseTags.map((tag) => tag.toLowerCase());
+  const isSunCare =
+    /sunscreen|sun\s*care/.test(category) ||
+    tags.some((tag) => tag === "spf" || tag.includes("sun"));
+
+  if (product.isBundle) {
+    return ["What's included?", "What skin types is this for?"];
+  }
+  if (isSunCare) {
+    return ["Is this waterproof?", "Can I layer this under makeup?"];
+  }
+  if (/serum|treatment|essence|booster/.test(category)) {
+    return ["Is this good for sensitive skin?", "How do I layer this with other products?"];
+  }
+  if (/moisturizer|cream|emulsion|lotion/.test(category)) {
+    return ["What's the texture like?", "What skin types is this for?"];
+  }
+  if (/cleanser|softener|toner|foam/.test(category)) {
+    return ["How do I use this?", "What skin types is this for?"];
+  }
+  if (/eye|lip/.test(category)) {
+    return ["What does this target?", "How do I layer this with other products?"];
+  }
+  if (/mask/.test(category)) {
+    return ["What's the texture like?", "What does this target?"];
+  }
+  return ["Is this good for sensitive skin?", "What does this target?"];
+}
 const TALL_CARD_VIEWPORT_RATIO = 0.92;
 const TALL_CARD_ANCHOR_RATIO = 0.6;
 const TALL_CARD_TOP_INSET_PX = 16;
@@ -429,10 +460,22 @@ export function SidecarAssistant({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const selectedSet = useMemo(() => new Set(selectedSlugs), [selectedSlugs]);
-  const contextualNbas = useMemo(
-    () => buildNbaItems(CONTEXTUAL_NBA_PLACEHOLDERS, "nba-contextual"),
-    [],
-  );
+  // Contextual pills adapt to how many products are selected: a single product
+  // offers Show similar + two product-tuned FAQs + the ingredients FAQ, while
+  // two or more products collapse to a single Compare action.
+  const contextualNbas = useMemo(() => {
+    if (selectedSlugs.length >= 2) {
+      return buildNbaItems(["Compare"], "nba-contextual");
+    }
+    const firstSlug = selectedSlugs[0];
+    const product = firstSlug ? getProductBySlug(firstSlug) : undefined;
+    if (!product) return [];
+    const [faq1, faq2] = buildContextualFaqs(product);
+    return buildNbaItems(
+      ["Show similar", faq1, faq2, INGREDIENTS_FAQ_LABEL],
+      "nba-contextual",
+    );
+  }, [selectedSlugs, getProductBySlug]);
 
   const chatRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -460,6 +503,17 @@ export function SidecarAssistant({
       // drop any prior NBA sets so historical ones don't accumulate in the
       // scrollback or remain interactive after the conversation has moved on.
       if (message.kind === "agent_nbas") {
+        return [
+          ...current.filter((m) => m.kind !== "agent_nbas"),
+          message,
+        ];
+      }
+      // A new shopper utterance supersedes any pending follow-up prompts:
+      // suggestion chips are transient affordances tied to the previous turn,
+      // so clear stale NBA sets the instant the shopper proceeds (typed input,
+      // NBA pill, contextual pill, or "Show more"). A fresh set may be appended
+      // by the response that follows.
+      if (message.kind === "shopper_text") {
         return [
           ...current.filter((m) => m.kind !== "agent_nbas"),
           message,
@@ -959,11 +1013,43 @@ export function SidecarAssistant({
       const remaining = cart.items.filter((item) => item.id !== itemId);
 
       if (remaining.length === 0) {
-        removeMessage(cartMessageId);
+        const productName =
+          cart.items.find((item) => item.id === itemId)?.title ?? "that item";
+
+        // Turn the removal into a conversational turn: shopper utterance,
+        // a "removing" latency loader, then a plain-text confirmation and
+        // discovery pills so the shopper can continue.
         appendMessage({
-          id: nextId("agent"),
-          kind: "agent_simple",
-          body: "Your cart is empty now. Let me know if you'd like more recommendations.",
+          id: nextId("shopper"),
+          kind: "shopper_text",
+          text: `Remove ${productName}`,
+        });
+        // Convert the cart card into its "Got it, I added X" acknowledgement
+        // line (kept in place) rather than deleting it. This preserves the
+        // agent's response to the original add so the "Add" and "Remove"
+        // shopper bubbles aren't left back-to-back, and — since it's no longer
+        // an agent_cart — the next add starts a fresh cart card.
+        updateMessage(cartMessageId, (message) =>
+          message.kind === "agent_cart"
+            ? {
+                id: message.id,
+                kind: "agent_simple",
+                body:
+                  message.acknowledgement ??
+                  `Added ${productName} to your cart.`,
+              }
+            : message,
+        );
+        const loaderId = nextId("loader");
+        appendMessage({ id: loaderId, kind: "agent_loader", variant: "removing" });
+        scheduleResponse(() => {
+          removeMessage(loaderId);
+          appendMessage({
+            id: nextId("agent"),
+            kind: "agent_simple",
+            body: `Removed ${productName} from your cart. Your cart is empty. Let me know what you wish to check out next.`,
+          });
+          appendMessage(buildNbasMessage(buildWelcomeNbas(0)));
         });
         return;
       }
@@ -984,7 +1070,7 @@ export function SidecarAssistant({
         };
       });
     },
-    [appendMessage, removeMessage, updateMessage],
+    [appendMessage, removeMessage, updateMessage, scheduleResponse],
   );
 
   const handleRemoveCartCoupon = useCallback(
@@ -1042,14 +1128,10 @@ export function SidecarAssistant({
 
       for (const action of actions) {
         switch (action.type) {
-          case "say":
-            appendMessage({
-              id: nextId("agent"),
-              kind: "agent_simple",
-              title: action.title,
-              body: action.text,
-            });
-            break;
+          // `say` is intentionally not handled: free-form acknowledgements must
+          // live inside the following card's intro (the main bubble), never as a
+          // separate agent_simple bubble. `say` is already filtered upstream
+          // before this runs; ignoring it here enforces that structurally.
           case "show_product_listing":
             renderPlpCard(
               action.intro,
@@ -1326,7 +1408,11 @@ export function SidecarAssistant({
         .filter((p): p is CatalogProduct => Boolean(p));
       const firstProduct = selectedProducts[0];
 
-      if (firstProduct && LOCAL_FAQ_PILL_LABELS.has(label)) {
+      // Any pill that isn't a dedicated action (Show similar / Compare) is a
+      // product FAQ, answered locally from catalog data so it always returns a
+      // single, product-grounded reply. The selection tray stays open for
+      // follow-up questions.
+      if (firstProduct && !CONTEXTUAL_ACTION_LABELS.has(label)) {
         appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
         const loaderId = nextId("loader");
         appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
@@ -1351,7 +1437,9 @@ export function SidecarAssistant({
           const related: CatalogProduct[] = [];
           const seen = new Set<string>();
           for (const slug of selectedSlugs) {
-            for (const candidate of getRelatedProducts(slug, 6)) {
+            // Pull a deep pool so the carousel can paginate the same way the
+            // normal PLP flow does (first page + "Show more" for the rest).
+            for (const candidate of getRelatedProducts(slug, 18)) {
               if (selectedSet.has(candidate.slug) || seen.has(candidate.slug)) {
                 continue;
               }
@@ -1367,10 +1455,15 @@ export function SidecarAssistant({
             });
             return;
           }
+          // Same 5+1 pagination as search results: show the first page and a
+          // "Show more" card, then let handleShowMore reveal the rest in pages.
+          const firstPage = related.slice(0, PLP_PAGE_SIZE);
+          const rest = related.slice(PLP_PAGE_SIZE);
           renderPlpCard(
             `Here are a few options similar to the ${firstProduct.title}:`,
-            related.slice(0, PLP_PAGE_SIZE).map((p) => p.slug),
-            false,
+            firstPage.map((p) => p.slug),
+            rest.length > 0,
+            { remainingSlugs: rest.map((p) => p.slug) },
           );
           setSelectedSlugs([]);
         });
