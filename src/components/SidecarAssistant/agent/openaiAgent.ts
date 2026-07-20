@@ -16,7 +16,7 @@ import {
 /**
  * Retained accessory-role vocab. Skincare products don't carry an
  * accessory role (the `accessoryRole` field is neutralized to null),
- * so this is effectively inert — kept only so the shared
+ * so this is effectively inert, kept only so the shared
  * `AccessoryRole` type and the tool schemas that reference it still
  * compile. Do NOT filter skincare recommendations on these values.
  */
@@ -58,7 +58,7 @@ const SKINCARE_TAG_VALUES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Collection vocab — kept in lockstep with `SERIES_VALUES` in
+ * Collection vocab, kept in lockstep with `SERIES_VALUES` in
  * `catalog.ts` (the `series` field carries the product Collection slug).
  * Used to validate the LLM's `series` filter values across
  * `search_catalog`, `propose_broad_recipe`, and `find_accessories`.
@@ -81,7 +81,7 @@ const SERIES_VALUES_LOCAL: ReadonlySet<string> = new Set(SERIES_ENUM);
 
 /**
  * Spec shape shared with the side-by-side assistant's
- * `BroadSubTopicSpec` — declared locally so this module stays
+ * `BroadSubTopicSpec`, declared locally so this module stays
  * self-contained (the agent is shared infrastructure; the recipe
  * engine lives downstream of it). Field semantics match
  * `buildRowProductsFromSpec` exactly.
@@ -122,7 +122,7 @@ export type ProposeBroadRecipeSpec = {
  * receives a list of UI-facing AgentActions, which it then maps onto
  * the existing card-rendering helpers (PLP, PDP, cart, order, NBAs).
  *
- * Tools are evaluated locally — read-only tools (search_catalog,
+ * Tools are evaluated locally: read-only tools (search_catalog,
  * lookup_policy) return data back to the model, while render/mutate
  * tools (show_product_listing, add_to_cart, …) push entries into an
  * `actions` queue and return a tiny success ack so the model can
@@ -140,7 +140,7 @@ export type AgentAction =
        * Canonical use-case tags (`dry`, `oily`, `spf`, `best-seller`,
        * etc.) the carousel was scoped to. Threaded through the See
        * Results handoff so the PLP shows the same narrowed subset.
-       * Optional — omit for unfiltered listings.
+       * Optional; omit for unfiltered listings.
        */
       useCases?: string[];
       /**
@@ -169,7 +169,7 @@ export type AgentAction =
        */
       priceMin?: number;
       /**
-       * Skin-type narrowing — `["dry"]` for a dry-skin carousel,
+       * Skin-type narrowing: `["dry"]` for a dry-skin carousel,
        * `["oily"]` for oily/combination-skin picks.
        */
       subtypes?: string[];
@@ -207,7 +207,7 @@ export type OpenAIAgentDeps = {
   /** Optional override for the chat model. Defaults to whatever
    *  `getOpenAIModel()` resolves (env-driven, falling back to
    *  gpt-4o-mini). The previously-required `apiKey` field has
-   *  been removed — keys are now injected by the proxy worker
+   *  been removed; keys are now injected by the proxy worker
    *  in production, or by `lib/openaiClient` in dev. */
   model?: string;
   products: CatalogProduct[];
@@ -260,7 +260,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: "search_catalog",
       description:
-        "Search the Shiseido skincare catalog. Use the structured filters (`category`, `tier`, `priceMin`/`priceMax`) whenever the shopper signals a formula level or budget — don't rely on free-text alone. Call BEFORE show_product_listing or add_to_cart so slugs and prices are grounded.",
+        "Search the Shiseido skincare catalog. Use the structured filters (`category`, `tier`, `priceMin`/`priceMax`) whenever the shopper signals a formula level or budget; don't rely on free-text alone. Call BEFORE show_product_listing or add_to_cart so slugs and prices are grounded.",
       parameters: {
         type: "object",
         properties: {
@@ -296,7 +296,7 @@ const TOOLS: ChatCompletionTool[] = [
               ],
             },
             description:
-              "Required filter tags from the curated catalog vocabulary. Pass `['dry']` for dry/dehydrated skin, `['oily']` for oily/shine-prone skin, `['combination']` or `['normal']` for those skin types, `['spf']` for sun protection / daily sunscreen, `['best-seller']` for most-popular/top-rated picks. Returns ONLY products tagged with every value — use this to keep non-matching SKUs out of the carousel.",
+              "Required filter tags from the curated catalog vocabulary. Pass `['dry']` for dry/dehydrated skin, `['oily']` for oily/shine-prone skin, `['combination']` or `['normal']` for those skin types, `['spf']` for sun protection / daily sunscreen, `['best-seller']` for most-popular/top-rated picks. Returns ONLY products tagged with every value; use this to keep non-matching SKUs out of the carousel.",
           },
           productType: {
             type: "string",
@@ -314,13 +314,13 @@ const TOOLS: ChatCompletionTool[] = [
               "general",
             ],
             description:
-              "Legacy accessory-role filter — unused for skincare (products don't carry an accessory role). Prefer `category` or `series` to narrow results.",
+              "Legacy accessory-role filter, unused for skincare (products don't carry an accessory role). Prefer `category` or `series` to narrow results.",
           },
           series: {
             type: "string",
             enum: [...SERIES_ENUM],
             description:
-              "Optional collection filter (e.g. 'benefiance', 'vital-perfection', 'ultimune', 'shiseido-men'). Use when the shopper names a collection ('show me Ultimune', 'the Vital Perfection line', 'Shiseido Men products') — much sharper than free-text because each product carries a structured `series` (Collection) slug.",
+              "Optional collection filter (e.g. 'benefiance', 'vital-perfection', 'ultimune', 'shiseido-men'). Use when the shopper names a collection ('show me Ultimune', 'the Vital Perfection line', 'Shiseido Men products'); this is much sharper than free-text because each product carries a structured `series` (Collection) slug.",
           },
           sortBy: {
             type: "string",
@@ -339,7 +339,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: "show_product_listing",
       description:
-        "Render a horizontal product carousel (PLP) inside the chat. Use after search_catalog to surface the recommended slugs. The `intro` becomes the agent's lead-in line above the carousel — do NOT also repeat it in your free-text reply. CRITICAL: when your search_catalog call narrowed the results by `useCases`, `category`, OR `tier`, ALSO pass those values here so the PLP's See Results handoff lands on the SAME subset shown in the card. Otherwise clicking the card shows the unfiltered category and the shopper sees products that contradict your intro text (e.g. 'Prestige serums' but the PLP includes everyday-tier picks).",
+        "Render a horizontal product carousel (PLP) inside the chat. Use after search_catalog to surface the recommended slugs. The `intro` becomes the agent's lead-in line above the carousel, so do NOT also repeat it in your free-text reply. CRITICAL: when your search_catalog call narrowed the results by `useCases`, `category`, OR `tier`, ALSO pass those values here so the PLP's See Results handoff lands on the SAME subset shown in the card. Otherwise clicking the card shows the unfiltered category and the shopper sees products that contradict your intro text (e.g. 'Prestige serums' but the PLP includes everyday-tier picks).",
       parameters: {
         type: "object",
         properties: {
@@ -367,7 +367,7 @@ const TOOLS: ChatCompletionTool[] = [
               ],
             },
             description:
-              "Pass the SAME `useCases` you used in `search_catalog` so the PLP narrows to the same subset. Critical for queries like 'dry-skin picks', 'oily-skin moisturizers', 'best-selling serums' — without this, the PLP shows the full category and contradicts your curated card.",
+              "Pass the SAME `useCases` you used in `search_catalog` so the PLP narrows to the same subset. Critical for queries like 'dry-skin picks', 'oily-skin moisturizers', 'best-selling serums'; without this, the PLP shows the full category and contradicts your curated card.",
           },
           compatibleWith: {
             type: "string",
@@ -399,7 +399,7 @@ const TOOLS: ChatCompletionTool[] = [
               ],
             },
             description:
-              "Skin-type narrowing — pass for QUERIES THAT NAME A SKIN TYPE (e.g. 'dry skin' → ['dry']; 'oily skin' → ['oily']; 'combination skin' → ['combination']). Without this, a 'for dry skin' card surfaces products for all skin types because the category alone doesn't differentiate within the bucket.",
+              "Skin-type narrowing: pass for QUERIES THAT NAME A SKIN TYPE (e.g. 'dry skin' → ['dry']; 'oily skin' → ['oily']; 'combination skin' → ['combination']). Without this, a 'for dry skin' card surfaces products for all skin types because the category alone doesn't differentiate within the bucket.",
           },
         },
         required: ["intro", "productSlugs"],
@@ -412,7 +412,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: "show_broad_listing",
       description:
-        "Render a stack of 3-5 sub-topic rows (each = a sub-search the shopper can drill into) for BROAD/exploratory queries that span multiple categories — e.g. 'a routine for dry skin', 'I'm new to skincare, where do I start', 'help me build an anti-aging regimen'. Prefer this over `show_product_listing` whenever the shopper's request can't be answered with a single product carousel. Each row points at a sub-search of catalog slugs grounded by `search_catalog`. The card also shows a 'Show all' link that opens the full storefront.",
+        "Render a stack of 3-5 sub-topic rows (each = a sub-search the shopper can drill into) for BROAD/exploratory queries that span multiple categories, e.g. 'a routine for dry skin', 'I'm new to skincare, where do I start', 'help me build an anti-aging regimen'. Prefer this over `show_product_listing` whenever the shopper's request can't be answered with a single product carousel. Each row points at a sub-search of catalog slugs grounded by `search_catalog`. The card also shows a 'Show all' link that opens the full storefront.",
       parameters: {
         type: "object",
         properties: {
@@ -471,7 +471,7 @@ const TOOLS: ChatCompletionTool[] = [
                     "general",
                   ],
                   description:
-                    "Legacy accessory-role filter — unused for skincare (products don't carry an accessory role). Leave unset.",
+                    "Legacy accessory-role filter, unused for skincare (products don't carry an accessory role). Leave unset.",
                 },
               },
               required: ["title", "productSlugs"],
@@ -489,7 +489,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: "propose_broad_recipe",
       description:
-        "PREFERRED tool for broad/exploratory skincare queries (replaces show_broad_listing in almost every case). Each row is a SPEC describing a category + skin-type + concern + collection filter — the platform's deterministic engine resolves the actual SKUs from the catalog. You never name slugs here, eliminating slug hallucinations. ALWAYS call `search_catalog` 1-2 times first to verify the category names and product families you're reasoning about exist; otherwise your filters may produce empty rows.",
+        "PREFERRED tool for broad/exploratory skincare queries (replaces show_broad_listing in almost every case). Each row is a SPEC describing a category + skin-type + concern + collection filter, and the platform's deterministic engine resolves the actual SKUs from the catalog. You never name slugs here, eliminating slug hallucinations. ALWAYS call `search_catalog` 1-2 times first to verify the category names and product families you're reasoning about exist; otherwise your filters may produce empty rows.",
       parameters: {
         type: "object",
         properties: {
@@ -525,7 +525,7 @@ const TOOLS: ChatCompletionTool[] = [
                     ],
                   },
                   description:
-                    "AND-filter on `capabilities` (fused skin-type / concern / collection tokens). Every requested token must be present on the product. Use sparingly — `primaryActivities` (concerns) and `series` (collections) usually narrow better.",
+                    "AND-filter on `capabilities` (fused skin-type / concern / collection tokens). Every requested token must be present on the product. Use sparingly, because `primaryActivities` (concerns) and `series` (collections) usually narrow better.",
                 },
                 subtypes: {
                   type: "array",
@@ -545,7 +545,7 @@ const TOOLS: ChatCompletionTool[] = [
                     "visual_enhancement", "storage", "general",
                   ],
                   description:
-                    "Legacy accessory-role filter — unused for skincare (products don't carry an accessory role). Leave unset.",
+                    "Legacy accessory-role filter, unused for skincare (products don't carry an accessory role). Leave unset.",
                 },
                 series: {
                   type: "array",
@@ -559,7 +559,7 @@ const TOOLS: ChatCompletionTool[] = [
                 compatibleWith: {
                   type: "string",
                   description:
-                    "Lowercased title token (e.g. 'vital perfection', 'ultimune', 'clarifying'). Surfaces only products whose title contains this substring. Use for SPECIFIC-PRODUCT rows like 'Products in the Vital Perfection LiftDefine line'. Pair with `series` when you want both a collection AND a specific line — e.g. series:['vital-perfection'] + compatibleWith:'liftdefine' picks the LiftDefine products from the Vital Perfection pool.",
+                    "Lowercased title token (e.g. 'vital perfection', 'ultimune', 'clarifying'). Surfaces only products whose title contains this substring. Use for SPECIFIC-PRODUCT rows like 'Products in the Vital Perfection LiftDefine line'. Pair with `series` when you want both a collection AND a specific line, e.g. series:['vital-perfection'] + compatibleWith:'liftdefine' picks the LiftDefine products from the Vital Perfection pool.",
                 },
                 primaryActivities: {
                   type: "array",
@@ -572,7 +572,7 @@ const TOOLS: ChatCompletionTool[] = [
                     ],
                   },
                   description:
-                    "OR-filter on `primaryActivities` (skin concerns) — any single match counts. e.g. `[anti-aging, wrinkle-smoothing]` keeps products flagged for either. Powerful for concern-driven queries: `[brightening]`, `[lifting-and-firming]`, `[deeply-hydrating]`.",
+                    "OR-filter on `primaryActivities` (skin concerns), where any single match counts. e.g. `[anti-aging, wrinkle-smoothing]` keeps products flagged for either. Powerful for concern-driven queries: `[brightening]`, `[lifting-and-firming]`, `[deeply-hydrating]`.",
                 },
                 titleMatchAny: {
                   type: "array",
@@ -665,7 +665,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: "suggest_nbas",
       description:
-        "Render up to 4 short follow-up suggestion chips. Each label should be 2–6 words. ALWAYS call this after `show_product_listing`, `show_product_detail`, or `add_to_cart` so the shopper has obvious next steps — only skip on pure conversational replies.",
+        "Render up to 4 short follow-up suggestion chips. Each label should be 2–6 words. ALWAYS call this after `show_product_listing`, `show_product_detail`, or `add_to_cart` so the shopper has obvious next steps; only skip on pure conversational replies.",
       parameters: {
         type: "object",
         properties: {
@@ -686,7 +686,7 @@ const TOOLS: ChatCompletionTool[] = [
     function: {
       name: "find_accessories",
       description:
-        "Find complementary routine products for a given product — the next routine step or same-collection companions (e.g. a softener and moisturizer to pair with a serum, or a sunscreen to finish a daytime routine). Call this after `show_product_detail` or `add_to_cart` to surface the right routine follow-ups and power cross-sell `suggest_nbas` chips.",
+        "Find complementary routine products for a given product: the next routine step or same-collection companions (e.g. a softener and moisturizer to pair with a serum, or a sunscreen to finish a daytime routine). Call this after `show_product_detail` or `add_to_cart` to surface the right routine follow-ups and power cross-sell `suggest_nbas` chips.",
       parameters: {
         type: "object",
         properties: {
@@ -704,7 +704,7 @@ const TOOLS: ChatCompletionTool[] = [
               "storage",
               "general",
             ],
-            description: "Legacy role filter — unused for skincare (products don't carry an accessory role). Leave unset; complementary products are resolved by category and collection.",
+            description: "Legacy role filter, unused for skincare (products don't carry an accessory role). Leave unset; complementary products are resolved by category and collection.",
           },
           limit: {
             type: "number",
@@ -712,7 +712,7 @@ const TOOLS: ChatCompletionTool[] = [
           },
           requireModelMatch: {
             type: "boolean",
-            description: "Legacy flag — unused for skincare. Leave unset (defaults to false).",
+            description: "Legacy flag, unused for skincare. Leave unset (defaults to false).",
           },
         },
         required: ["productSlug"],
@@ -745,25 +745,25 @@ function buildSystemPrompt(products: CatalogProduct[]): string {
   return [
     "You are the Shiseido Personal Beauty Advisor inside a storefront prototype. You help shoppers discover skincare, build routines, answer product questions, manage their cart, and complete checkout.",
     "",
-    "STYLE: Be concise, warm, and helpful — 1-2 short sentences per turn unless the shopper asks for detail. Never invent product titles, slugs, or prices; always call `search_catalog` first to ground recommendations. Never give medical or dermatological diagnoses — recommend products and suggest seeing a dermatologist for persistent concerns.",
-    "FORMATTING: Reply in plain conversational prose. Do NOT use Markdown — no `**bold**`, no `*italic*`, no headers, no bullet or numbered lists. When you need to enumerate items, write them inline as a comma-separated sentence (e.g. \"Start with the cleanser, then the softener, then the serum, and finish with a moisturizer.\").",
+    "STYLE: Be concise, warm, and helpful. Keep to 1-2 short sentences per turn unless the shopper asks for detail. Never invent product titles, slugs, or prices; always call `search_catalog` first to ground recommendations. Never give medical or dermatological diagnoses. Recommend products and suggest seeing a dermatologist for persistent concerns.",
+    "FORMATTING: Reply in plain conversational prose. Do NOT use Markdown: no `**bold**`, no `*italic*`, no headers, no bullet or numbered lists. When you need to enumerate items, write them inline as a comma-separated sentence (e.g. \"Start with the cleanser, then the softener, then the serum, and finish with a moisturizer.\").",
     "",
     "WORKFLOW:",
-    "- BROAD-VS-SPECIFIC PRECEDENCE (read this BEFORE any tier/category routing): routine- or goal-phrased asks of the shape `routine|regimen|set|products|help for {skin goal, concern, or skin type}` are ALWAYS broad and MUST go to `propose_broad_recipe`, NEVER to `show_product_listing`. The {goal} can be a concern ('anti-aging', 'brightening', 'dark spots', 'firming', 'hydration', 'acne / oily skin'), a skin type ('dry skin', 'sensitive skin', 'combination skin'), or an audience ('men's skincare', 'a routine for my mom'). Do NOT collapse these into a single carousel — produce a multi-step routine (2-6 rows, one per routine step or concern lane).",
+    "- BROAD-VS-SPECIFIC PRECEDENCE (read this BEFORE any tier/category routing): routine- or goal-phrased asks of the shape `routine|regimen|set|products|help for {skin goal, concern, or skin type}` are ALWAYS broad and MUST go to `propose_broad_recipe`, NEVER to `show_product_listing`. The {goal} can be a concern ('anti-aging', 'brightening', 'dark spots', 'firming', 'hydration', 'acne / oily skin'), a skin type ('dry skin', 'sensitive skin', 'combination skin'), or an audience ('men's skincare', 'a routine for my mom'). Do NOT collapse these into a single carousel. Produce a multi-step routine (2-6 rows, one per routine step or concern lane).",
     "- For SPECIFIC shopping intent (e.g. 'show me serums', 'a moisturizer for dry skin', 'sunscreen for the face', 'brightening treatment'), call `search_catalog`, then `show_product_listing` with up to 5 real slugs from the result. Set `showMoreCard: true` if the search found more than you displayed.",
     "- TIER PROPAGATION: when the query implies a price tier ('prestige serum', 'luxury cream', 'everyday moisturizer', 'affordable cleanser'), pass `tier` to BOTH `search_catalog` AND `show_product_listing`. Map: prestige/luxury/premium/advanced/intensive → 'pro'; everyday/affordable/basic/starter → 'beginner'.",
     "- BUDGET PROPAGATION: when the query has a price cap ('serum under $150', 'sunscreen under $60', 'cheaper than $100'), pass `priceMax` to BOTH `search_catalog` AND `show_product_listing`. Same for `priceMin` when set.",
-    "- ZERO-RESULT REASONING: if `search_catalog` returns 0 results for a constrained query, DO NOT widen silently. Write a short reply explaining what didn't match (e.g. 'I couldn't find a sunscreen under $40 — the most affordable is the Clear Sunscreen Stick at $30.') and call `suggest_nbas` with viable alternatives. Name a real closest product when you can.",
+    "- ZERO-RESULT REASONING: if `search_catalog` returns 0 results for a constrained query, DO NOT widen silently. Write a short reply explaining what didn't match (e.g. 'I couldn't find a sunscreen under $40. The most affordable is the Clear Sunscreen Stick at $30.') and call `suggest_nbas` with viable alternatives. Name a real closest product when you can.",
     "- For BROAD/EXPLORATORY intent that spans multiple routine steps (e.g. 'a routine for dry skin', 'help me with dark spots', 'men's skincare routine', 'anti-aging regimen'), STRONGLY PREFER `propose_broad_recipe`. Describe each row as a FILTER SPEC (categoryToken + capabilities + primaryActivities + series + leadCount) and the deterministic engine resolves real SKUs. You never name slugs there.",
     "- BEFORE calling `propose_broad_recipe`, call `search_catalog` 1-2 times to ground yourself: verify the category strings you'll match exist (Cleansers, Softeners, Serums & Treatments, Moisturizers, Eye & Lip Care, Masks, Sunscreen, Sets & Bundles).",
     "- VOCAB for `propose_broad_recipe` (use these tokens exactly):\n  CATEGORIES (categoryToken, substring-matched): cleanser, softener, serum, treatment, moisturizer, eye, mask, sunscreen, set.\n  CAPABILITIES / SKIN TYPES (capabilities): dry, oily, combination, normal, spf, best-seller.\n  CONCERNS (primaryActivities): brightening, anti-aging, wrinkle-smoothing, lifting-and-firming, deeply-hydrating, pore-minimizing.\n  COLLECTIONS (series, OR-filter): benefiance, future-solution-lx, shiseido-men, vital-perfection, essentials, ultimate-sun, ultimune, urban-environment, bio-performance, essential-energy, eudermine. Use `series` when a row scopes to a collection (e.g. 'Shiseido Men routine' → series:['shiseido-men']).",
-    "- COMPOSITION HEURISTICS for `propose_broad_recipe` rows: emit 2-6 rows total — use the smallest count that genuinely covers the query and NEVER pad. A full routine follows the order Cleanser → Softener → Serum/Treatment → Eye & Lip Care → Moisturizer → Sunscreen (AM) / Mask (weekly). A concern-led ask ('brightening') may only warrant Serums + Moisturizers + Sunscreen. Set `allowBundles: true` only for set/bundle rows.",
+    "- COMPOSITION HEURISTICS for `propose_broad_recipe` rows: emit 2-6 rows total, using the smallest count that genuinely covers the query and NEVER pad. A full routine follows the order Cleanser → Softener → Serum/Treatment → Eye & Lip Care → Moisturizer → Sunscreen (AM) / Mask (weekly). A concern-led ask ('brightening') may only warrant Serums + Moisturizers + Sunscreen. Set `allowBundles: true` only for set/bundle rows.",
     "- WORKED EXAMPLES for `propose_broad_recipe`:\n  • 'Build a full routine' / 'complete regimen' → Cleansers (categoryToken:'cleanser'); Softeners (categoryToken:'softener'); Serums & treatments (categoryToken:'serum'); Moisturizers (categoryToken:'moisturizer'); Daily sunscreen (categoryToken:'sunscreen').\n  • 'Anti-aging routine' → Serums & treatments (categoryToken:'serum', primaryActivities:['anti-aging','wrinkle-smoothing']); Anti-aging moisturizers (categoryToken:'moisturizer', primaryActivities:['anti-aging']); Eye creams (categoryToken:'eye'); Daily sunscreen (categoryToken:'sunscreen').\n  • 'Brightening / dark spots' → Brightening serums (categoryToken:'serum', primaryActivities:['brightening']); Brightening moisturizers (categoryToken:'moisturizer', primaryActivities:['brightening']); Daily sunscreen (categoryToken:'sunscreen').\n  • 'Routine for dry skin' → Gentle cleansers (categoryToken:'cleanser', capabilities:['dry']); Hydrating softeners (categoryToken:'softener', capabilities:['dry']); Hydrating serums (categoryToken:'serum', capabilities:['dry']); Rich moisturizers (categoryToken:'moisturizer', capabilities:['dry']).\n  • 'Oily / acne-prone routine' → Foaming cleansers (categoryToken:'cleanser', capabilities:['oily']); Balancing softeners (categoryToken:'softener', capabilities:['oily']); Lightweight moisturizers (categoryToken:'moisturizer', capabilities:['oily']); Daily sunscreen (categoryToken:'sunscreen', capabilities:['oily']).\n  • \"Men's skincare\" → Cleansers (categoryToken:'cleanser', series:['shiseido-men']); Moisturizers (categoryToken:'moisturizer', series:['shiseido-men']); Sunscreen (categoryToken:'sunscreen', series:['shiseido-men']).",
     "- For a specific product, call `show_product_detail`.",
     "- For 'add to cart' / 'buy' requests, call `add_to_cart` with the slug and quantity (default 1).",
     "- For promo codes, call `apply_promo`. " + PROMO_HINTS,
     "- For 'checkout' / 'pay', call `checkout`.",
-    "- For policy questions (returns, refunds, replacement, guarantee, shipping), call `lookup_policy` and base your answer ONLY on the returned `text` — it's grounded in Shiseido customer care. Do NOT invent return windows or refund timing. Mention the URL from the tool's `source` field.",
+    "- For policy questions (returns, refunds, replacement, guarantee, shipping), call `lookup_policy` and base your answer ONLY on the returned `text`, which is grounded in Shiseido customer care. Do NOT invent return windows or refund timing. Mention the URL from the tool's `source` field.",
     "- For routine cross-sell (after `add_to_cart` or a PDP), call `find_accessories` with the product slug to surface complementary routine steps or same-collection products, and use them to power `suggest_nbas` chips like 'Add a moisturizer to finish your routine'.",
     "- After EVERY `show_product_listing`, `show_broad_listing`, `show_product_detail`, or `add_to_cart` call, ALWAYS follow up with `suggest_nbas` (2-4 short, stage-relevant chips). Never end a turn that surfaced a card without them.",
     "",
@@ -775,13 +775,13 @@ function buildSystemPrompt(products: CatalogProduct[]): string {
     "- ALWAYS pass `category` whenever the shopper named one (cleanser, serum, moisturizer, sunscreen, eye cream, mask, etc.).",
     "",
     "CONCERN & SKIN-TYPE ROUTING (match recommendations to the shopper's skin):",
-    "- Map shopper context to `useCases` values on `search_catalog`. The catalog ships curated tags per product — trust them.",
+    "- Map shopper context to `useCases` values on `search_catalog`. The catalog ships curated tags per product, so trust them.",
     "  • 'dry', 'dryness', 'dehydrated' → useCases: ['dry']",
     "  • 'oily', 'oil control', 'shine' → useCases: ['oily']",
     "  • 'combination skin' → useCases: ['combination']",
     "  • 'SPF', 'sun protection', 'sunscreen' → useCases: ['spf']",
     "  • 'best seller', 'most popular', 'top rated' → useCases: ['best-seller']",
-    "- For concern words (anti-aging, wrinkles, brightening, dark spots, firming, hydration, pores), route by CATEGORY — brightening/anti-aging/firming → Serums & Treatments + Moisturizers; hydration → Moisturizers + Serums & Treatments; pores/oil → Cleansers + Softeners; sun protection → Sunscreen.",
+    "- For concern words (anti-aging, wrinkles, brightening, dark spots, firming, hydration, pores), route by CATEGORY: brightening/anti-aging/firming → Serums & Treatments + Moisturizers; hydration → Moisturizers + Serums & Treatments; pores/oil → Cleansers + Softeners; sun protection → Sunscreen.",
     "",
     "COLLECTION ROUTING (match recommendations to a Shiseido collection):",
     "- Each product carries a `series` tag = its collection: Benefiance, Future Solution LX, Vital Perfection, Ultimune, Bio-Performance, Essential Energy, Eudermine, Essentials, Urban Environment, Ultimate Sun, Shiseido Men.",
@@ -792,15 +792,15 @@ function buildSystemPrompt(products: CatalogProduct[]): string {
     "",
     "SKIN-CONCERN RECOMMENDATIONS (answers \"my skin is X, what should I use\" turns):",
     "- When the shopper describes a concern (dryness, dullness, dark spots, fine lines, sagging, oiliness/large pores, dark circles, redness/sensitivity, sun protection), recommend the right product family, not the entire shelf. Map: dryness → hydrating moisturizers; dullness/uneven tone → brightening serums; dark spots → dark-spot treatments; fine lines/wrinkles → anti-aging treatments; sagging → firming treatments; oily/large pores → pore-refining cleansers & softeners; dark circles/puffiness → eye creams; sensitivity/redness → gentle, soothing products; sun → daily sunscreen.",
-    "- Card title should read like \"Hydrating moisturizers for dry skin\" — never echo the literal query.",
+    "- Card title should read like \"Hydrating moisturizers for dry skin\", never echoing the literal query.",
     "",
     "BUNDLES vs SINGLE PRODUCTS:",
     "- Default: carousels show single products. `search_catalog` excludes Sets & Bundles by default.",
     "- Set `includeBundles: true` ONLY when the shopper mentions 'set', 'bundle', 'kit', 'routine', or 'gift set'.",
-    "- After showing single products, prefer `suggest_nbas` chips like 'See sets & save' — bundles are an upsell.",
+    "- After showing single products, prefer `suggest_nbas` chips like 'See sets & save', since bundles are an upsell.",
     "",
     "IMPORTANT:",
-    "- Do NOT repeat the `intro` text in your free-text reply when calling `show_product_listing` — the carousel renders its own intro.",
+    "- Do NOT repeat the `intro` text in your free-text reply when calling `show_product_listing`; the carousel renders its own intro.",
     "- When the user picks a follow-up chip, treat its label as their next message and act accordingly.",
     "- When you can't find a match, say so honestly and suggest narrowing.",
     "",
@@ -818,7 +818,7 @@ export function createOpenAIAgent({
   /* The shared client returns `null` only when neither a proxy URL
    * nor a direct API key is configured. Callers gate `createOpenAIAgent`
    * on `isLlmConfigured()` so reaching here without a client is a
-   * programmer error — throw eagerly so the caller's gate doesn't
+   * programmer error, so throw eagerly so the caller's gate doesn't
    * silently produce a broken agent. */
   const client = getOpenAIClient();
   if (!client) {
@@ -834,7 +834,7 @@ export function createOpenAIAgent({
     if (history.length <= HISTORY_LIMIT) return history;
     // OpenAI requires every `tool` message to follow an `assistant`
     // message with matching `tool_calls`. A naïve slice can start
-    // mid-sequence — on a `tool` message whose `tool_calls` parent
+    // mid-sequence, on a `tool` message whose `tool_calls` parent
     // got trimmed, or on an `assistant` whose `tool_call_id`s
     // reference tool messages we no longer have. Walk forward to the
     // next `user` message, which is always a safe conversation
@@ -857,7 +857,7 @@ export function createOpenAIAgent({
     useCases?: string[];
     // Neutralized for skincare (products carry no product-type or
     // accessory-role); accepted for schema compatibility but not used
-    // to filter — prefer `category` / `series`.
+    // to filter; prefer `category` / `series`.
     productType?: string;
     accessoryRole?: AccessoryRole;
     series?: string;
@@ -893,7 +893,7 @@ export function createOpenAIAgent({
       "good", "best", "show", "find", "give", "looking", "look", "some", "any",
     ]);
 
-    // Synonym expansion — map shopper vocabulary to catalog vocabulary.
+    // Synonym expansion: map shopper vocabulary to catalog vocabulary.
     // Each token can expand into several alternatives; ANY of them in the
     // haystack counts as a hit for that token group.
     const SYNONYMS: Record<string, string[]> = {
@@ -979,7 +979,7 @@ export function createOpenAIAgent({
         return false;
       }
       if (seriesFilter && (p.series as string | null) !== seriesFilter) return false;
-      // Substring category match — aligns with `getProductsForProductListingPage`
+      // Substring category match that aligns with `getProductsForProductListingPage`
       // and the recipe filter, so the model can pass natural names like
       // "Serums", "Moisturizers", "Sunscreen" without exact-matching
       // the full catalog vocab ("Serums & Treatments", etc.).
@@ -1001,7 +1001,7 @@ export function createOpenAIAgent({
       if (usableTokenGroups.length === 0) return true;
 
       const haystack = `${p.title} ${p.category} ${p.shortDescription}`.toLowerCase();
-      // AND across the usable groups only — every shopper token (or
+      // AND across the usable groups only: every shopper token (or
       // one of its synonyms) that exists somewhere in the catalog
       // must hit on this product.
       return usableTokenGroups.every((group) =>

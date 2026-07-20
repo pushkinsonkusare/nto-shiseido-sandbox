@@ -47,7 +47,7 @@ export type NavigateOptions = {
   /**
    * Multi-select category list. Used by the PLP sidebar so shoppers can
    * combine `Action cameras + Drone accessories`. OR-semantics across
-   * the list. Coexists with the singular `category` param — entry
+   * the list. Coexists with the singular `category` param, so entry
    * points like the top-nav and chat handoffs continue to use the
    * singular form for clean deep-links.
    */
@@ -73,7 +73,7 @@ export type NavigateOptions = {
   /**
    * Lowercased model token (e.g. `mavic 4 pro`, `osmo pocket 3`).
    * When set, the PLP filters accessory results to SKUs whose
-   * `compatibleWithModels` or `title` contain this token — so an
+   * `compatibleWithModels` or `title` contain this token, so an
    * "ND filter for Mavic 4 Pro" carousel hands off to a PLP showing
    * the same Mavic 4 Pro filter set, not the full lens-filter
    * catalog.
@@ -90,7 +90,7 @@ export type NavigateOptions = {
   /** Price floor in USD. */
   priceMin?: number;
   /**
-   * v6 subtype narrowing — `["mount_helmet"]` for "helmet mount"
+   * v6 subtype narrowing: `["mount_helmet"]` for "helmet mount"
    * queries, `["acc_filter_nd"]` for "ND filter" queries. Threaded so
    * the PLP shows only those subtypes (e.g. helmet mounts only, not
    * all 12 mount variants).
@@ -110,14 +110,14 @@ export type NavigateOptions = {
   primaryActivities?: string[];
   /**
    * Explicit slug union. When set, the PLP narrows to ONLY these
-   * slugs — bypassing every other filter. Used by the Broad result
+   * slugs, bypassing every other filter. Used by the Broad result
    * card's "Show all" button to surface the union of every row's
    * recommended products as a single curated PLP, rather than the
    * full storefront catalog.
    */
   slugs?: string[];
   /**
-   * Free-text search query — basic e-com hygiene. When set, the PLP
+   * Free-text search query, basic e-com hygiene. When set, the PLP
    * runs the catalog search engine and shows the ranked results as
    * the listing. Mutually independent from category/useCases/etc.
    * (search wins).
@@ -154,7 +154,7 @@ type NavigationContextValue = {
   /**
    * Active explicit slug list parsed from the URL (empty when
    * absent). When non-empty the PLP narrows to ONLY these slugs,
-   * ignoring all other filters — used by the Broad card's
+   * ignoring all other filters, used by the Broad card's
    * "Show all" handoff.
    */
   currentSlugs: string[];
@@ -246,7 +246,7 @@ function buildBrowserUrl(route: StaticRoute, options?: NavigateOptions) {
     .map((s) => s.trim())
     .filter(Boolean);
   if (slugList.length > 0) {
-    // Keep the URL compact — the slug union for a 4-row recipe is
+    // Keep the URL compact. The slug union for a 4-row recipe is
     // typically <40 slugs total, well under any sane URL-length cap.
     params.set(SLUGS_PARAM, Array.from(new Set(slugList)).join(","));
   }

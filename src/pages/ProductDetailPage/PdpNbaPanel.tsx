@@ -15,7 +15,7 @@ import {
 export type AskAssistantEventDetail = {
   /** The text the assistant should treat as a shopper utterance. */
   prompt: string;
-  /** Slug of the PDP that originated the prompt — used for telemetry and to render the product context header. */
+  /** Slug of the PDP that originated the prompt, used for telemetry and to render the product context header. */
   productSlug?: string;
   /**
    * Kind of NBA pill that fired the prompt. Routes the assistant to the
@@ -51,7 +51,7 @@ type Props = {
 };
 
 /**
- * "Ask Assistant" NBA module rendered on the PDP — Figma node 33250:50536.
+ * "Ask Assistant" NBA module rendered on the PDP (Figma node 33250:50536).
  *
  * Surfaces five contextual pills covering product FAQs, bundling/upsell, and
  * hygiene questions. Clicking any pill fires `agentic:ask-assistant`, which
@@ -73,7 +73,7 @@ export function PdpNbaPanel({ product, catalog }: Props) {
   }, [product.slug]);
 
   // Fire an impression event each time a new pill set lands in front of the
-  // shopper — mirrors the assistant-side telemetry shape.
+  // shopper. Mirrors the assistant-side telemetry shape.
   useEffect(() => {
     emitTelemetry("pdp_nba_impression", {
       productSlug: product.slug,

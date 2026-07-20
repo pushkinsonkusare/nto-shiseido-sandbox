@@ -25,12 +25,12 @@ export type AgentOrderSummaryProps = {
 };
 
 /**
- * AgentOrderSummary — agentic Order Summary card rendered inside the
+ * AgentOrderSummary is the agentic Order Summary card rendered inside the
  * SidecarAssistant chat panel.  Mirrors `Agent_Order_summary` (states:
  * collapsed + expanded) at node-id 32923:51817 / 32923:51826.
  *
  * Structurally similar to AgentCart, but omits the promo code input and
- * the trailing footnote — orders cannot be modified once placed.
+ * the trailing footnote, because orders cannot be modified once placed.
  */
 export function AgentOrderSummary({
   acknowledgement,

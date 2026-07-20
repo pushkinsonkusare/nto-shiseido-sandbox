@@ -287,7 +287,7 @@ a.prototype-brand-link.figma-plp__brand-mark {
   outline-offset: 2px;
 }
 
-/* Min/Max input row for the price filter — sits above the bucket list.
+/* Min/Max input row for the price filter, sits above the bucket list.
  * Two equal-width fields with a small "to" label between them. Each
  * field is a 1px-bordered input shell with a leading dollar-sign icon
  * and a numeric input that loses its native spinner styling so the
@@ -344,7 +344,7 @@ a.prototype-brand-link.figma-plp__brand-mark {
 }
 
 /* Strip the native number-input spinner so the field looks like a
- * plain text input — the user can still type digits and the browser
+ * plain text input. The user can still type digits and the browser
  * still validates numeric input via inputMode/min, just without the
  * up/down arrows that don't match the design. */
 .figma-plp__price-field input::-webkit-outer-spin-button,

@@ -5,13 +5,13 @@ import OpenAI from "openai";
  *
  * Two operating modes, decided at build time by Vite-inlined env:
  *
- *   1. Proxy mode  — `VITE_LLM_PROXY_URL` set. Requests go to a
+ *   1. Proxy mode: `VITE_LLM_PROXY_URL` set. Requests go to a
  *      backend worker (Cloudflare Workers, etc.) that injects the
  *      real `Authorization: Bearer …` header server-side. The
  *      browser bundle never sees the secret. This is the only
  *      safe configuration for a public deploy (e.g. GitHub Pages).
  *
- *   2. Direct mode — `VITE_OPENAI_API_KEY` set, no proxy. The SDK
+ *   2. Direct mode: `VITE_OPENAI_API_KEY` set, no proxy. The SDK
  *      hits api.openai.com from the browser with the key inlined
  *      in the bundle. Acceptable for local dev with a personal
  *      key in `.env.local`; NEVER use for a public build.
@@ -25,7 +25,7 @@ const API_KEY = (import.meta.env.VITE_OPENAI_API_KEY ?? "").trim();
 const MODEL = (import.meta.env.VITE_OPENAI_MODEL ?? "").trim() || "gpt-4o-mini";
 
 /* Proxy mode requires SOMETHING in `apiKey` because the OpenAI SDK
- * refuses to construct without it, but the value is unused — the
+ * refuses to construct without it, but the value is unused. The
  * Worker overwrites the Authorization header. */
 const PROXY_API_KEY_PLACEHOLDER = "proxied-no-browser-key";
 
@@ -47,7 +47,7 @@ export function getOpenAIClient(): OpenAI | null {
     clientSingleton = new OpenAI({
       apiKey: PROXY_URL ? PROXY_API_KEY_PLACEHOLDER : API_KEY,
       baseURL: buildBaseURL(),
-      // Required even in proxy mode — the SDK guards this flag.
+      // Required even in proxy mode: the SDK guards this flag.
       dangerouslyAllowBrowser: true,
     });
   }
@@ -67,7 +67,7 @@ export function getOpenAIModel(): string {
 
 /** Whether the current build is talking to a backend proxy
  *  (vs. hitting the OpenAI API directly from the browser). Useful
- *  for diagnostics / dev banners — most call sites should not need
+ *  for diagnostics / dev banners. Most call sites should not need
  *  this. */
 export function isUsingProxy(): boolean {
   return Boolean(PROXY_URL);

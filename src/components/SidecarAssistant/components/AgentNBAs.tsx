@@ -24,8 +24,8 @@ export type AgentNBAsProps = {
 };
 
 /**
- * AgentNBAs — "Next Best Actions" pill set rendered after each agent
- * utterance.  Mirrors `NBA Pill Set` (node-id 32923:51870 family) — a wrap
+ * AgentNBAs is the "Next Best Actions" pill set rendered after each agent
+ * utterance.  Mirrors `NBA Pill Set` (node-id 32923:51870 family): a wrap
  * of secondary-styled pills followed by an optional refresh icon button.
  */
 export function AgentNBAs({

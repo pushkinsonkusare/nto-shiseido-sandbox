@@ -12,6 +12,7 @@ import {
 } from "../icons/StorefrontIcons";
 import {
   AgentCart,
+  AgentCompareCard,
   AgentNBAs,
   AgentOrderSummary,
   AgentPDPCard,
@@ -21,6 +22,8 @@ import {
   type AgentNBA,
   type AgentCartItem,
   type AgentCartLineItem,
+  type AgentCompareColumn,
+  type AgentCompareRow,
   type AgentPLPProduct,
 } from "./components";
 import {
@@ -49,6 +52,7 @@ import {
 } from "./conversation/flow";
 import type { ChatMessage } from "./conversation/types";
 import type { CatalogProduct } from "../../catalog/catalog";
+import { resolveProductFaq } from "../SideBySideAssistant/conversation/productFaq";
 import { createOpenAIAgent, type AgentAction, type OpenAIAgent } from "./agent/openaiAgent";
 import { isLlmConfigured } from "../../lib/openaiClient";
 import "./SidecarAssistant.css";
@@ -73,6 +77,11 @@ const CONTEXTUAL_NBA_PLACEHOLDERS = [
   "Compare",
   "Ingredients",
 ];
+
+/** Contextual pills answered locally from catalog data (via
+ * `resolveProductFaq`) instead of the OpenAI agent, so they always return a
+ * single, product-grounded reply with no model round-trip. */
+const LOCAL_FAQ_PILL_LABELS = new Set(["Is this waterproof?", "Ingredients"]);
 const TALL_CARD_VIEWPORT_RATIO = 0.92;
 const TALL_CARD_ANCHOR_RATIO = 0.6;
 const TALL_CARD_TOP_INSET_PX = 16;
@@ -91,7 +100,7 @@ function nextId(prefix: string) {
  */
 function buildTranscriptText(messages: ChatMessage[]): string {
   const lines: string[] = [
-    "Shiseido Personal Assistant — Session Transcript",
+    "Shiseido Personal Assistant Session Transcript",
     `Exported: ${new Date().toLocaleString()}`,
     "",
   ];
@@ -103,7 +112,7 @@ function buildTranscriptText(messages: ChatMessage[]): string {
         break;
       case "agent_simple":
         lines.push(
-          `Assistant: ${message.title ? `${message.title} — ` : ""}${message.body}`,
+          `Assistant: ${message.title ? `${message.title}: ` : ""}${message.body}`,
         );
         break;
       case "agent_plp":
@@ -114,6 +123,20 @@ function buildTranscriptText(messages: ChatMessage[]): string {
         break;
       case "agent_pdp":
         lines.push(`Assistant: ${message.title} (${message.price})`);
+        break;
+      case "agent_compare":
+        lines.push(`Assistant: ${message.intro}`);
+        lines.push(`  ${message.columns.map((column) => column.title).join(" vs ")}`);
+        for (const row of message.rows) {
+          lines.push(
+            `    ${row.label}: ${row.values
+              .map((value) => value ?? "N/A")
+              .join(" | ")}`,
+          );
+        }
+        if (message.recommendation) {
+          lines.push(`Assistant: ${message.recommendation}`);
+        }
         break;
       case "agent_cart":
       case "agent_order":
@@ -171,6 +194,61 @@ function toPlpProduct(
   };
 }
 
+function toCompareColumn(product: CatalogProduct): AgentCompareColumn {
+  return {
+    id: product.slug,
+    slug: product.slug,
+    imageUrl: product.imageUrl,
+    imageAlt: product.imageAlt,
+    title: product.title,
+    price: product.priceFormatted,
+    comparePrice: product.comparePriceFormatted ?? undefined,
+    rating: product.rating ?? undefined,
+    reviewCount: product.reviewCount ?? undefined,
+  };
+}
+
+/* Preferred order for spec rows in the comparison table; any remaining
+ * spec labels present on the products are appended after these. */
+const COMPARE_SPEC_ORDER = [
+  "Collection",
+  "Type",
+  "Skin type",
+  "Targets",
+  "Sizes",
+  "Routine",
+];
+
+/** Build catalog-grounded comparison rows (category, then shared specs) for a
+ * set of products. Price and rating are rendered in the column headers instead
+ * of as rows. Missing values are left as `null` so the table renders "N/A". */
+function buildCompareRows(products: CatalogProduct[]): AgentCompareRow[] {
+  const specValue = (product: CatalogProduct, label: string): string | null => {
+    const spec = product.specs.find((entry) => entry.label === label);
+    return spec && spec.value ? spec.value : null;
+  };
+
+  const rows: AgentCompareRow[] = [
+    { label: "Category", values: products.map((p) => p.category || null) },
+  ];
+
+  const seen = new Set<string>();
+  const orderedLabels = [
+    ...COMPARE_SPEC_ORDER,
+    ...products.flatMap((p) => p.specs.map((s) => s.label)),
+  ];
+  for (const label of orderedLabels) {
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    const values = products.map((p) => specValue(p, label));
+    if (values.some((value) => value != null)) {
+      rows.push({ label, values });
+    }
+  }
+
+  return rows;
+}
+
 function toCartItem(product: CatalogProduct, quantity: number): AgentCartItem {
   return {
     id: `cart-${product.slug}`,
@@ -216,7 +294,7 @@ function recomputeCartLineItems(
       value: `-${usd.format(discount)}`,
     });
   }
-  // Not yet calculated — shown as placeholders until wired to pricing logic.
+  // Not yet calculated, so these show as placeholders until wired to pricing logic.
   lines.push({ label: "Promotions", value: "-" });
   lines.push({ label: "Shipping", value: "-" });
   lines.push({ label: "Shipping Discount", value: "-" });
@@ -308,39 +386,6 @@ function buildOrderLineItems(
   return items;
 }
 
-type AgentRuntimeError = {
-  status?: number;
-  code?: string;
-  type?: string;
-  message?: string;
-  error?: {
-    code?: string;
-    type?: string;
-    message?: string;
-  };
-};
-
-function buildAgentFailureMessage(error: unknown): string {
-  const runtimeError = error as AgentRuntimeError | undefined;
-  const errorCode = runtimeError?.code ?? runtimeError?.error?.code ?? "";
-  const errorType = runtimeError?.type ?? runtimeError?.error?.type ?? "";
-  const status = runtimeError?.status;
-
-  if (errorCode === "insufficient_quota" || errorType === "insufficient_quota") {
-    return "I couldn't reach OpenAI because this API key is out of quota — falling back to local recommendations.";
-  }
-
-  if (status === 401 || errorCode === "invalid_api_key" || errorType === "authentication_error") {
-    return "I couldn't reach OpenAI because the API key is invalid or unauthorized — falling back to local recommendations.";
-  }
-
-  if (errorCode === "model_not_found") {
-    return `I couldn't reach OpenAI because model "${OPENAI_MODEL}" isn't available for this key — falling back to local recommendations.`;
-  }
-
-  return "I hit a hiccup reaching the model — falling back to local recommendations.";
-}
-
 type SidecarAssistantProps = {
   /** When true, the assistant renders as a flush docked panel that fills its
    * container (see SidecarDockLayout) instead of a floating fixed overlay.
@@ -365,7 +410,8 @@ export function SidecarAssistant({
   detached = false,
   onToggleDetach,
 }: SidecarAssistantProps = {}) {
-  const { products, heroProduct, getProductBySlug, orderHistory } = useCatalog();
+  const { products, heroProduct, getProductBySlug, getRelatedProducts, orderHistory } =
+    useCatalog();
   const [isOpen, setIsOpen] = useState(false);
 
   // When docked, the surrounding layout owns open/close; mirror it into the
@@ -528,7 +574,7 @@ export function SidecarAssistant({
       appendMessage({
         id,
         kind: "agent_cart",
-        acknowledgement: `Got it — I added ${product.title} to your cart.`,
+        acknowledgement: `Got it, I added ${product.title} to your cart.`,
         summary: cartSummaryText(items, subtotal),
         items,
         lineItems: recomputeCartLineItems(items, appliedPromo),
@@ -610,7 +656,7 @@ export function SidecarAssistant({
           appliedPromo,
           cartCoupons: [...existingCoupons, trimmed],
           lineItems: recomputeCartLineItems(message.items, appliedPromo),
-          summary: `Promo applied — your new estimated total is ${usd.format(Math.max(0, subtotal - discountAmount))}.`,
+          summary: `Promo applied. Your new estimated total is ${usd.format(Math.max(0, subtotal - discountAmount))}.`,
         };
       });
 
@@ -1171,7 +1217,7 @@ export function SidecarAssistant({
         appendMessage({
           id: nextId("agent"),
           kind: "agent_simple",
-          body: "I couldn't find an exact match — let's narrow that down. What matters most to you?",
+          body: "I couldn't find an exact match. Let's narrow that down. What matters most to you?",
         });
         const probingItems = buildStageNbas({ stage: "probing", intent });
         appendMessage(buildStageNbasMessage("probing", probingItems));
@@ -1243,11 +1289,9 @@ export function SidecarAssistant({
           .catch((error) => {
             console.error("[SidecarAssistant] OpenAI agent failed", error);
             removeMessage(loaderId);
-            appendMessage({
-              id: nextId("agent"),
-              kind: "agent_simple",
-              body: buildAgentFailureMessage(error),
-            });
+            // Fall back to the deterministic rule-based response silently so the
+            // shopper sees a single utterance (the results intro), not a filler
+            // "let me pull that together" line followed by the results.
             dispatchRuleBasedResponse(trimmed);
           });
         return;
@@ -1264,6 +1308,138 @@ export function SidecarAssistant({
       dispatchRuleBasedResponse,
       removeMessage,
       scheduleResponse,
+    ],
+  );
+
+  /** Contextual (selected-product) pills, routed conditionally:
+   *  - Informational pills ("Is this waterproof?", "Ingredients") answer
+   *    inline from catalog data via `resolveProductFaq` and keep the
+   *    selection tray open for follow-ups.
+   *  - "Show similar" renders a related-products carousel, then collapses
+   *    the tray.
+   *  - "Compare" renders a comparison table of the selected products, then
+   *    collapses the tray. */
+  const handleContextualPill = useCallback(
+    (label: string) => {
+      const selectedProducts = selectedSlugs
+        .map((slug) => getProductBySlug(slug))
+        .filter((p): p is CatalogProduct => Boolean(p));
+      const firstProduct = selectedProducts[0];
+
+      if (firstProduct && LOCAL_FAQ_PILL_LABELS.has(label)) {
+        appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
+        const loaderId = nextId("loader");
+        appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
+        scheduleResponse(() => {
+          removeMessage(loaderId);
+          appendMessage({
+            id: nextId("agent"),
+            kind: "agent_simple",
+            body: resolveProductFaq(firstProduct, label),
+          });
+        });
+        return;
+      }
+
+      if (firstProduct && label === "Show similar") {
+        appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
+        const loaderId = nextId("loader");
+        appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
+        scheduleResponse(() => {
+          removeMessage(loaderId);
+          const selectedSet = new Set(selectedSlugs);
+          const related: CatalogProduct[] = [];
+          const seen = new Set<string>();
+          for (const slug of selectedSlugs) {
+            for (const candidate of getRelatedProducts(slug, 6)) {
+              if (selectedSet.has(candidate.slug) || seen.has(candidate.slug)) {
+                continue;
+              }
+              seen.add(candidate.slug);
+              related.push(candidate);
+            }
+          }
+          if (related.length === 0) {
+            appendMessage({
+              id: nextId("agent"),
+              kind: "agent_simple",
+              body: `I couldn't find close matches to the ${firstProduct.title} right now. Tell me what matters most and I'll keep looking.`,
+            });
+            return;
+          }
+          renderPlpCard(
+            `Here are a few options similar to the ${firstProduct.title}:`,
+            related.slice(0, PLP_PAGE_SIZE).map((p) => p.slug),
+            false,
+          );
+          setSelectedSlugs([]);
+        });
+        return;
+      }
+
+      if (firstProduct && label === "Compare") {
+        appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
+        const loaderId = nextId("loader");
+        appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
+        scheduleResponse(() => {
+          removeMessage(loaderId);
+          const compareProducts = [...selectedProducts];
+          const included = new Set(compareProducts.map((p) => p.slug));
+          // Pad with related products so a single-selection compare still
+          // produces a meaningful multi-column table.
+          if (compareProducts.length < 2) {
+            for (const candidate of getRelatedProducts(firstProduct.slug, 6)) {
+              if (included.has(candidate.slug)) continue;
+              included.add(candidate.slug);
+              compareProducts.push(candidate);
+              if (compareProducts.length >= MAX_SELECTED_PRODUCTS) break;
+            }
+          }
+          const comparedProducts = compareProducts.slice(0, MAX_SELECTED_PRODUCTS);
+          const columns = comparedProducts.map(toCompareColumn);
+          if (columns.length < 2) {
+            appendMessage({
+              id: nextId("agent"),
+              kind: "agent_simple",
+              body: `I need at least two products to compare. Select another item and I'll line them up side by side.`,
+            });
+            return;
+          }
+          const otherCount = comparedProducts.length - 1;
+          const recommended = [...comparedProducts].sort(
+            (a, b) =>
+              (b.rating ?? 0) - (a.rating ?? 0) ||
+              (b.reviewCount ?? 0) - (a.reviewCount ?? 0),
+          )[0];
+          const recommendation =
+            recommended.rating != null
+              ? `I'd recommend the ${recommended.title}. It has the highest rating (${recommended.rating.toFixed(1)}${recommended.reviewCount != null ? ` from ${recommended.reviewCount} reviews` : ""}) and is priced at ${recommended.priceFormatted}.`
+              : `I'd recommend the ${recommended.title}, priced at ${recommended.priceFormatted}.`;
+          appendMessage({
+            id: nextId("compare"),
+            kind: "agent_compare",
+            intro: `Here's a side-by-side comparison of ${firstProduct.title} and ${otherCount} other ${otherCount === 1 ? "item" : "items"}.`,
+            columns,
+            rows: buildCompareRows(comparedProducts),
+            recommendation,
+            recommendedSlug: recommended.slug,
+          });
+          setSelectedSlugs([]);
+        });
+        return;
+      }
+
+      dispatchShopperMessage(label);
+    },
+    [
+      selectedSlugs,
+      getProductBySlug,
+      getRelatedProducts,
+      renderPlpCard,
+      appendMessage,
+      scheduleResponse,
+      removeMessage,
+      dispatchShopperMessage,
     ],
   );
 
@@ -1325,7 +1501,7 @@ export function SidecarAssistant({
 
   useEffect(() => {
     // A docked panel lives inside the page flow (like SideBySide), so Escape
-    // must not tear it down — the layout owns close. When detached as a modal,
+    // must not tear it down; the layout owns close. When detached as a modal,
     // Escape re-docks it instead.
     if (docked) {
       if (!detached) return;
@@ -1610,6 +1786,7 @@ export function SidecarAssistant({
                 onShowMore={() => handleShowMore(message.id)}
                 selectedIds={selectedSet}
                 onToggleSelect={handleToggleSelect}
+                onAddToCart={(slug) => handleAddToCart(slug, 1)}
                 selectionLimitReached={selectedSet.size >= MAX_SELECTED_PRODUCTS}
               />
             );
@@ -1630,6 +1807,19 @@ export function SidecarAssistant({
                   handleAddToCart(message.productSlug, quantity)
                 }
                 onApplePay={() => handleAddToCart(message.productSlug, 1)}
+              />
+            );
+          case "agent_compare":
+            return (
+              <AgentCompareCard
+                key={message.id}
+                intro={message.intro}
+                columns={message.columns}
+                rows={message.rows}
+                recommendation={message.recommendation}
+                recommendedSlug={message.recommendedSlug}
+                onSelect={handleProductSelect}
+                onAddToCart={(slug) => handleAddToCart(slug, 1)}
               />
             );
           case "agent_cart":
@@ -1875,7 +2065,7 @@ export function SidecarAssistant({
             <AgentNBAs
               nbas={contextualNbas}
               regenerateButton={false}
-              onSelect={(nba) => dispatchShopperMessage(nba.label)}
+              onSelect={(nba) => handleContextualPill(nba.label)}
             />
           </div>
         ) : null}
@@ -1902,7 +2092,7 @@ export function SidecarAssistant({
   );
 
   // Docked mode: fill the panel supplied by SidecarDockLayout. No floating
-  // overlay, no backdrop, no self-owned FAB — the layout drives open/close and
+  // overlay, no backdrop, no self-owned FAB. The layout drives open/close and
   // the grid reflow, so we always render the panel body here.
   if (docked) {
     return (

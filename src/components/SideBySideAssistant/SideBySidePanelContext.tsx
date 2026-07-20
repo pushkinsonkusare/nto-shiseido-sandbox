@@ -17,7 +17,7 @@ import type { PdpNbaPillKind } from "../../pages/ProductDetailPage/pdpNbaPills";
  * causes the turn to be dispatched twice).
  *
  * `productSlug` and `pillKind` are populated when the prompt originated
- * from a PDP NBA pill click — they let the assistant render the
+ * from a PDP NBA pill click. They let the assistant render the
  * product-context header inside the reply card and pick the right
  * utterance variant (hygiene/faq/open/…).
  */

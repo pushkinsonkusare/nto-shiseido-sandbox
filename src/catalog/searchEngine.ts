@@ -4,7 +4,7 @@
  * Goals:
  *   1. Keyword search across name / category / brand / tags / description /
  *      compatible_with.
- *   2. Field weighting per the spec — name matches outrank tag matches
+ *   2. Field weighting per the spec: name matches outrank tag matches
  *      outrank description matches.
  *   3. Synonym expansion ("vlog" -> "vlogging", "drone" -> "quadcopter",
  *      etc.) so casual queries surface the right gear.
@@ -12,7 +12,7 @@
  *   5. Search suggestions: top-5 product names + top-3 categories.
  *   6. Performance: < 50ms for 250 products on a warm index.
  *
- * The engine is intentionally framework-agnostic — `buildSearchIndex` is
+ * The engine is intentionally framework-agnostic: `buildSearchIndex` is
  * called once when the catalog loads (`catalog.ts`) and the resulting
  * `SearchIndex` is shared across the app via `catalogStore.searchIndex`.
  */
@@ -26,7 +26,7 @@ import type { CatalogProduct } from "./catalog";
 /**
  * Bidirectional-ish synonym table. The expander walks each query token
  * once and pushes every related term, so we list both directions
- * explicitly rather than relying on a graph traversal — keeps the
+ * explicitly rather than relying on a graph traversal. This keeps the
  * lookup an O(1) Map.get and avoids accidental over-expansion (e.g.
  * "audio" should NOT pull in every "mic" synonym chain).
  */
@@ -122,7 +122,7 @@ export function tokenize(value: string): string[] {
   for (const t of norm.split(" ")) {
     if (!t) continue;
     if (STOPWORDS.has(t)) continue;
-    // Single-character tokens are usually noise ("a", "b") — except for
+    // Single-character tokens are usually noise ("a", "b"), except for
     // digits, which carry real model-line meaning ("Mini 5" vs "Mini 3",
     // "RS 4", "Air 3"). Dropping them collapses distinct product lines
     // into a single bucket and lets older models out-rank the queried one.
@@ -137,8 +137,8 @@ export function tokenize(value: string): string[] {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Iterative two-row Levenshtein. We don't need the full matrix — only
- * the previous row — so memory is O(n). Fast enough that we can afford
+ * Iterative two-row Levenshtein. We don't need the full matrix, just
+ * the previous row, so memory is O(n). Fast enough that we can afford
  * to call it ~thousands of times per query for fuzzy candidate
  * selection.
  */
@@ -210,12 +210,12 @@ export type QueryPlan = {
    * For each original token: the list of expansion tokens to probe (the
    * original itself first, then its synonyms). `search()` requires every
    * original token to be satisfied by at least one expansion in its
-   * group before a doc enters the result set — synonyms count as
+   * group before a doc enters the result set. Synonyms count as
    * alternative spellings of the same intent, not as extra evidence.
    */
   expansionsByToken: Map<string, string[]>;
   /** Flat union of every expansion (originals + synonyms), preserving the
-   * legacy `expandQueryTokens` ordering — surfaced on `SearchResult` for
+   * legacy `expandQueryTokens` ordering, surfaced on `SearchResult` for
    * debugging. */
   expandedTokens: string[];
 };
@@ -263,7 +263,7 @@ export type IndexedDoc = {
   product: CatalogProduct;
   /** Lowercased + punctuation-stripped product title (used for phrase match). */
   nameNormalized: string;
-  /** Token sets per searchable field — Set lookup is O(1). */
+  /** Token sets per searchable field, where Set lookup is O(1). */
   nameTokens: Set<string>;
   categoryTokens: Set<string>;
   brandTokens: Set<string>;
@@ -285,7 +285,7 @@ export type IndexedDoc = {
    * phrase gate even when their own title doesn't repeat the model.
    */
   compatibleModelTokenSequence: string[];
-  /** Union of every searchable token — backs fuzzy candidate scan. */
+  /** Union of every searchable token, backing the fuzzy candidate scan. */
   allTokens: Set<string>;
 };
 
@@ -317,19 +317,19 @@ function collectTagText(p: CatalogProduct): string {
     p.accessoryRole ?? "",
   ];
   // Underscores in tags ("first_person_view") would otherwise survive
-  // tokenization and never match a user query — turn them into spaces.
+  // tokenization and never match a user query, so turn them into spaces.
   return parts.join(" ").replace(/_/g, " ");
 }
 
 function collectCompatibleText(p: CatalogProduct): string {
   // Models are real multi-word names ("DJI Mini 5 Pro") and benefit
-  // from word-level tokenization — searching "mini 5" should hit any
+  // from word-level tokenization, since searching "mini 5" should hit any
   // accessory whose `compatible_with_models` lists that model.
   const modelText = p.compatibleWithModels.join(" ").replace(/_/g, " ");
 
   // Compatibility *types* are categorical buckets ("action_camera",
   // "drone", "osmo_action"). Splitting them on `_` causes spurious
-  // matches — e.g. a Mini 5 Pro flight battery tagged with
+  // matches, e.g. a Mini 5 Pro flight battery tagged with
   // `compatible_with_type=["drone","action_camera"]` would otherwise
   // surface for the query "action 5 accessories" because the loose
   // "action" token from `action_camera` clears the AND-gate. Collapse
@@ -414,7 +414,7 @@ export function buildSearchIndex(products: CatalogProduct[]): SearchIndex {
 /* -------------------------------------------------------------------------- */
 
 // Lowered from 4 to 3 so typo correction kicks in one keystroke
-// earlier — `mvc` -> `mavic`, `asmo` -> `osmo`, `osmp` -> `osmo` all
+// earlier, so `mvc` -> `mavic`, `asmo` -> `osmo`, `osmp` -> `osmo` all
 // resolve at 3 chars instead of waiting for the 4th. At 3 chars the
 // length-bucket prune (within +/- FUZZY_MAX_DISTANCE) keeps the
 // candidate set small enough that the Levenshtein cost stays
@@ -458,7 +458,7 @@ function fuzzyCandidates(token: string, index: SearchIndex): string[] {
 /**
  * Prefix-expand a short query token against the indexed vocab. Used as
  * a complement to `fuzzyCandidates` for tokens too short for fuzzy
- * matching (below `FUZZY_MIN_LEN`) — without this, a 2-char query like
+ * matching (below `FUZZY_MIN_LEN`). Without this, a 2-char query like
  * `os` can never match `osmo` because the inverted index keys on full
  * normalized tokens, not prefixes, and Levenshtein on a 2-char input
  * is too noisy to be useful.
@@ -491,7 +491,7 @@ function prefixCandidates(token: string, index: SearchIndex): string[] {
 /* Scoring                                                                    */
 /* -------------------------------------------------------------------------- */
 
-/** Per-field weights — kept aligned with the spec in the task description. */
+/** Per-field weights, kept aligned with the spec in the task description. */
 const SCORE = {
   exactNamePhrase: 10,
   partialName: 6,
@@ -512,10 +512,10 @@ type FieldHit = {
 
 /**
  * Numeric tokens carry real signal in product names ("Mini 5", "Action 5",
- * "RS 4") — they identify a specific model line. They are NOT signal in
+ * "RS 4"): they identify a specific model line. They are NOT signal in
  * description text, where they appear as footnote markers ("[5]"),
  * spec fragments ("11.5 Wh", "5° to 40° C"), or counts ("5-axis"). If a
- * doc's only hit for a digit token is the description, that's noise —
+ * doc's only hit for a digit token is the description, that's noise:
  * surfacing it lets queries like "action 5 accessories" leak Action 3 /
  * Mic 3 / Neo 2 products whose copy happens to mention a "5" anywhere.
  *
@@ -529,7 +529,7 @@ function isNumericToken(token: string): boolean {
 
 /**
  * Score a single (token, doc) pair. Returns the highest-weight field hit
- * the token produced — we don't double-count "drone" appearing in both
+ * the token produced. We don't double-count "drone" appearing in both
  * the name and the description, the strongest field wins.
  */
 function scoreTokenAgainstDoc(
@@ -560,7 +560,7 @@ function scoreTokenAgainstDoc(
 
 /**
  * Matches purely-numeric or alphanumeric-leading-with-digits tokens
- * (e.g. "3", "5", "4k", "2s") — the right-hand side of model-line
+ * (e.g. "3", "5", "4k", "2s"), the right-hand side of model-line
  * bigrams DJI uses ("Action 3", "Mavic 4", "Mini 5", "Air 2S").
  */
 function looksLikeModelDigit(token: string): boolean {
@@ -569,7 +569,7 @@ function looksLikeModelDigit(token: string): boolean {
 
 /**
  * Generous so list-style titles like "Osmo Action 5 Pro / 4 / 3"
- * (which tokenize to "osmo action 5 pro 4 3" — gap of 4 between
+ * (which tokenize to "osmo action 5 pro 4 3", a gap of 4 between
  * "action" and "3") still satisfy a phrase requirement for "action 3".
  * Anything beyond ~4 starts pulling in incidental co-occurrences
  * across long descriptive titles.
@@ -577,7 +577,7 @@ function looksLikeModelDigit(token: string): boolean {
 const PHRASE_MAX_GAP = 4;
 
 type PhraseRequirement = {
-  /** Original left token (for debugging only — not used to match). */
+  /** Original left token (for debugging only, not used to match). */
   left: string;
   /** Original right token. */
   right: string;
@@ -594,12 +594,12 @@ type PhraseRequirement = {
  * requirement when the right token looks like a model-line digit
  * ("3", "4", "5", "4k", "2s"). The gate then enforces that the doc's
  * title OR `compatibleWithModels` list contains both tokens close
- * together — without this, the per-token AND-gate happily admits
+ * together. Without this, the per-token AND-gate happily admits
  * "Mavic 3" / "Pocket 3" / "Mic 3" docs into "action 3" results
  * because each individual token (action, 3) hits *some* field.
  *
  * Two cases are deliberately skipped:
- *   1. Both tokens numeric ("4 3" — ambiguous, rarely a model).
+ *   1. Both tokens numeric ("4 3", which is ambiguous and rarely a model).
  *   2. The query has only one token total (no bigrams to form).
  */
 function detectModelPhrases(
@@ -624,7 +624,7 @@ function detectModelPhrases(
 
 /**
  * True iff `seq` contains `left` followed by `right` with at most
- * `maxGap` intervening tokens. `right` must come AFTER `left` —
+ * `maxGap` intervening tokens. `right` must come AFTER `left`, because
  * model names are written in a fixed order ("Action 3", never
  * "3 Action") so order-preservation is the right semantic.
  */
@@ -679,7 +679,7 @@ function docSatisfiesPhrase(
 /* -------------------------------------------------------------------------- */
 
 export type SearchSuggestions = {
-  /** Top product names — suitable for an autocomplete dropdown. */
+  /** Top product names, suitable for an autocomplete dropdown. */
   products: { slug: string; title: string; score: number }[];
   /** Distinct categories present in the top results. */
   categories: string[];
@@ -700,8 +700,8 @@ export type SearchResult = {
  * earlier. Cores are the bare flagship SKU ("DJI Mavic 4 Pro"),
  * bundles are combo/kit packages built around a core ("...Fly More
  * Combo"), and accessories are peripherals (cases, batteries, mounts,
- * filters). Without this layer, queries like "mavic" — where every
- * Mavic SKU ties at name+phrase=16 — fell back to rating, which let
+ * filters). Without this layer, queries like "mavic", where every
+ * Mavic SKU ties at name+phrase=16, fell back to rating, which let
  * an Air 2S accessory case outrank the Mavic 4 Pro itself.
  *
  * `isAccessory` is checked first so accessory-flagged kits (e.g.
@@ -716,7 +716,7 @@ function rankingTier(product: CatalogProduct): 0 | 1 | 2 {
 /**
  * Run a search against an index. Stable ordering: score desc, then
  * tier asc (core < bundle < accessory), then rating desc, then review
- * count desc — guarantees deterministic output for equally-scored
+ * count desc. This guarantees deterministic output for equally-scored
  * products and keeps the flagship SKU above its bundles / accessories
  * when nothing in the query disambiguates them.
  */
@@ -746,7 +746,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
 
   // Resolve fuzzy fallbacks once per expansion (not once per doc) across
   // every token group. Pulling from the flat `expandedTokens` list
-  // dedupes naturally — the same expansion shared by two originals only
+  // dedupes naturally, so the same expansion shared by two originals only
   // pays for one Levenshtein scan.
   //
   // When fuzzy returns nothing (because the token is too short for
@@ -755,7 +755,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
   // `os` can never match `osmo` because the inverted index keys on
   // full tokens. Prefix candidates ride the same fuzzy fallback rail
   // in the scoring loop below, so they already get the
-  // FUZZY_MULTIPLIER weight reduction (0.5x) — exact matches still
+  // FUZZY_MULTIPLIER weight reduction (0.5x), so exact matches still
   // outrank them.
   const fuzzyByToken = new Map<string, string[]>();
   for (const t of expandedTokens) {
@@ -770,7 +770,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
 
   // Phrase-proximity gate. Model-line bigrams in the query ("action 3",
   // "mavic 4", "mini 5") must co-occur in the doc's title or
-  // compatibility-models list — otherwise the per-token AND-gate below
+  // compatibility-models list. Otherwise the per-token AND-gate below
   // happily admits Mavic 3 / Pocket 3 / Mic 3 into "action 3" results
   // (each token hits *some* field independently). Computed once per
   // query, then checked per doc inside the main scoring loop.
@@ -780,7 +780,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
   );
 
   const scores = new Float64Array(index.docs.length);
-  // Parallel inclusion array — only docs whose every original token was
+  // Parallel inclusion array: only docs whose every original token was
   // satisfied by at least one expansion (or its fuzzy fallback) qualify.
   // Avoids the historical OR-leak where a single weak token hit (e.g.
   // category="Accessories" alone) could float unrelated products into
@@ -790,7 +790,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
   for (let i = 0; i < index.docs.length; i++) {
     const doc = index.docs[i];
 
-    // Phrase gate runs before per-token scoring — cheap rejection lets
+    // Phrase gate runs before per-token scoring, since cheap rejection lets
     // us skip the heavier AND-gate work for the majority of docs that
     // don't carry the queried model anywhere near each other.
     if (phraseRequirements.length > 0) {
@@ -808,7 +808,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
     let allSatisfied = true;
 
     // Per-original-token scoring. Each group contributes its single
-    // best field hit — synonyms are alternative spellings of the same
+    // best field hit, since synonyms are alternative spellings of the same
     // intent, not additive evidence, so we don't double-count a doc
     // that happens to mention "drone" *and* "quadcopter".
     for (const original of originalTokens) {
@@ -850,7 +850,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
 
     // Exact phrase bonus stacks on top of the per-token sum and only
     // fires when the full normalized query appears in the product name.
-    // Safe to add after the AND gate — a phrase match implies every
+    // Safe to add after the AND gate, since a phrase match implies every
     // token already hit the name field anyway.
     if (
       normalizedQuery.length >= 3 &&
@@ -874,7 +874,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
     const pa = index.docs[a.idx].product;
     const pb = index.docs[b.idx].product;
     // Tier tie-breaker: core (0) < bundle (1) < accessory (2). Only
-    // fires when raw scores are equal — strong accessory matches
+    // fires when raw scores are equal, so strong accessory matches
     // ("mavic case", "mini battery") still win on score alone.
     const tierDelta = rankingTier(pa) - rankingTier(pb);
     if (tierDelta !== 0) return tierDelta;
@@ -885,7 +885,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
 
   const results = ranked.map((r) => index.docs[r.idx].product);
 
-  // Suggestions — top 5 product names + top 3 distinct categories,
+  // Suggestions: top 5 product names + top 3 distinct categories,
   // both pulled from the same ranked pool so they stay consistent
   // with the result set.
   const productSuggestions = ranked.slice(0, 5).map((r) => ({
@@ -922,8 +922,8 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
 
 /**
  * Best-effort spelling correction. For a query whose `search()` call
- * returned zero results — typically because the user mistyped a model
- * name or product term — try to replace each missing token with the
+ * returned zero results (typically because the user mistyped a model
+ * name or product term), try to replace each missing token with the
  * closest vocab match (Levenshtein distance ≤ {@link FUZZY_MAX_DISTANCE}).
  *
  * Returns the corrected query as a plain string when at least one
@@ -932,7 +932,7 @@ export function search(index: SearchIndex, rawQuery: string): SearchResult {
  * or no fuzzy candidate exists for the unknown ones (so callers can
  * decide whether to render a "Did you mean: …" prompt).
  *
- * Tokens already present in `index.postings` are kept verbatim — they
+ * Tokens already present in `index.postings` are kept verbatim, since they
  * exist in the catalog, so the user wasn't typing a typo for them.
  * Among multiple equidistant candidates we prefer the one with the
  * highest posting-list size (more frequent in the catalog → more

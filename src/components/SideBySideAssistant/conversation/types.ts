@@ -40,8 +40,8 @@ export type SxsMessage =
       /**
        * Canonical `useCaseTags` (`waterproof`, `compact`, `rugged`,
        * etc.) inferred from the shopper query. Threaded through so the
-       * PLP applies the same AND-filter the card carousel did —
-       * otherwise "osmo accessories for deep sea" would narrow to
+       * PLP applies the same AND-filter the card carousel did.
+       * Otherwise "osmo accessories for deep sea" would narrow to
        * waterproof in the card but show every Osmo accessory in the
        * PLP.
        */
@@ -83,7 +83,7 @@ export type SxsMessage =
        * Reply card scoped to a specific PDP, fired when the shopper
        * uses an "Ask Assistant" NBA pill. Renders a product-context
        * header (image + title + category) above the body, with an
-       * optional external-link CTA — used today for hygiene
+       * optional external-link CTA, used today for hygiene
        * (return/warranty/shipping policies pointing at the DJI Help
        * Center), generic FAQs, and the "Ask me anything" intro.
        */

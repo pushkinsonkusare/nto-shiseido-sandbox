@@ -168,7 +168,7 @@
   width: 100%;
   aspect-ratio: 1/1;
   /* `contain` (vs the previous `cover`) keeps tall marketing composites
-   * — e.g. the "Track Without Shaking" stacked OFF/ON panels — fully
+   * (e.g. the "Track Without Shaking" stacked OFF/ON panels) fully
    * visible inside the 1:1 hero frame. Square product shots (the
    * common case) render identically; non-square assets get letterboxed
    * against the gallery surface instead of being centre-cropped. */
@@ -406,7 +406,7 @@
 .figma-pdp__rail {
   padding: var(--pdp-space-lg) 0;
   /* Sizing container so the cards row inside this rail can adapt its
-   * visible card count to the rail's *actual* width — which shrinks
+   * visible card count to the rail's *actual* width, which shrinks
    * when the side-by-side / sidecar assistant docks alongside the
    * PDP. Plain @media queries can't see that change because the
    * viewport stays the same when the assistant opens. */
@@ -428,7 +428,7 @@
    * rules below so the row never clips a partial card, never wraps
    * to a second row, and never falls back to horizontal scrolling.
    *
-   * Step thresholds = `N * 260 + (N - 1) * 24` — the exact width
+   * Step thresholds = `N * 260 + (N - 1) * 24`: the exact width
    * needed to fit N cards with 24px gaps:
    *   ≥ 1396px  →  5 cards
    *   1112–1395 →  4 cards

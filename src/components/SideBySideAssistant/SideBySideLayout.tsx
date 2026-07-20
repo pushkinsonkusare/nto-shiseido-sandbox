@@ -27,7 +27,7 @@ function SideBySideLayoutInner({ children }: Props) {
   // Once the assistant mounts we keep it in the tree for the rest of the
   // session so the chat history (owned by useSideBySideAgent inside it)
   // survives a close → reopen. The close transition is driven entirely by
-  // CSS — the grid collapses to 0px and the panel slides out via the
+  // CSS: the grid collapses to 0px and the panel slides out via the
   // `--closing` class, so an unmounted assistant is not required to hide it.
   const [panelMounted, setPanelMounted] = useState(panelOpen);
   const [fabVisible, setFabVisible] = useState(!panelOpen);

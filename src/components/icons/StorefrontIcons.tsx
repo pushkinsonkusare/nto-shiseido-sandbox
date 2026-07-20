@@ -56,6 +56,18 @@ export function ShoppingCartIcon(props: IconProps) {
   );
 }
 
+export function CartPlusIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="9" cy="20" r="1.6" />
+      <circle cx="17.5" cy="20" r="1.6" />
+      <path d="M2.5 3.5H5l1.9 9.6a1.8 1.8 0 0 0 1.8 1.45h8a1.8 1.8 0 0 0 1.77-1.43l.7-3.37" />
+      <path d="M17 2.5v6" />
+      <path d="M14 5.5h6" />
+    </BaseIcon>
+  );
+}
+
 export function ChevronRightIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

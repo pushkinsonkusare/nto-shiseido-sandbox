@@ -146,7 +146,7 @@ export function SideBySideAssistant() {
   // Exactly one card at a time owns the "Viewing" label: the card whose
   // `See Results` button (or `Show all` footer, for broad cards) the
   // shopper most recently clicked. New result cards no longer auto-push
-  // their scope onto the PLP — the assistant stays in the chat surface
+  // their scope onto the PLP. The assistant stays in the chat surface
   // until the shopper explicitly hands off.
   const [viewingCardId, setViewingCardId] = useState<string | null>(null);
 
@@ -173,7 +173,7 @@ export function SideBySideAssistant() {
   /* ---------- clear "Viewing" when the PLP no longer matches ---------- */
   // If the shopper navigates away from the PLP, or filters the storefront
   // outside of the assistant flow, the active card is no longer "what
-  // you're viewing" — drop the label so every card reverts to `See Results`.
+  // you're viewing". Drop the label so every card reverts to `See Results`.
   // The viewing id can refer to either an `agent_result_card` (specific
   // search) or a row inside an `agent_broad_result_card` (broad search).
   useEffect(() => {
@@ -196,7 +196,7 @@ export function SideBySideAssistant() {
       }
       if (m.kind === "agent_broad_result_card") {
         // The broad card itself owns the viewing label only when the
-        // shopper clicked its "Show all" button — otherwise the row
+        // shopper clicked its "Show all" button. Otherwise the row
         // owns it. Detect by id match on the outer card.
         if (m.id === viewingCardId) {
           isShowAllCard = true;
@@ -282,7 +282,7 @@ export function SideBySideAssistant() {
 
   /* ---------- PDP-aware dispatch wrapper ---------- */
   // When the shopper is on a PDP, free-typed input (FooterInput) and chip
-  // taps (NbaPillRow) should ground on the active product — but ONLY for
+  // taps (NbaPillRow) should ground on the active product, but ONLY for
   // questions that look like product FAQs ("what's in the box", "is this
   // beginner-friendly", "battery life?"). Shopping / discovery prompts
   // ("gear for moto vlogging", "show me cinema drones", "compare to X",
@@ -547,7 +547,7 @@ export function SideBySideAssistant() {
                     }
                     onShowAll={() => {
                       // Aggregate the union of every row's slugs and
-                      // hand that to the PLP — preserves card order
+                      // hand that to the PLP. This preserves card order
                       // (FPV drones first, then batteries, etc.) and
                       // de-dupes any product that appears in two rows.
                       const seen = new Set<string>();

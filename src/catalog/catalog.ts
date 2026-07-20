@@ -355,7 +355,7 @@ function slugToken(value: string): string {
 /* Deterministic pseudo rating/review count so the demo storefront shows
  * populated star ratings. Shiseido's site doesn't expose a clean numeric
  * rating in the scrape, so we derive a stable value from the product id
- * (never random — the same product always shows the same number). */
+ * (never random: the same product always shows the same number). */
 function hash(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i += 1) {
@@ -478,7 +478,7 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     inTheBox: [],
     productUrl: record.pdpUrl,
     badgeLabel: badgeFor(record, rating),
-    // Skincare products aren't sold by color — the old DJI "color
+    // Skincare products aren't sold by color, so the old DJI "color
     // options" swatch row is intentionally left empty so ProductCard
     // doesn't render it.
     swatches: [],
@@ -487,7 +487,7 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     bundleBaseSlug: null,
     useCaseTags: tags,
     capabilities: tags,
-    // Neutralized legacy (drone) fields — see type declarations above.
+    // Neutralized legacy (drone) fields. See type declarations above.
     productType: "",
     productTypeGroup: "",
     compatibleWithType: [],

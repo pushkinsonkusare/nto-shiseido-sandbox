@@ -31,7 +31,7 @@ export type AgentSimpleUtteranceProps = {
 };
 
 /**
- * AgentSimpleUtterance — the canonical agent message card used inside the
+ * AgentSimpleUtterance is the canonical agent message card used inside the
  * SidecarAssistant chat panel.  Renders an optional hero image, an optional
  * title, the agent's body copy and an optional stack of CTAs.
  *

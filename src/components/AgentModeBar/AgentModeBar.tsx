@@ -39,7 +39,7 @@ export function AgentModeBar() {
   useEffect(() => {
     /* Reflect the active viewport on the documentElement so CSS
      * media-query-equivalents can scope to it. We deliberately
-     * DON'T persist this to localStorage anymore — every page
+     * DON'T persist this to localStorage anymore. Every page
      * refresh resets the experience switcher to its defaults
      * (see `AgentModeContext.tsx`). One-time cleanup of any stale
      * value left by a previous build keeps the storage tidy. */

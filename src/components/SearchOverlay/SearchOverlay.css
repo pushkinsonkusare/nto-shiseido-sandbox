@@ -45,7 +45,7 @@
 /* The `__input-row` is geometrically identical to the page's
  * top-nav (top:64px, height:80px) and now shares its light treatment
  * (white surface, dark text, hairline bottom border), so we deliberately
- * DON'T animate it — animating a transform/opacity on a bar that's
+ * DON'T animate it. Animating a transform/opacity on a bar that's
  * already congruent with the one underneath produces a ghosted
  * "two stacked bars" effect during the transition. We instead
  * slide+fade only the dropdown content (recent searches, bestsellers,
@@ -80,13 +80,13 @@
  * brand wordmark on the left, a bordered search field in the middle,
  * and a close X on the right. Sits flush at the top of the panel so when the
  * overlay opens it literally replaces the page's top-nav (which is
- * 80px tall in the existing pages — we match that height here).
+ * 80px tall in the existing pages, so we match that height here).
  */
 
 .search-overlay__input-row {
   position: relative;
   /* Three-column layout with equal-weight flanks (`1fr auto 1fr`) so
-   * the search field — sized at a fixed 928px in the centre column —
+   * the search field (sized at a fixed 928px in the centre column)
    * lands at the true horizontal centre of the panel regardless of
    * viewport width. Brand wordmark sits flush-left in column 1, close
    * X sits flush-right in column 3 (each via `justify-self`). Earlier
@@ -164,7 +164,7 @@
 
 .search-overlay__field {
   /* Sits in column 2 (`auto`) of the input-row grid, flanked by two
-   * equal `1fr` rails — that's what centres the field horizontally
+   * equal `1fr` rails. That's what centres the field horizontally
    * within the panel. The 600px width is the design spec; the
    * surrounding `1fr` flanks soak up any extra viewport. At narrow
    * viewports (<1280px) the row collapses to `auto 1fr auto` and the
@@ -217,7 +217,7 @@
   color: var(--color-text-muted);
 }
 
-/* Inline "Clear" link inside the search field — only rendered when
+/* Inline "Clear" link inside the search field, only rendered when
  * the input has content. Sits to the right of the input via the
  * label's flex layout. Styled as a low-emphasis link so it doesn't
  * compete with the typed query for visual weight, but bright enough
@@ -341,7 +341,7 @@
   min-width: 0;
 }
 
-/* Recent searches column — fixed 360px lane in the row layout so the
+/* Recent searches column: fixed 360px lane in the row layout so the
  * rail has enough breathing room for the longest demo labels (~25
  * chars) without ellipsis. Shrinks to 320px at the 3-up tier to make
  * room for the bestsellers grid, then becomes a full-width row when
@@ -367,7 +367,7 @@
   }
 }
 
-/* Bestsellers column — must NOT shrink in the flex row, otherwise the
+/* Bestsellers column: must NOT shrink in the flex row, otherwise the
  * inner 5/4/3-up grid (with 260px-wide ProductCards) would lose its
  * track widths and the cards would overlap. `fit-content` lets the
  * column hug the grid's intrinsic width at each breakpoint. */
@@ -457,7 +457,7 @@
  * generated from the matched products' metadata (rule-based, instant)
  * with an optional LLM upgrade (~500ms after pause). Surface treatment
  * mirrors the recent-suggestion list so the column reads as one
- * cohesive rail rather than a separate widget — only the heading icon
+ * cohesive rail rather than a separate widget. Only the heading icon
  * and per-row sparkle glyph signal the AI lane. */
 .search-overlay__assistant-section {
   margin-top: 24px;
@@ -539,7 +539,7 @@
 /* ---------- Match highlighting ----------
  *
  * Surfaces inside `.search-overlay__recent-label`. Kept deliberately
- * subtle — the matched substring picks up a semi-bold weight so it
+ * subtle. The matched substring picks up a semi-bold weight so it
  * pops without the visual noise of a colored background. `<mark>`'s
  * UA default yellow is overridden here.
  */
@@ -621,7 +621,7 @@
 
 /* ProductCard has a fixed `width: 260px` (see ProductCard.css
  * `--pc-card-width`). We size the grid tracks to that exact value so
- * each tier is a stable, definite-width rectangle — using `1fr` here
+ * each tier is a stable, definite-width rectangle. Using `1fr` here
  * would collapse to 0 inside the `fit-content` parent column and the
  * cards would overlap.
  *
@@ -709,7 +709,7 @@
   justify-content: flex-start;
 }
 
-/* Mirrors Figma node 33245:50164 — borderless text + arrow-right link.
+/* Mirrors Figma node 33245:50164: borderless text + arrow-right link.
  * No pill background or border; opacity hover keeps the affordance subtle
  * since the source design only specifies the resting state. */
 .search-overlay__view-all-btn {
@@ -742,7 +742,7 @@
 }
 
 /* Compact product card variant for the search dropdown.
- * The dropdown is a quick-pick surface — we hide swatches, brand/category
+ * The dropdown is a quick-pick surface. We hide swatches, brand/category
  * meta, long-form description, the gallery hover icon-buttons, the hover
  * "View details" CTA, and the prev/next carousel arrows so each tile only
  * shows image, badge, title, rating, price. The whole card is already
@@ -769,7 +769,7 @@
 /* ---------- Assistant promo strip ---------- */
 
 .search-overlay__promo {
-  /* Housed inside the dropdown body — its horizontal margins mirror
+  /* Housed inside the dropdown body. Its horizontal margins mirror
    * the `.search-overlay__body` padding tiers, and the 1920px cap
    * keeps the strip aligned with the centered body content area at
    * extra-wide viewports. Border-radius + full border turn the strip
@@ -793,12 +793,12 @@
   border-radius: 0px;
   /* Mirrors Figma node 33432:104871 ("Agentic Bar"). Two-layer stack:
    *   1. A white→transparent gradient (white solid 0–33.17%, fades to
-   *      transparent at 100%) — same stops as the Figma design so the
+   *      transparent at 100%), same stops as the Figma design so the
    *      icon + title + subtitle always sit on opaque white.
    *   2. The decorative blue-wave graphic, anchored to the bottom-right
    *      and scaled with `cover` so the dense band of waves lands in
    *      the trailing portion of the strip (the upper half of the
-   *      source PNG is mostly empty white, which is fine — the gradient
+   *      source PNG is mostly empty white, which is fine; the gradient
    *      masks it out anyway).
    */
   background-color: #ffffff;
@@ -841,7 +841,7 @@
 }
 
 .search-overlay__promo:hover {
-  /* `background-color` only — using the `background` shorthand here would
+  /* `background-color` only. Using the `background` shorthand here would
    * wipe out the gradient + decorative image layered by `.search-overlay__promo`.
    * The tint sits below the gradient; on the opaque-white left half it's
    * masked, and on the right half the decorative image covers it. */

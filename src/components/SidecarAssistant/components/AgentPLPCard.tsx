@@ -25,6 +25,9 @@ export type AgentPLPCardProps = {
   selectedIds?: Set<string>;
   /** Toggle handler invoked with the product id when its checkbox is clicked. */
   onToggleSelect?: (id: string) => void;
+  /** Add-to-cart handler invoked with the product id when a card's cart icon
+   * button is clicked. Cart button is hidden when omitted. */
+  onAddToCart?: (id: string) => void;
   /** When true, unselected cards' checkboxes are disabled (selection cap hit). */
   selectionLimitReached?: boolean;
   /** Optional class name appended to the root element. */
@@ -35,7 +38,7 @@ export type AgentPLPCardProps = {
 const FALLBACK_GAP = 12;
 
 /**
- * AgentPLPCard — agentic Product List Page card rendered inside the
+ * AgentPLPCard is the agentic Product List Page card rendered inside the
  * SidecarAssistant chat panel.  Mirrors `Agent/PLP_Card` (node-id 32748:34667).
  */
 export function AgentPLPCard({
@@ -45,6 +48,7 @@ export function AgentPLPCard({
   onShowMore,
   selectedIds,
   onToggleSelect,
+  onAddToCart,
   selectionLimitReached,
   className,
 }: AgentPLPCardProps) {
@@ -126,6 +130,9 @@ export function AgentPLPCard({
               swatches={product.swatches}
               badgeLabel={product.badgeLabel}
               onSelect={product.onSelect}
+              onAddToCart={
+                onAddToCart ? () => onAddToCart(product.id) : undefined
+              }
               onWishlist={product.onWishlist}
               selected={selectedIds?.has(product.id)}
               onToggleSelect={() => onToggleSelect?.(product.id)}

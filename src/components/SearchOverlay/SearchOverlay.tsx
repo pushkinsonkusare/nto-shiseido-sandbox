@@ -37,7 +37,7 @@ import "./SearchOverlay.css";
 
 /**
  * Minimum trimmed length before we run the live search. Matches
- * common e-com behaviour — single-letter queries dump too many false
+ * common e-com behaviour: single-letter queries dump too many false
  * positives into the dropdown.
  */
 const MIN_QUERY_LEN = 2;
@@ -56,7 +56,7 @@ const SEARCH_DEBOUNCE_MS = 150;
 
 /**
  * Cap how many ranked products we render in the dropdown grid. The grid
- * lays out as 5x2 / 4x2 / 3x2 / 2x2 / 1x4 across breakpoints — we
+ * lays out as 5x2 / 4x2 / 3x2 / 2x2 / 1x4 across breakpoints. We
  * always render 10 cards into the DOM and let CSS hide the trailing
  * ones via `:nth-child(n+N)` so the React tree stays resize-stable.
  */
@@ -110,7 +110,7 @@ const PROMO_SUB =
  * Filters out accessories and bundles so we surface flagship single-SKU
  * products (drones, action cameras, gimbals, mics), then orders by
  * rating descending with reviewCount as a tiebreaker. Returns up to
- * `MAX_BESTSELLERS` cards — the responsive grid (5x2 / 4x2 / 3x2 /
+ * `MAX_BESTSELLERS` cards. The responsive grid (5x2 / 4x2 / 3x2 /
  * 2x2 / 1x4) hides the trailing ones via CSS at narrower viewports.
  */
 function pickBestsellers(
@@ -144,7 +144,7 @@ export function SearchOverlay() {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Gates AI touch points inside the search overlay — the "Shop with
+  // Gates AI touch points inside the search overlay: the "Shop with
   // your personal Assistant" promo strip and the "Search with
   // assistant" suggestion list. Both should only surface in the
   // assistant-enabled experiences. The Native Storefront
@@ -170,7 +170,7 @@ export function SearchOverlay() {
   }, [query]);
 
   // Snap the debounced query to empty the moment the user clears the
-  // input — clearing should feel instant rather than waiting out the
+  // input. Clearing should feel instant rather than waiting out the
   // 300ms tail of the previous keystroke.
   useEffect(() => {
     if (query.length === 0) setDebouncedQuery("");
@@ -184,7 +184,7 @@ export function SearchOverlay() {
   }, [isQuerying, trimmedQuery, searchProducts]);
   // Stable reference per query. The previous `.slice()` here returned
   // a new array on every render, which churned every downstream
-  // `useMemo`/`useEffect` that depends on `gridProducts` — most
+  // `useMemo`/`useEffect` that depends on `gridProducts`. Most
   // importantly the LLM upgrade effect, whose cleanup aborts the
   // in-flight OpenAI call on every render. Without this memo the
   // assistant suggestions never get to swap from rule-based to LLM.
@@ -198,7 +198,7 @@ export function SearchOverlay() {
 
   // Rule-based "Search with assistant" phrases. Computed synchronously
   // on every render so the section appears the moment the dropdown
-  // opens with results — no network, no debounce. The LLM upgrade
+  // opens with results (no network, no debounce). The LLM upgrade
   // effect below replaces these once the user pauses (when an API
   // key is configured).
   const ruleBasedAssistantSuggestions = useMemo<AssistantSuggestion[]>(() => {
@@ -247,7 +247,7 @@ export function SearchOverlay() {
 
   // Did-you-mean: only computed when the live search returned nothing.
   // Pipes the corrected query back through the engine to confirm it
-  // actually yields hits — we don't want to suggest a "fix" that's
+  // actually yields hits. We don't want to suggest a "fix" that's
   // also empty.
   const didYouMean = useMemo(() => {
     if (!isQuerying) return null;
@@ -278,7 +278,7 @@ export function SearchOverlay() {
     }
   }, [isOpen]);
 
-  /* Escape closes — installed on `document` so it works regardless of
+  /* Escape closes. Installed on `document` so it works regardless of
    * which descendant has focus. */
   useEffect(() => {
     if (!isOpen) return;
@@ -307,7 +307,7 @@ export function SearchOverlay() {
    * Submit the typed query. Basic e-com hygiene: navigate to the PLP
    * with `?q=<query>`. The PLP runs the same search engine and renders
    * the ranked results page. We deliberately bypass the assistant on
-   * the keyword path — the assistant is still reachable via the
+   * the keyword path. The assistant is still reachable via the
    * dedicated promo strip below.
    */
   const submitSearch = useCallback(
@@ -403,7 +403,7 @@ export function SearchOverlay() {
       <div className="search-overlay__panel" role="document">
         {/*
          * Search-mode header: replaces the page's top-nav while the
-         * overlay is open. Visual matches Figma node 33354:69743 —
+         * overlay is open. Visual matches Figma node 33354:69743:
          * dark bg, brand wordmark on the left, dark input field in
          * the centre, close X on the right. The header sits flush at
          * the top of the panel so when the overlay is open it

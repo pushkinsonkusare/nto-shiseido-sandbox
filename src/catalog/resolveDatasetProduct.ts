@@ -29,7 +29,7 @@ function normalize(s: string): string {
     .trim();
 }
 
-/** Subtype/group predicates per family — used to keep the resolver
+/** Subtype/group predicates per family, used to keep the resolver
  *  anchored to the right product class. */
 function familyPredicate(family: ResolveFamily): (p: CatalogProduct) => boolean {
   switch (family) {
@@ -44,7 +44,7 @@ function familyPredicate(family: ResolveFamily): (p: CatalogProduct) => boolean 
     case "Audio":
       return (p) => p.subtypes.some((s) => s.startsWith("mic_"));
     default:
-      /* Unknown/empty family — accept anything that isn't a pure
+      /* Unknown/empty family: accept anything that isn't a pure
        * accessory so we still bias toward a sensible core. */
       return () => true;
   }

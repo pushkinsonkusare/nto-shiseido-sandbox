@@ -13,7 +13,7 @@ export type BroadResultRow = {
   /** Accessory role filter (`mounting`, `power`, …) propagated to the PLP. */
   accessoryRole?: string;
   /**
-   * Recipe spec id — opaque token that lets the PLP look up the same
+   * Recipe spec id: an opaque token that lets the PLP look up the same
    * sub-topic spec the card used (incl. title patterns the URL can't
    * encode cleanly). Set by the rule-based recipe engine; left
    * undefined for OpenAI-driven rows.

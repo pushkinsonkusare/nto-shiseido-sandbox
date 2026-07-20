@@ -25,7 +25,7 @@
    * Per-page local token blocks (--plp-*, --cart-*, etc.) and the
    * storefront chrome reference these. The Theme switcher swaps the
    * whole look by redefining these under
-   * `html[data-demo-theme="consumer-electronics"]` (NTO) below —
+   * `html[data-demo-theme="consumer-electronics"]` (NTO) below.
    * "market street" simply inherits these :root defaults. */
   --color-bg: #ffffff;
   --color-surface: #ffffff;
@@ -123,7 +123,7 @@ html[data-demo-theme="consumer-electronics"] {
   --color-announcement-foreground: #08344a;
 }
 
-/* ----- "NTO" theme — component accent overrides -----
+/* ----- "NTO" theme: component accent overrides -----
  * The storefront ships with several hard-coded Shiseido accent colors
  * (green "Add to Cart", yellow/orange rating stars, blue PLP links, and
  * dark selected chips) that never read from the palette tokens above, so
@@ -138,7 +138,7 @@ html[data-demo-theme="consumer-electronics"] {
   --pc-desc-color: var(--color-text-muted);
 }
 
-/* Primary CTA — PDP "Add to Cart" (default hard-coded green #1cb167). */
+/* Primary CTA: PDP "Add to Cart" (default hard-coded green #1cb167). */
 html[data-demo-theme="consumer-electronics"] .figma-pdp__cta {
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -152,7 +152,7 @@ html[data-demo-theme="consumer-electronics"] .figma-pdp__chips .is-active {
   color: var(--color-primary-foreground);
 }
 
-/* Rating stars — PDP + product cards (default orange/yellow). */
+/* Rating stars: PDP + product cards (default orange/yellow). */
 html[data-demo-theme="consumer-electronics"] .figma-pdp__stars,
 html[data-demo-theme="consumer-electronics"] .figma-product-card__stars {
   color: var(--color-primary);
@@ -164,7 +164,7 @@ html[data-demo-theme="consumer-electronics"] .figma-product-card__badge {
   color: var(--color-primary-foreground);
 }
 
-/* PDP product title — lighter weight for the NTO theme (default bold 700). */
+/* PDP product title, lighter weight for the NTO theme (default bold 700). */
 html[data-demo-theme="consumer-electronics"] .figma-pdp__info h1 {
   font-weight: 500;
 }
@@ -190,8 +190,8 @@ body,
  * frame (`html[data-demo-viewport="mobile"]` clamps `#root` to
  * 430px while the browser viewport stays at desktop width) keys off
  * `@container viewport (max-width: ...)` instead of `@media`. The
- * container's inline-size matches `#root`'s rendered width — which
- * tracks the visible frame in both modes — so a single set of
+ * container's inline-size matches `#root`'s rendered width, which
+ * tracks the visible frame in both modes, so a single set of
  * mobile rules works in dev preview and production.
  *
  * Existing `@container` queries in `ProductDetailPage.css` and
@@ -215,7 +215,7 @@ body {
  * The default OS/browser scrollbar reads far too heavy for this
  * design. We slim it to an 8px overlay-style bar with a transparent
  * track and a soft, rounded translucent thumb that only firms up on
- * hover — mirroring the treatment used by GitHub, Linear, macOS
+ * hover, mirroring the treatment used by GitHub, Linear, macOS
  * overlay scrollbars, etc.
  *
  * Firefox uses the standard `scrollbar-width` / `scrollbar-color`

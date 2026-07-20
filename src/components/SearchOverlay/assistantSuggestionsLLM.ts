@@ -23,7 +23,7 @@ import { isBundleTrippingPhrase } from "./assistantSuggestions";
  *     surfacing an error.
  *   - Per-query in-memory cache. A repeated query inside the
  *     same session never re-fires the network request.
- *   - Cancellable via AbortSignal — caller passes a signal that
+ *   - Cancellable via AbortSignal: caller passes a signal that
  *     gets aborted on every keystroke or unmount, so a stale
  *     response can't overwrite fresh state.
  *   - On any error (network, parse, schema, abort) returns
@@ -147,7 +147,7 @@ export async function fetchAssistantSuggestionsLLM(
     cache.set(cacheKey, prompts);
     return prompts;
   } catch (error) {
-    // Abort errors are expected on every keystroke — don't pollute
+    // Abort errors are expected on every keystroke, so don't pollute
     // the console. Log other failures once for debug parity with the
     // existing OpenAI integration.
     if (
@@ -164,7 +164,7 @@ export async function fetchAssistantSuggestionsLLM(
   }
 }
 
-/** Whether an LLM backend is configured — caller can short-circuit
+/** Whether an LLM backend is configured. Caller can short-circuit
  *  the effect entirely when this is false. */
 export function isLlmAvailable(): boolean {
   return isLlmConfigured();

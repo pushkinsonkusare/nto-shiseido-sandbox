@@ -16,19 +16,19 @@ import type { Intent } from "../../SidecarAssistant/conversation/flow";
  * For exploratory shopper queries (e.g. "A routine for anti-aging",
  * "Help me build a regimen for dry, sensitive skin") the assistant
  * renders a BroadResultCard whose rows correspond to a narrow slice of
- * the catalog — usually one step of a skincare routine. Each slice is
+ * the catalog, usually one step of a skincare routine. Each slice is
  * described by a {@link BroadSubTopicSpec} combining:
- *   - `categoryToken`  — substring match against `product.category`
+ *   - `categoryToken`: substring match against `product.category`
  *                       (matches vocab like "Cleansers", "Serums &
  *                       Treatments", "Sunscreen")
- *   - `capabilities`   — AND-filter on the fused catalog tags
- *   - `titleMatchAny`  — at-least-one substring match on the title,
+ *   - `capabilities`: AND-filter on the fused catalog tags
+ *   - `titleMatchAny`: at-least-one substring match on the title,
  *                       used when tag/category filters can't
  *                       disambiguate a row on their own
- *   - `titleExcludeAny`— hard exclusion list (e.g. drop bundle SKUs
+ *   - `titleExcludeAny`: hard exclusion list (e.g. drop bundle SKUs
  *                       whose title reads like a set even when not
  *                       flagged `isBundle`)
- *   - `leadCount`      — hard cap on products surfaced for this row
+ *   - `leadCount`: hard cap on products surfaced for this row
  *
  * Each spec carries a stable `id` so the See Results handoff can put
  * `?recipe=<id>` on the URL and the PLP can re-resolve the SAME filter
@@ -94,7 +94,7 @@ export type BroadSubTopicSpec = {
    * OR-filter on `product.series` (repurposed to the product
    * Collection slug: `benefiance`, `vital-perfection`,
    * `future-solution-lx`, `shiseido-men`, `ultimune`, …). Any single
-   * match surfaces the product — lets a row scope to one Collection.
+   * match surfaces the product, letting a row scope to one Collection.
    */
   series?: string[];
   /**
@@ -538,7 +538,7 @@ const ALL_SPECS_BY_ID: Map<string, BroadSubTopicSpec> = (() => {
  * The LLM-as-recipe-author tool is the primary path for broad
  * queries. When it doesn't fire (no API key, network error, model
  * timeout), the rule-based fallback used to drop straight to
- * DAILY_ROUTINE_RECIPE — a neutral full-routine sweep. The keyword
+ * DAILY_ROUTINE_RECIPE, a neutral full-routine sweep. The keyword
  * detector below makes the fallback concern-aware so any query that
  * mentions a skin goal (anti-aging, brightening, hydration, …) still
  * produces a tailored routine card without the LLM in the loop.
@@ -704,7 +704,7 @@ export function buildActivityRowTemplates(
   const inclusion = TIER_INCLUSION[tier];
   const rows: ActivityRowTemplate[] = [];
 
-  /* L1 — always included. The first row is the ANCHOR; the routine
+  /* L1: always included. The first row is the ANCHOR; the routine
    * plan's core picker keys off this. */
   rows.push(
     filterToActivityRowTemplate(
@@ -714,7 +714,7 @@ export function buildActivityRowTemplates(
     ),
   );
 
-  /* L2 — filter by tier allowlist, capped at `inclusion.secondary`. */
+  /* L2: filter by tier allowlist, capped at `inclusion.secondary`. */
   let l2Used = 0;
   for (const sec of hierarchy.secondary) {
     if (l2Used >= inclusion.secondary) break;
@@ -730,7 +730,7 @@ export function buildActivityRowTemplates(
     l2Used += 1;
   }
 
-  /* L3 — supporting rows in priority order, capped. */
+  /* L3: supporting rows in priority order, capped. */
   for (let i = 0; i < hierarchy.accessories.length && i < inclusion.accessories; i += 1) {
     const acc: AccessoryHint = hierarchy.accessories[i];
     rows.push(
@@ -753,7 +753,7 @@ export function buildActivityRowTemplates(
  * `?recipe=<id>`.
  *
  * The optional `tier` parameter lets tier-aware callers (the routine
- * plan) request tier-specific row sets — defaults to "ideal", which is
+ * plan) request tier-specific row sets. It defaults to "ideal", which is
  * what non-tier-aware callers (sidecar, sxs) want. Returns an empty
  * array when the goal isn't registered as a hierarchy.
  */
@@ -794,12 +794,12 @@ function buildActivityRecipe(
  *
  * Selection priority (first match wins):
  *  1. EXPLICIT CATEGORY named in the query ("serums", "moisturizers",
- *     "sunscreen", …) — uses `CATEGORY_LED_RECIPES`. We check this
+ *     "sunscreen", …). It uses `CATEGORY_LED_RECIPES`. We check this
  *     FIRST so a query like "for dry skin, suggest a cleanser" leads
  *     with cleansers instead of being captured by hydration-flavoured
  *     concern detection.
  *  2. SKIN GOAL keyword detected in the raw query (anti-aging,
- *     brightening, hydration, pore-control, men's, sun protection) —
+ *     brightening, hydration, pore-control, men's, sun protection). It
  *     builds a tailored routine, preferring a hierarchy-backed recipe
  *     and falling back to the static `GOAL_LED_RECIPES` routine.
  *  3. `anti-aging` / `brightening` / `hydration` tags on the intent.
@@ -813,7 +813,7 @@ export function pickRecipeForIntent(
   const tags = new Set(intent?.requiredTags ?? []);
 
   /* Explicit-category override. If the shopper named a category, we
-   * always lead with that — even if their query also tripped a
+   * always lead with that, even if their query also tripped a
    * concern. */
   const explicitCategoryLabel = intent?.categoryLabel?.toLowerCase();
   if (explicitCategoryLabel && explicitCategoryLabel in CATEGORY_LED_RECIPES) {
@@ -825,7 +825,7 @@ export function pickRecipeForIntent(
     // Prefer the first specific goal match. Try a hierarchy-backed
     // recipe first, then the static routine. If nothing yields rows,
     // the caller (`buildBroadSubTopics` / `resolveRecipe`) retries with
-    // the default recipe — same fallback we already do for empty
+    // the default recipe, the same fallback we already do for empty
     // matches.
     for (const goal of detectedGoals) {
       const recipe = buildActivityRecipe(goal);
@@ -849,9 +849,9 @@ export function getDefaultRecipe(): BroadSubTopicSpec[] {
 }
 
 /**
- * Runtime registry — receives LLM-emitted specs from the
+ * Runtime registry: receives LLM-emitted specs from the
  * `propose_broad_recipe` tool. In-memory only (lost on page refresh,
- * which is fine — refresh URLs degrade gracefully via the existing
+ * which is fine, since refresh URLs degrade gracefully via the existing
  * `?recipe=` fallback path).
  *
  * Runtime entries are checked BEFORE static specs in `getRecipeSpecById`,
@@ -862,7 +862,7 @@ const RUNTIME_SPECS: Map<string, BroadSubTopicSpec> = new Map();
 /**
  * Register an LLM-emitted spec so the PLP can resolve it on row click
  * via `?recipe=<spec.id>`. Returns the id (caller is expected to have
- * already minted a unique one — typically `llm-{ts}-{idx}`).
+ * already minted a unique one, typically `llm-{ts}-{idx}`).
  */
 export function registerRuntimeSpec(spec: BroadSubTopicSpec): string {
   RUNTIME_SPECS.set(spec.id, spec);
@@ -916,7 +916,7 @@ export function buildRowProductsFromSpec(
     }
 
     if (spec.subtypes && spec.subtypes.length > 0) {
-      // AND on Skin Type tokens — every requested skin type must be on
+      // AND on Skin Type tokens: every requested skin type must be on
       // the product. e.g. `["dry"]` matches products tagged for dry
       // skin; `["all"]` matches all-skin-type formulas.
       const tokens = p.subtypes;
@@ -924,7 +924,7 @@ export function buildRowProductsFromSpec(
     }
 
     if (spec.primaryActivities && spec.primaryActivities.length > 0) {
-      // OR on Concern tokens — any single match surfaces the product.
+      // OR on Concern tokens: any single match surfaces the product.
       // e.g. `["anti-aging", "wrinkle-smoothing"]` keeps products that
       // target either concern.
       const tokens = p.primaryActivities;
@@ -932,7 +932,7 @@ export function buildRowProductsFromSpec(
     }
 
     if (spec.series && spec.series.length > 0) {
-      // OR on the product Collection slug — any single match surfaces
+      // OR on the product Collection slug: any single match surfaces
       // the product. Products with `series === null` are dropped from
       // collection-scoped rows.
       if (!p.series || !spec.series.includes(p.series)) continue;

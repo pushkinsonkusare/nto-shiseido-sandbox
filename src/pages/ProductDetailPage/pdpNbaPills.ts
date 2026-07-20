@@ -6,7 +6,7 @@ export type PdpNbaPillKind =
   | "downsell" // Step-down to a cheaper sibling
   | "bundle" // Combo / kit / accessory bundling
   | "hygiene" // Returns, warranty, shipping
-  | "open"; // "Ask me anything" catch-all — has no arrow icon
+  | "open"; // "Ask me anything" catch-all, has no arrow icon
 
 export type PdpNbaPill = {
   /** Stable id for React keys + click telemetry. */
@@ -30,7 +30,7 @@ function shortenTitle(title: string, max = 32): string {
   return `${trimmed.slice(0, max - 1).trimEnd()}…`;
 }
 
-/** Wrap-around index pick — keeps set-rotation logic concise. */
+/** Wrap-around index pick that keeps set-rotation logic concise. */
 function pickByIndex<T>(pool: readonly T[], index: number): T | null {
   if (pool.length === 0) return null;
   const len = pool.length;
@@ -166,7 +166,7 @@ function openPill(product: CatalogProduct, suffix: string): PdpNbaPill {
  * Each lane exposes three pools:
  *   - `confidenceFaqs`: durability / fit-for-use / regulatory FAQs that
  *     defuse the most common pre-purchase hesitations for the category.
- *   - `hookFeatures`: feature-search upsells. Order matters — the first
+ *   - `hookFeatures`: feature-search upsells. Order matters: the first
  *     entry whose `match` returns true is preferred for set A; subsequent
  *     sets cycle through the rest.
  *   - `bundles`: lane-flavored bundle/accessory pills. Always returns at
@@ -217,7 +217,7 @@ const DRONE_LANE: LanePack = {
     {
       id: "faq-drone-noise",
       label: "Is it noisy?",
-      prompt: `How loud is the ${product.title} in flight — will it disturb people or wildlife nearby?`,
+      prompt: `How loud is the ${product.title} in flight, and will it disturb people or wildlife nearby?`,
       kind: "faq",
     },
   ],
@@ -440,7 +440,7 @@ const GIMBAL_LANE: LanePack = {
     {
       id: "faq-gimbal-travel",
       label: "Is it travel-friendly?",
-      prompt: `Is the ${product.title} travel-friendly — does it fold down and fit in a daypack?`,
+      prompt: `Is the ${product.title} travel-friendly, and does it fold down and fit in a daypack?`,
       kind: "faq",
     },
     {
@@ -540,7 +540,7 @@ const MIC_LANE: LanePack = {
     {
       id: "faq-mic-noise",
       label: "How does it handle wind & noise?",
-      prompt: `How well does the ${product.title} handle wind and background noise — what windshields are included?`,
+      prompt: `How well does the ${product.title} handle wind and background noise, and what windshields are included?`,
       kind: "faq",
     },
   ],
@@ -630,12 +630,12 @@ const ACCESSORY_LANE: LanePack = {
       {
         id: "faq-acc-install",
         label: "How do I install it?",
-        prompt: `How do I install or set up the ${product.title} — does it need firmware updates?`,
+        prompt: `How do I install or set up the ${product.title}, and does it need firmware updates?`,
         kind: "faq",
       },
     ];
   },
-  // Accessories don't get a hook-feature upsell — there's no meaningful
+  // Accessories don't get a hook-feature upsell. There's no meaningful
   // step-up to a "better" battery / case. The set builders detect an
   // empty pool and substitute a second confidence FAQ instead.
   hookFeatures: () => [],
@@ -679,7 +679,7 @@ const LANE_PACKS: Record<Lane, LanePack> = {
  * Returns the lane's hook-feature pool ordered by relevance: every
  * `match`ing pill first (in the order they're declared in the lane
  * pack), then the unconditional defaults. This lets the most specific
- * upsell — e.g. "FPV drones" for an Avata PDP — land in set A. */
+ * upsell (e.g. "FPV drones" for an Avata PDP) land in set A. */
 
 function rankHookFeatures(
   features: HookFeature[],
@@ -703,7 +703,7 @@ function rankHookFeatures(
  *
  * The three sets share a common skeleton (in-box + hygiene + open) and
  * differ in how they fill the remaining two contextual slots:
- *   - Set A: hook-feature[0] + bundle[0]   (default lead — discovery + kit)
+ *   - Set A: hook-feature[0] + bundle[0]   (default lead: discovery + kit)
  *   - Set B: confidence-FAQ[1] + hook-feature[1] (durability deep-dive)
  *   - Set C: confidence-FAQ[2] + bundle[1]  (objection-handling + kit)
  * Inside the rotation, every contextual pill has a unique id so a single
@@ -724,7 +724,7 @@ function buildSetA(
   if (hook) {
     pills.push(hook);
   } else {
-    // Accessory lane fallback — promote a confidence FAQ into the slot.
+    // Accessory lane fallback: promote a confidence FAQ into the slot.
     const faq = pickByIndex(faqPool, 0);
     if (faq) pills.push(faq);
   }
@@ -758,7 +758,7 @@ function buildSetB(
   if (hook) {
     pills.push(hook);
   } else {
-    // Accessory lane — substitute a third confidence FAQ.
+    // Accessory lane: substitute a third confidence FAQ.
     const faq3 = pickByIndex(faqPool, 2);
     if (faq3) pills.push(faq3);
   }
@@ -767,7 +767,7 @@ function buildSetB(
   pills.push(openPill(product, "b"));
 
   // Falling back for very small lanes that can't fill three contextual
-  // slots — pad with the catalog-relative compare so the rotation never
+  // slots. Pad with the catalog-relative compare so the rotation never
   // ships with fewer than five pills.
   if (pills.length < 5) {
     const compare = findStepUpSibling(product, catalog);
@@ -840,5 +840,5 @@ export function buildPdpNbaPills(
   return builder(product, catalog, pack);
 }
 
-/** Total number of curated rotations — exported for telemetry & tests. */
+/** Total number of curated rotations, exported for telemetry & tests. */
 export const PDP_NBA_PILL_SET_COUNT = 3;

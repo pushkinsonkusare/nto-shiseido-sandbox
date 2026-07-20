@@ -118,7 +118,7 @@ const BROAD_PATTERNS: RegExp[] = [
   /\b(return|refund|policy|warranty|shipping|delivery\s*time|track\s*order|order\s*status|customer\s*service)\b/i,
   /\b(help\s*me|not\s*sure|advice|where\s*do\s*i\s*start|how\s*do\s*i)\b/i,
   // Exploratory cues like "gear for moto vlogging" / "equipment for a film
-  // shoot" / "kit for travel" — multi-category curated requests that should
+  // shoot" / "kit for travel", multi-category curated requests that should
   // route to the broad result card instead of a single PLP carousel.
   /\b(gear|equipment|kit|setup|essentials|accessor(y|ies))\s+for\b/i,
 ];
@@ -223,7 +223,7 @@ const LANDING_NBA_ALTERNATES: Record<LandingNbaLane, readonly string[]> = {
   ],
   decisionSupport: [
     "Show best-selling skincare",
-    "Serum vs treatment — which do I need?",
+    "Serum vs treatment: which do I need?",
   ],
   supportIntent: ["Help with returns", "Where is my order"],
 };
@@ -309,7 +309,7 @@ export type Intent = {
    * Lowercased model token extracted from the query (e.g. "mavic 4
    * pro", "mini 5 pro", "osmo pocket 3"). When present, accessory
    * results are narrowed to SKUs whose `compatibleWithModels` or
-   * `title` contain this token — so "ND filter for Mavic 4 Pro"
+   * `title` contain this token, so "ND filter for Mavic 4 Pro"
    * surfaces only Mavic 4 Pro filters, not the full lens-filter
    * catalog.
    */
@@ -317,7 +317,7 @@ export type Intent = {
   /**
    * v6 subtype hints from the query ("helmet mount" → mount_helmet,
    * "ND filter" → acc_filter_nd). When present, narrows products to
-   * those carrying at least one of these subtypes — sharper than the
+   * those carrying at least one of these subtypes, sharper than the
    * category-label allow-list which spans every variant in the bucket.
    */
   subtypeHints?: string[];
@@ -330,7 +330,7 @@ const BUNDLE_QUERY_PATTERN =
  * Specific model-name patterns. When a query mentions a particular
  * SKU family (e.g. "for Mavic 4 Pro", "for Mini 5 Pro", "for Pocket
  * 3"), the matched lowercased token feeds `intent.compatibleWith` so
- * accessory results filter to that family. ORDER MATTERS — more
+ * accessory results filter to that family. ORDER MATTERS: more
  * specific patterns must come BEFORE shorter ones (e.g. "Mavic 4 Pro"
  * before "Mavic 3", "Mini 5 Pro" before "Mini 5").
  */
@@ -367,7 +367,7 @@ function stripModelPhrases(text: string): string {
 }
 
 /**
- * Specific subtype hints — when the shopper names a precise mount /
+ * Specific subtype hints: when the shopper names a precise mount /
  * filter / mic / lens variant, narrow the result to that exact v6
  * subtype rather than the broader category-label allow-list. Without
  * this, "helmet mount for Action 5 Pro" surfaces all 12 mount types
@@ -493,7 +493,7 @@ export function classifyIntent(query: string): Intent {
     };
   }
 
-  // Default fallback when no positive signal matched — neither a
+  // Default fallback when no positive signal matched: neither a
   // category (CATEGORY_PATTERNS), a shopping cue (BROAD_PATTERNS), a
   // tier/price/use-case/bundle hint, nor a model name. Returning
   // `empty` lets downstream callers tell "the shopper genuinely typed
@@ -519,14 +519,14 @@ export function classifyIntent(query: string): Intent {
  *     noise, shake, brightness, water, ...).
  *   - The query carries an OWNS_PATTERN ("i have", "my", ...) OR a
  *     HOWTO_PATTERN ("how do i", "what should i use", ...) signal.
- *     Either alone is enough — "how do i reduce glare" is a valid
+ *     Either alone is enough. "how do i reduce glare" is a valid
  *     question even when the shopper doesn't explicitly name a
  *     camera.
  *
  * A model is OPTIONAL. When present we prefer the versioned
  * MODEL_PATTERNS detector ("osmo action 5 pro") and fall back to
  * the family-level detector ("osmo action") only when no version
- * was named. Missing both is fine — the recommendation card just
+ * was named. Missing both is fine. The recommendation card just
  * scopes by role/subtype/capability without a host filter.
  * ============================================================= */
 
@@ -569,7 +569,7 @@ export function classifySymptomAccessory(
  *   1. If `modelToken` matches a non-accessory product's title,
  *      return that exact SKU.
  *   2. If `modelFamily` is set, return the top-rated non-accessory
- *      product whose `series` matches the family — this becomes the
+ *      product whose `series` matches the family. This becomes the
  *      "lead" for an Osmo Action / Mavic / etc. recommendation.
  *   3. Otherwise return `undefined`.
  */
@@ -632,7 +632,7 @@ export function listSymptomHostCandidates(
  * compatibility when a versioned model OR a model family was
  * detected.
  *
- * We deliberately do NOT pivot on a single resolved host — when the
+ * We deliberately do NOT pivot on a single resolved host. When the
  * shopper says "my osmo action" without a version we want to surface
  * accessories compatible with ANY Osmo Action variant, not just the
  * top-rated one. The host-pivot path (`findAccessoriesFor`) is kept
@@ -658,7 +658,7 @@ export function findSymptomAccessories(
     if (capabilities && capabilities.length > 0) {
       if (!p.useCaseTags.some((t) => capabilities.includes(t))) return false;
     }
-    // Compatibility narrowing — soft, but applied here rather than
+    // Compatibility narrowing: soft, but applied here rather than
     // as a pre-sort because for symptom queries the host filter is
     // the SECOND-most important signal after role/subtype.
     if (modelToken) {
@@ -679,7 +679,7 @@ export function findSymptomAccessories(
 
   return candidates
     .sort((a, b) => {
-      // Prefer SKUs that explicitly tag a compatible model — these
+      // Prefer SKUs that explicitly tag a compatible model. These
       // are the curated cross-sells, less likely to be a tag-spray
       // false positive than a title-substring hit.
       const aHasModel = a.compatibleWithModels.length > 0 ? 1 : 0;
@@ -699,7 +699,7 @@ export function filterProducts(
   let pool = products;
 
   // Detect accessory-flavoured intent BEFORE the bundle filter so we
-  // can suppress the bundle exclusion for accessory queries — many
+  // can suppress the bundle exclusion for accessory queries, because many
   // legit accessory SKUs ("Diving Accessory Kit", "Bike Accessory
   // Kit", "Filter Kit", "Microphone Kit") match the catalog's
   // `BUNDLE_TITLE_PATTERN` (which flags `\bkit\b`) even though they
@@ -708,7 +708,7 @@ export function filterProducts(
     // Match every v6 accessory-flavoured category name so an explicit
     // intent like {categories:["Microphones"]} or {categories:["Camera
     // grips & sticks"]} lifts the default isAccessory hide. v5 used
-    // "Microphones"; v6 uses "Camera microphones" — both are accessory
+    // "Microphones"; v6 uses "Camera microphones". Both are accessory
     // buckets, so we match the substring family rather than enumerate.
     /accessor|mount|filter|batter|cable|case|microphone|microphones|charger|strap|tripod|monopod|adapter|propeller|landing\s*gear|remote|lens|grip|stick/i.test(
       c,
@@ -716,10 +716,10 @@ export function filterProducts(
   );
 
   if (intent.includeBundles) {
-    // Explicit bundle ask — show only bundle SKUs.
+    // Explicit bundle ask: show only bundle SKUs.
     pool = pool.filter((product) => product.isBundle);
   } else if (!askedForAccessories) {
-    // Default flagship query — drop bundles so the core PLP shows
+    // Default flagship query: drop bundles so the core PLP shows
     // single-SKU products. Accessory queries skip this so Kit-named
     // accessory products survive.
     pool = pool.filter((product) => !product.isBundle);
@@ -727,13 +727,13 @@ export function filterProducts(
   if (!askedForAccessories) {
     // v5 tags many accessories under their host's product_type
     // (an ND filter for a drone is `product_type: "drone"`), so we
-    // can't trust productType alone — use the derived `isAccessory`
+    // can't trust productType alone, so use the derived `isAccessory`
     // signal which combines product_type, accessory_role, and title.
     pool = pool.filter((product) => !product.isAccessory);
   }
 
   if (intent.categories && intent.categories.length > 0) {
-    // Substring match — keeps the rule-based path aligned with the
+    // Substring match: keeps the rule-based path aligned with the
     // PLP and recipe filter, so labels like "Microphones" still match
     // the v6 catalog category "Camera microphones", "Drones" matches
     // "4K drones", etc.
@@ -747,7 +747,7 @@ export function filterProducts(
   // Accessory-class subtype narrowing.
   //
   // - `subtypeHints` (e.g. `mount_helmet` from "helmet mount") are
-  //   the SHARPEST signal — when the shopper named a specific
+  //   the SHARPEST signal: when the shopper named a specific
   //   variant we narrow to those subtypes only.
   // - Otherwise fall back to the category-label allow-list (e.g.
   //   "mounts" → all mount_* subtypes) so the row stays clean of
@@ -770,7 +770,7 @@ export function filterProducts(
     }
   }
 
-  // Compatibility filter — when the shopper named a specific model
+  // Compatibility filter: when the shopper named a specific model
   // (e.g. "ND filter for Mavic 4 Pro"), narrow accessory results to
   // SKUs that match. We check BOTH `compatibleWithModels` (curated v5
   // tags) AND the SKU title (catches accessories that simply name the
@@ -822,8 +822,8 @@ export function filterProducts(
   // Use-case tags are HARD filters. If at least one product matches
   // every required tag we keep only those. If not, we fall back to
   // matching ANY one tag (useful for compound asks like "ocean
-  // travel"). If even that returns nothing, we return an empty pool —
-  // the wrong recommendation is worse than a "no exact match" message.
+  // travel"). If even that returns nothing, we return an empty pool,
+  // because the wrong recommendation is worse than a "no exact match" message.
   if (intent.requiredTags && intent.requiredTags.length > 0) {
     const tagged = pool.filter((product) =>
       intent.requiredTags!.every((tag) => product.useCaseTags.includes(tag)),
@@ -898,7 +898,7 @@ export const WELCOME_BODY =
 export const WELCOME_NBAS = buildWelcomeNbas(0);
 
 export const PROBING_FALLBACK_BODY =
-  "Got it — could you tell me a bit more so I can find the perfect match? Here are a few common things shoppers narrow down by:";
+  "Got it. Could you tell me a bit more so I can find the perfect match? Here are a few common things shoppers narrow down by:";
 
 export const PROBING_NBAS = [
   "Products for dry skin",
@@ -959,7 +959,7 @@ export function classifyHygieneTopic(query: string): HygieneTopic | null {
 export const POLICY_BODIES: Record<HygieneTopic, string> = {
   return:
     "Shiseido accepts returns within 30 days of delivery for a full " +
-    "refund. Products should be gently used or unopened — if a product " +
+    "refund. Products should be gently used or unopened, and if a product " +
     "doesn't work for your skin, you can still return it within the " +
     "window. Include your order details, and refunds are issued back to " +
     "the original payment method and typically clear in 7–14 business " +
@@ -969,7 +969,7 @@ export const POLICY_BODIES: Record<HygieneTopic, string> = {
     "If your order arrived damaged, leaking, or you received the wrong " +
     "item, we'll send a free replacement. Let us know within 30 days of " +
     "delivery and, where possible, share a photo of the issue so we can " +
-    "resolve it quickly — there's no need to return a damaged item " +
+    "resolve it quickly. There's no need to return a damaged item " +
     `first in most cases. Details: ${HELP_CENTER_URL}`,
   warranty:
     "Every Shiseido product is backed by our satisfaction guarantee. If " +
@@ -979,7 +979,7 @@ export const POLICY_BODIES: Record<HygieneTopic, string> = {
     "on the packaging for how long a product stays at its best once " +
     `opened. Guarantee info: ${HELP_CENTER_URL}`,
   shipping:
-    "Shipping times and fees vary by region and ship-to address — we " +
+    "Shipping times and fees vary by region and ship-to address, and we " +
     "confirm both at checkout, and standard orders typically arrive in " +
     "2–4 business days. Complimentary shipping is available on qualifying " +
     "orders, and you can track your order from your Shiseido account once " +
@@ -1233,7 +1233,7 @@ function buildPlpNbas(
     items.push({ label: "Best for my skin type", lane: "capture" });
   }
 
-  // Bundle upsell — only when the current PLP is showing core SKUs
+  // Bundle upsell: only when the current PLP is showing core SKUs
   // (intent.includeBundles === false) and at least one bundle exists
   // in the same category.
   if (!intent.includeBundles && bundleProducts.length > 0) {
@@ -1262,7 +1262,7 @@ function buildPdpNbas(
     { label: `Add ${product.title} to cart`, lane: "conversion" },
   ];
 
-  // Bundle upsell takes priority — it's the highest-AOV next move.
+  // Bundle upsell takes priority because it's the highest-AOV next move.
   if (matchingBundle && !product.isBundle) {
     items.push({
       label: `Save more with ${matchingBundle.title.split("(")[0].trim()}`,
@@ -1354,7 +1354,7 @@ function buildOrderNbas(
 
   if (purchased) {
     // Post-purchase, the strongest "complete the set" chip is a
-    // model-specific ND filter / battery — surface that first when we
+    // model-specific ND filter / battery, so surface that first when we
     // can resolve a real accessory from the catalog.
     if (catalog) {
       const accessory = findAccessoriesFor(purchased, catalog, { limit: 1 })[0];
@@ -1382,7 +1382,7 @@ function buildOrderNbas(
     }
   }
 
-  // Post-purchase bundle nudge — useful when shopper bought a base
+  // Post-purchase bundle nudge: useful when shopper bought a base
   // SKU and the next-trip-up is the matching combo.
   if (matchingBundle && purchased && !purchased.isBundle) {
     items.push({
@@ -1462,7 +1462,7 @@ const ACCESSORY_ROLE_LABELS: Record<AccessoryRole, string> = {
  * Roles that we treat as "common ecosystem add-ons" worth surfacing
  * automatically. `general` and `stabilization` are too broad/niche
  * to seed by default but are still queryable. `fpv_component` is
- * intentionally NOT in the default list — it only applies to the
+ * intentionally NOT in the default list: it only applies to the
  * Avata family and would over-surface goggles for non-FPV cores.
  * `buildAccessoryBundle` picks it up explicitly via series matching
  * (see `buildFPVEcosystemBundle`).
@@ -1475,7 +1475,7 @@ const DEFAULT_ACCESSORY_ROLES: AccessoryRole[] = [
 ];
 
 /**
- * Series considered "FPV hosts" — when a shopper looks at one of
+ * Series considered "FPV hosts": when a shopper looks at one of
  * these cores we add `fpv_component` cross-sell on top of the normal
  * battery/filter/case/mount triad.
  */
@@ -1614,7 +1614,7 @@ export type FindAccessoriesOptions = {
    */
   requireModelMatch?: boolean;
   /**
-   * Optional v6 subtype filter — narrows the role bucket further.
+   * Optional v6 subtype filter that narrows the role bucket further.
    * e.g. `role: "visual_enhancement"` + `subtypes: ["acc_filter_cpl"]`
    * surfaces polarising filters specifically rather than every
    * visual-enhancement SKU. Soft filter: if no candidate carries any
@@ -1623,7 +1623,7 @@ export type FindAccessoriesOptions = {
    */
   subtypes?: string[];
   /**
-   * Optional v6 capability filter — narrows by `useCaseTags` (the
+   * Optional v6 capability filter that narrows by `useCaseTags` (the
    * canonical tag set already exposed on `CatalogProduct`). Used by
    * the symptom router for waterproof gear: role `general` is too
    * wide, so we additionally require `waterproof` / `underwater` to
@@ -1655,7 +1655,7 @@ export function findAccessoriesFor(
     if (role && candidate.accessoryRole !== role) return false;
     if (!accessoryMatchesType(candidate, hostGroup)) return false;
     const modelMatch = accessoryMatchesModel(candidate, core.title);
-    /* Phone-gimbal escape hatch — mirrors the rule in
+    /* Phone-gimbal escape hatch that mirrors the rule in
      * isAccessoryCompatibleWithCoreStrict. The v6 catalog under-tags
      * the universal phone-creator SKUs (DJI Mic family, OM Magnetic
      * Phone Clamp, Magnetic Ball Joint Mount, Mini Tripod, Mini
@@ -1679,7 +1679,7 @@ export function findAccessoriesFor(
 
   // Soft subtype narrowing inside the role bucket. e.g. when the
   // symptom router asks for `acc_filter_cpl` we keep only kits that
-  // carry that subtype — but if the data has no CPL-tagged kit for
+  // carry that subtype, but if the data has no CPL-tagged kit for
   // this host (gap in tagging) we keep the broader bucket so the
   // shopper still gets a useful answer.
   let narrowed = candidates;
@@ -1714,7 +1714,7 @@ export function findAccessoriesFor(
  * leads with the experience-defining peripheral, not a battery.
  *
  * When `size > 4` (e.g. the Wingman Plan page's pro tier asking for 7
- * tiles), the role-uniqueness rule alone can't fill the request — the
+ * tiles), the role-uniqueness rule alone can't fill the request, because the
  * default role pool only has 4 entries. After the first one-per-role
  * pass, do a second pass that allows up to 2 picks per role, still
  * de-duped by slug, until we either reach `size` or run out of
@@ -1789,7 +1789,7 @@ function accessoryChipLabel(accessory: CatalogProduct): string {
   const role = accessory.accessoryRole;
   const friendlyRole =
     role && role !== "general" ? ACCESSORY_ROLE_LABELS[role] : "accessory";
-  // Prefer a concise human label — the full SKU title can be long.
+  // Prefer a concise human label because the full SKU title can be long.
   // "Add Freewell ND filter (Mini 4 Pro)" reads better than the raw
   // marketing title.
   return `Add ${capitalize(friendlyRole)}: ${shortenTitle(accessory.title)}`;
@@ -1870,7 +1870,7 @@ function useCaseIntro(tags: string[] | undefined): string {
 /** Build the agent's intro line for a PLP response based on the query/intent. */
 export function buildPlpIntro(query: string, intent: Intent, count: number): string {
   if (count === 0) {
-    return "I couldn't find an exact match for that — here's a curated selection that's close.";
+    return "I couldn't find an exact match for that, but here's a curated selection that's close.";
   }
 
   if (intent.includeBundles) {

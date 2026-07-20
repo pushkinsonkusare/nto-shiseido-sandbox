@@ -18,7 +18,7 @@ export type RecentSearchKind = "assistant" | "plp";
 export type RecentSearch = {
   /** Visible label rendered in the dropdown row. */
   label: string;
-  /** Where the click leads — assistant prompt vs PLP nav. */
+  /** Where the click leads: assistant prompt vs PLP nav. */
   kind: RecentSearchKind;
 };
 

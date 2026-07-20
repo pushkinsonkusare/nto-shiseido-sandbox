@@ -6,7 +6,7 @@ type Props = {
 /**
  * Free-text agent reply, rendered with the same `.sxs-result-card` chrome
  * (#fafafa surface, #d1d5db border, 24px vertical / 24px horizontal padding)
- * as the result cards so every assistant utterance — text or card — sits
+ * as the result cards so every assistant utterance (text or card) sits
  * inside a consistent component frame. Mirrors the Figma "Agent /
  * Simple_Utterance" node so we never fall back to a bare paragraph.
  */

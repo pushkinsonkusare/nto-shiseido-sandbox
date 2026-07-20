@@ -19,7 +19,7 @@
  * `display: contents` so that the page's children (header-shell, page-inner,
  * footer) become direct grid items of .sxs-layout. The header-shell spans
  * both columns (full width), the body takes column 1, and the assistant
- * panel sits in column 2 next to the body — never under the header. */
+ * panel sits in column 2 next to the body, never under the header. */
 
 :root {
   --sxs-mode-bar-height: 0px;
@@ -185,7 +185,7 @@
 
 /* Open / close animations.
  *
- * The easing — cubic-bezier(0.22, 1, 0.36, 1) — is "easeOutQuint": a quick
+ * The easing (cubic-bezier(0.22, 1, 0.36, 1)) is "easeOutQuint": a quick
  * initial pull followed by a long, slow settle. It gives the panel the
  * confident, decelerating feel typical of high-end native UIs (and matches
  * the curve already used by `.sxs-layout__fab`).
@@ -296,8 +296,8 @@
   position: fixed;
   right: 64px;
   bottom: 64px;
-  height: 70px;
-  width: 70px;
+  height: 56px;
+  width: 56px;
   padding: 0 16px;
   border-radius: 999px;
   border: none;
@@ -321,6 +321,30 @@
     box-shadow 160ms ease,
     background-color 160ms ease;
   animation: sxs-layout__fab-in 220ms ease-out;
+}
+
+/* Premium light shimmer: a single narrow band of light glides across the
+ * pill once it has finished expanding on hover (see the 300ms delay on the
+ * trigger below, timed to land just after the ~320ms width transition).
+ * Uses transform (GPU-accelerated) rather than background-position so the
+ * sweep stays perfectly smooth. */
+.sxs-layout__fab::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-160%) skewX(-16deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
 }
 
 .sxs-layout__backdrop {
@@ -389,10 +413,39 @@
   outline-offset: 3px;
 }
 
+/* Only sweep once the pill is fully expanded (label revealed). The 300ms
+ * delay holds the shimmer until the expansion settles for a premium feel. */
+.sxs-layout__fab:hover::after,
+.sxs-layout__fab:focus-visible::after {
+  animation: sxs-layout__fab-shimmer 1000ms ease-in-out 300ms 1;
+}
+
+@keyframes sxs-layout__fab-shimmer {
+  0% {
+    opacity: 0;
+    transform: translateX(-160%) skewX(-16deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(320%) skewX(-16deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sxs-layout__fab,
   .sxs-layout__fab-label {
     transition: none;
+    animation: none;
+  }
+
+  .sxs-layout__fab:hover::after,
+  .sxs-layout__fab:focus-visible::after {
     animation: none;
   }
 }
@@ -515,6 +568,12 @@ html[data-demo-viewport="mobile"] .sxs-layout--mobile .sxs-layout__fab {
 .sxs-layout--mobile .sxs-layout__fab:focus-visible {
   width: 60px;
   gap: 0;
+}
+
+/* No shimmer on mobile: the FAB stays collapsed (icon-only) on hover. */
+.sxs-layout--mobile .sxs-layout__fab:hover::after,
+.sxs-layout--mobile .sxs-layout__fab:focus-visible::after {
+  animation: none;
 }
 
 .sxs-layout--mobile .sxs-layout__fab-label {

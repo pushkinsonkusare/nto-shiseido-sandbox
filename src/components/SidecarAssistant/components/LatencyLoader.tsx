@@ -26,7 +26,7 @@ export type LatencyLoaderProps = {
 };
 
 /**
- * LatencyLoader — agentic "the assistant is working" indicator rendered
+ * LatencyLoader is the agentic "the assistant is working" indicator rendered
  * inside the chat panel while a response is in flight.  Mirrors
  * `Latency Loader` (node-id 32933:112416 family) from Figma.
  */

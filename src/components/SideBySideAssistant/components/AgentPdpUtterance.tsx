@@ -8,15 +8,15 @@ import { ExternalLinkIcon } from "../../icons/StorefrontIcons";
  * subset of Markdown the LLM tends to emit into actual HTML. The
  * underlying `<p>` is a plain text node otherwise, so things like
  * `**DJI Neo Drone**` or numbered lists with embedded newlines would
- * read as raw asterisks and get collapsed onto a single line — looks
- * like code, not prose.
+ * read as raw asterisks and get collapsed onto a single line, which
+ * looks like code, not prose.
  *
  * Supported today:
  * - `**bold**` → <strong>bold</strong>
  * - `\n` (and `\r\n`) → <br />
  *
  * Anything outside this whitelist (italics, headings, bullets, links)
- * is left as literal text — by design. The prompt also asks the model
+ * is left as literal text, by design. The prompt also asks the model
  * to respond in plain prose, so this renderer is the host-side
  * insurance, not the primary surface.
  */
@@ -43,7 +43,7 @@ function renderInlineBody(body: string): ReactNode {
 export type AgentPdpUtteranceCta = {
   /** Visible label of the CTA chip. */
   label: string;
-  /** Destination URL — opened in a new tab. */
+  /** Destination URL, opened in a new tab. */
   href: string;
 };
 
@@ -65,7 +65,7 @@ type Props = {
 };
 
 /**
- * Reply card scoped to a specific PDP — fired when the shopper uses an
+ * Reply card scoped to a specific PDP, fired when the shopper uses an
  * "Ask Assistant" NBA pill on a product page. Renders a 64×64 product
  * thumbnail + title + category as a context header inside the same
  * `sxs-result-card` chrome used for result cards, with the agent's

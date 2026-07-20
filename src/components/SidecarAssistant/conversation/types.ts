@@ -5,6 +5,8 @@ import type {
   AgentPDPSizeOption,
   AgentCartItem,
   AgentCartLineItem,
+  AgentCompareColumn,
+  AgentCompareRow,
   LatencyLoaderVariant,
 } from "../components";
 import type { NbaLane, NbaStage } from "./flow";
@@ -21,6 +23,7 @@ export type ChatMessage =
   | AgentLoaderMessage
   | AgentPlpMessage
   | AgentPdpMessage
+  | AgentCompareMessage
   | AgentCartMessage
   | AgentOrderMessage
   | AgentNbasMessage;
@@ -73,6 +76,21 @@ export type AgentPdpMessage = {
   reviewCount?: number;
   colors?: AgentPDPColorOption[];
   sizes?: AgentPDPSizeOption[];
+};
+
+export type AgentCompareMessage = {
+  id: string;
+  kind: "agent_compare";
+  /** Body copy rendered above the comparison table. */
+  intro: string;
+  /** Products compared, one per table column. */
+  columns: AgentCompareColumn[];
+  /** Attribute rows, each with one value per column. */
+  rows: AgentCompareRow[];
+  /** Optional closing recommendation shown beneath the table. */
+  recommendation?: string;
+  /** Slug of the recommended product, bolded inside the recommendation copy. */
+  recommendedSlug?: string;
 };
 
 export type AgentCartMessage = {

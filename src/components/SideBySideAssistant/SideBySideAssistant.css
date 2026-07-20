@@ -1,4 +1,4 @@
-/* Side-by-Side Assistant — inline, non-overlay variant of the Personal Assistant.
+/* Side-by-Side Assistant: inline, non-overlay variant of the Personal Assistant.
  *
  * Pixel-matches the Figma "Side by side assistant" frame
  * (file EUVJNhnF47i8ubfOWKwErc, node 32946:128103). Lives inside a 420px column
@@ -191,7 +191,7 @@
  *
  * Free-text replies are rendered inside the same .sxs-result-card chrome
  * as result/broad cards (so every assistant message sits in a consistent
- * frame). The only thing that differs is the body text colour — utterances
+ * frame). The only thing that differs is the body text colour: utterances
  * use the full foreground (#17171b) per the Figma "Agent /
  * Simple_Utterance" node, while result-card body text stays muted. */
 .sxs-utterance__text {
@@ -217,8 +217,8 @@
  *
  * Per Figma nodes 33250:60409 / 60410 / 33266:60638. */
 /* Visual chrome mirrors `.sxs-result-card__row` (BroadResultCard row
- * button) so the PDP context button reads as the same component family
- * — background, hover, focus, and border all match. The PDP variant
+ * button) so the PDP context button reads as the same component family:
+ * background, hover, focus, and border all match. The PDP variant
  * keeps its own thumb / lead-text sizing rules below since the inner
  * markup differs (no `.sxs-result-card__lead` wrapper, no CTA icon). */
 .sxs-pdp-utterance__context {
@@ -322,7 +322,7 @@
   box-sizing: border-box;
 }
 
-/* "Detailed return policy" chip — text + external-link icon. No fill /
+/* "Detailed return policy" chip: text + external-link icon. No fill /
  * border per the Figma chip; the underline shows on hover so the link
  * affordance is still discoverable. */
 .sxs-pdp-utterance__cta {
@@ -362,7 +362,7 @@
 
 /* The body renderer in `AgentPdpUtterance.tsx` lifts `**bold**` markdown
  * into <strong>, but the design treats those segments as emphasized prose
- * rather than visually bold — keep the regular weight so the run flows
+ * rather than visually bold. Keep the regular weight so the run flows
  * with the surrounding paragraph instead of sprouting bold runs. */
 .sxs-pdp-utterance .sxs-result-card__body-text {
   color: rgba(23, 23, 27, 1);
@@ -519,7 +519,7 @@
  *
  * Matches the Figma "Result Card / Specific" component (file:
  * EUVJNhnF47i8ubfOWKwErc, node 33090:156189). Two states share the same
- * layout — only the trailing icon swaps between arrow-right (rest) and eye
+ * layout: only the trailing icon swaps between arrow-right (rest) and eye
  * (viewing), and the inner row inverts to white when viewing.
  *
  * Structure:
@@ -539,7 +539,7 @@
  * `.sxs-result-card__lead` / `__lead-text` / `__title` rules are
  * intentionally the canonical "card row" treatment used by Compact,
  * Broad (`.sxs-broad-card`) sub-topic rows, and AgentPdpUtterance's
- * `.sxs-pdp-utterance__context` row alike — same #fafafa surface,
+ * `.sxs-pdp-utterance__context` row alike: same #fafafa surface,
  * vertically centered 64px lead, 14px semibold title, no gap between
  * title and subtitle. Don't reintroduce per-variant overrides for
  * font-size, gap, or vertical alignment unless the Figma genuinely
@@ -703,7 +703,7 @@
 }
 
 /* Icon-only CTA per the Figma "Result Card / Specific" component: no fill,
- * no border, no shadow — just the lucide icon. The row's white background
+ * no border, no shadow: just the lucide icon. The row's white background
  * (in viewing state) is what signals active scope; this button only owns
  * its own focus ring. The 16px right-padding lives on a wrapper inside the
  * row so the icon sits 16px from the inner border. */
@@ -715,7 +715,7 @@
   flex: 0 0 auto;
 }
 
-/* The CTA is now a decorative icon inside the row button — the parent row
+/* The CTA is now a decorative icon inside the row button. The parent row
  * owns the click, focus ring, and hover. Keep the box untouched so layout
  * is identical, but drive color from the row's hover state. */
 .sxs-result-card__cta {
@@ -776,7 +776,7 @@
 /* Collapse the seam between stacked rows: each row carries its own 1px
  * border, so with gap:0 adjacent borders would render as a 2px line.
  * Pulling every non-first row up by 1px makes its top border land
- * exactly on the previous row's bottom border — the two 1px lines
+ * exactly on the previous row's bottom border. The two 1px lines
  * occupy the same pixel and read as a single hairline. Scoped to the
  * broad stack so single-row consumers of `.sxs-result-card__row-wrap`
  * (CompactResultCard, AgentPdpUtterance) are unaffected. */
@@ -784,8 +784,8 @@
   margin-top: -1px;
 }
 
-/* Establish a stacking context on every row so the viewing variant —
- * and any hovered/focused row — can paint above its neighbors. Without
+/* Establish a stacking context on every row so the viewing variant,
+ * and any hovered/focused row, can paint above its neighbors. Without
  * this the viewing row's bottom #9ca3af border would be covered by the
  * next row's #d1d5db top border (later DOM order paints later), and a
  * focus outline (outline-offset:2px) could be visually overlapped by

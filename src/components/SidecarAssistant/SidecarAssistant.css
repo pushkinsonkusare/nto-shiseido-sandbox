@@ -230,7 +230,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
 }
 
 /* Prevent any direct chat message/card from being squashed by the flex
-   column container — they should always render at their natural content
+   column container. They should always render at their natural content
    height and let `.sidecar-assistant__chat` scroll instead. */
 .sidecar-assistant__chat > * {
   flex-shrink: 0;

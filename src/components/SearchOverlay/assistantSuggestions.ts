@@ -10,7 +10,7 @@ import {
  * Mines metadata of the matched products (series, subtypes,
  * primaryActivities, capabilities, accessoryRole, title) and
  * templates 3-4 conversational prompts a shopper might want to
- * ask the assistant — `Accessories for Mavic 4 Pro`, `Wedding
+ * ask the assistant: `Accessories for Mavic 4 Pro`, `Wedding
  * videographer kit`, `Cinematic gimbals`, etc.
  *
  * Sync, free, deterministic, offline-friendly. Used as the
@@ -50,7 +50,7 @@ const BROAD_VERB_FOR_PATTERN =
  * True when a phrase would land on the side-by-side's bundle-deals
  * branch (CompactResultCard with "Here are some bundle deals... save
  * you more:" copy). A phrase is bundle-tripping when it matches the
- * bundle pattern AND does NOT also match the broad pattern — the
+ * bundle pattern AND does NOT also match the broad pattern. The
  * broad classifier wins when both fire and routes the intent to a
  * BroadResultCard recipe instead.
  *
@@ -65,7 +65,7 @@ export function isBundleTrippingPhrase(phrase: string): boolean {
 }
 
 /**
- * Activities we treat as "generic" — fine signals on their own but
+ * Activities we treat as "generic": fine signals on their own but
  * outranked by more specific ones when both are present. e.g. a query
  * that matches both `vlog` and `wedding` should produce wedding-flavoured
  * phrases, not vlogging ones.
@@ -197,7 +197,7 @@ export function buildAssistantSuggestionsRuleBased(
     phrases.push(norm);
   };
 
-  // 1. Accessories-for-model — the strongest, most-clickable phrase
+  // 1. Accessories-for-model: the strongest, most-clickable phrase
   //    when the user has typed something that resolves to a specific
   //    SKU (Mavic 4 Pro, RS 4, Osmo Action 5 Pro). Skips silently when
   //    the title doesn't carry a recognisable model token.
@@ -206,7 +206,7 @@ export function buildAssistantSuggestionsRuleBased(
     push(`Accessories for ${model}`);
   }
 
-  // 2. Activity-driven — pick the most-common specific activity across
+  // 2. Activity-driven: pick the most-common specific activity across
   //    the top results. `professional_filmmaker`/`wedding`/`motorcycle`
   //    win over generic `vlog`/`travel` when both are present.
   const activitySpecific = topToken(
@@ -226,7 +226,7 @@ export function buildAssistantSuggestionsRuleBased(
     }
   }
 
-  // 3. Series ecosystem — when 2+ top products share a series, the
+  // 3. Series ecosystem: when 2+ top products share a series, the
   //    family is a meaningful axis of exploration. Phrased as
   //    `Gear for {Series} owners` (rather than `{Series} ecosystem`)
   //    so it matches the broad classifier and routes to a series-
@@ -248,7 +248,7 @@ export function buildAssistantSuggestionsRuleBased(
     push(`Gear for ${formatSeriesLabel(dominantSeries)} owners`);
   }
 
-  // 4. Capability-flavoured category — "Cinematic gimbals", "Waterproof
+  // 4. Capability-flavoured category: "Cinematic gimbals", "Waterproof
   //    action cameras". Picks the first capability from the top
   //    product's `capabilities` array that's in our adjectival list.
   const cap = ADJECTIVAL_CAPABILITIES.find((c) =>
@@ -258,7 +258,7 @@ export function buildAssistantSuggestionsRuleBased(
     push(`${formatCapabilityLabel(cap)} ${categoryNoun(topProduct.category)}`);
   }
 
-  // 5. Comparison fallback — when the top 2 results belong to different
+  // 5. Comparison fallback: when the top 2 results belong to different
   //    series, a "X vs Y" comparison is a natural assistant prompt.
   if (top.length >= 2 && phrases.length < MAX_SUGGESTIONS) {
     const a = top[0].series;

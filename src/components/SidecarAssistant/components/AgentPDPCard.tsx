@@ -108,7 +108,7 @@ function StarRating({
 }
 
 /**
- * AgentPDPCard — agentic Product Detail Page card rendered inside the
+ * AgentPDPCard is the agentic Product Detail Page card rendered inside the
  * SidecarAssistant chat panel.  Mirrors `Agent/PDP_Card` (node-id 32748:34755).
  */
 export function AgentPDPCard({
@@ -254,7 +254,7 @@ export function AgentPDPCard({
           <div className="agent-pdp__group" role="radiogroup" aria-label="Color">
             <p className="agent-pdp__group-label">
               Color:{" "}
-              <span style={{ fontWeight: 400 }}>{colorLabel ?? "—"}</span>
+              <span style={{ fontWeight: 400 }}>{colorLabel ?? "N/A"}</span>
             </p>
             <div className="agent-pdp__group-options">
               {colors.map((option) => {
@@ -286,7 +286,7 @@ export function AgentPDPCard({
         {sizes && sizes.length > 0 ? (
           <div className="agent-pdp__group" role="radiogroup" aria-label="Size">
             <p className="agent-pdp__group-label">
-              Size: <span style={{ fontWeight: 400 }}>{sizeLabel ?? "—"}</span>
+              Size: <span style={{ fontWeight: 400 }}>{sizeLabel ?? "N/A"}</span>
             </p>
             <div className="agent-pdp__group-options">
               {sizes.map((option) => {

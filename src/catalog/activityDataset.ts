@@ -1,5 +1,5 @@
 /* =============================================================
- * Activity training dataset — routing ground-truth.
+ * Activity training dataset: routing ground-truth.
  *
  * Sourced from the DJI agent training dataset (.xlsx), transcribed
  * into `activityDataset.generated.ts` by
@@ -118,7 +118,7 @@ export function getTierRows(
 /* ---------- Query -> activity detection ----------
  *
  * Keyword patterns mapping free-text queries onto the 29 dataset
- * activities. Order matters — more specific activities first so a
+ * activities. Order matters, with more specific activities first so a
  * compound query ("mountain biking trip") hits `Mountain Biking`
  * before the generic `Road Trip`. The first match wins.
  *
@@ -126,7 +126,7 @@ export function getTierRows(
  * through to the legacy hierarchy planner, which is a safe default.
  */
 const ACTIVITY_PATTERNS: Array<{ activity: string; test: RegExp }> = [
-  /* Order matters — first match wins. Physical-activity environments
+  /* Order matters, and the first match wins. Physical-activity environments
    * (Commercial, Air, Water, Sports, Outdoor) are checked BEFORE the
    * generic Creator `vlog` pattern so a query like "moto vlogging"
    * routes to Motorcycle Touring (Action + helmet/handlebar mounts +
@@ -152,7 +152,7 @@ const ACTIVITY_PATTERNS: Array<{ activity: string; test: RegExp }> = [
   { activity: "Kayaking", test: /\b(kayak\w*|canoe\w*|paddling)\b/i },
   { activity: "Fishing", test: /\b(fish\w*|angling|kayak\s*fish\w*)\b/i },
 
-  // Sports — checked before the generic `vlog` pattern so
+  // Sports, checked before the generic `vlog` pattern so
   // "moto vlogging", "mtb vlog", "ski edit" win their sport.
   { activity: "Motorcycle Touring", test: /\b(moto(?:rcycle|rbike)?\s*(?:tour\w*|vlog\w*|trip|riding|ride)?|motorbike|motorcycl\w*|\brider\b)\b/i },
   { activity: "Mountain Biking", test: /\b(mountain\s*bik\w*|mtb|downhill\s*bik\w*|trail\s*bik\w*)\b/i },
@@ -175,7 +175,7 @@ const ACTIVITY_PATTERNS: Array<{ activity: string; test: RegExp }> = [
   { activity: "YouTube Creator", test: /\b(youtub\w*|content\s*creat\w*|streamer|twitch|tiktok\w*|reels?|influencer)\b/i },
   { activity: "Travel Vlogging", test: /\b(travel\s*vlog\w*|vlog\w*|travel\s*diary)\b/i },
 
-  // Travel (generic — checked late so specific travel sub-types win)
+  // Travel (generic, checked late so specific travel sub-types win)
   { activity: "Road Trip", test: /\b(road\s*trip|roadtrip|drive\s*trip|cross\s*country\s*drive)\b/i },
   { activity: "Family Vacation", test: /\b(family\s*vacation|family\s*holiday|family\s*trip|vacation\s*with\s*(?:my\s*)?(?:kids|family))\b/i },
   { activity: "City Exploration", test: /\b(city\s*explor\w*|city\s*tour|city\s*break|urban\s*explor\w*|sightsee\w*|walking\s*tour)\b/i },

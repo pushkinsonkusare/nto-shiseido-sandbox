@@ -1,26 +1,26 @@
 /* =============================================================
  * Activity-driven recommendation hierarchy.
  *
- * Single source of truth for "what does an X kit look like" — used
+ * Single source of truth for "what does an X kit look like", used
  * by every Wingman / Sidecar / SideBySide flow that needs to pick a
  * core SKU and supporting accessories for a detected activity.
  *
  * Structure (3 levels):
  *
- *   Level 1 — Primary capture device (REQUIRED)
+ *   Level 1: Primary capture device (REQUIRED)
  *     The kit's flagship. Sets the productType the deterministic
  *     planner anchors on. For paragliding this is action_camera;
  *     for a wedding it's drone_cinema. There is exactly one L1.
  *
- *   Level 2 — DJI ecosystem enhancers (PREFERRED, tier-aware)
+ *   Level 2: DJI ecosystem enhancers (PREFERRED, tier-aware)
  *     Cross-sell candidates that meaningfully extend the kit
  *     (mics, gimbals, second body, FPV components). Each entry can
  *     opt out of cheaper tiers via `tiers` so we don't push a
  *     $250 mic into the $400 budget kit.
  *
- *   Level 3 — Activity-specific accessories (FALLBACK)
+ *   Level 3: Activity-specific accessories (FALLBACK)
  *     Mounts, batteries, cases, filters that fill remaining slots.
- *     Order = priority — higher entries get picked first when there
+ *     Order = priority, so higher entries get picked first when there
  *     are more candidates than slots.
  *
  *   Exclusions
@@ -29,14 +29,14 @@
  *     ranking happened to surface a high-rated drone.
  *
  * Tier inclusion (default):
- *   budget — L1 + 2 of L3
- *   ideal  — L1 + 1 of L2 + 3 of L3
- *   top    — L1 + up to 3 of L2 + 4 of L3
+ *   budget: L1 + 2 of L3
+ *   ideal:  L1 + 1 of L2 + 3 of L3
+ *   top:    L1 + up to 3 of L2 + 4 of L3
  *
  * The 22 hierarchies below mirror the activities that
  * `extractActivitiesFromQuery` (broadRecipes.ts) detects from a
  * shopper query. Adding an activity to that detector REQUIRES a
- * matching hierarchy here — otherwise the planner falls back to the
+ * matching hierarchy here. Otherwise the planner falls back to the
  * legacy `ACTIVITY_ROW_TEMPLATES` literal.
  * ============================================================= */
 
@@ -51,7 +51,7 @@ import type {
  *  `buildPlan.ts`) and accepted by the row generator. */
 export type Tier = "budget" | "ideal" | "top";
 
-/** Filter spec used at every level — narrows the live catalog down
+/** Filter spec used at every level to narrow the live catalog down
  *  to the candidate pool for that level. Every field is optional
  *  except `categoryToken`; the catalog filter ANDs all provided
  *  fields together (subtypes ALL match, capabilities ALL match). */
@@ -71,14 +71,14 @@ export type CategoryFilter = {
   allowBundles?: boolean;
 };
 
-/** Level 2 enhancer — same shape as a `CategoryFilter` plus a tier
+/** Level 2 enhancer: same shape as a `CategoryFilter` plus a tier
  *  allowlist. When `tiers` is omitted it defaults to
  *  `["ideal", "top"]` (skip in budget). */
 export type SecondaryEnhancer = CategoryFilter & {
   tiers?: Tier[];
 };
 
-/** Level 3 accessory — `CategoryFilter` plus an optional explicit
+/** Level 3 accessory: `CategoryFilter` plus an optional explicit
  *  accessory role for the catalog filter. */
 export type AccessoryHint = CategoryFilter & {
   accessoryRole?: AccessoryRole;
@@ -95,17 +95,17 @@ export type ActivityExclusions = {
 };
 
 export type ActivityHierarchy = {
-  /** L1 — required flagship. The core SKU comes from this filter. */
+  /** L1: required flagship. The core SKU comes from this filter. */
   primary: CategoryFilter;
-  /** L2 — preferred enhancers, tier-aware. Order = priority. */
+  /** L2: preferred enhancers, tier-aware. Order = priority. */
   secondary: SecondaryEnhancer[];
-  /** L3 — accessory candidates. Order = priority. */
+  /** L3: accessory candidates. Order = priority. */
   accessories: AccessoryHint[];
   /** Hard "never include" rules. */
   exclusions?: ActivityExclusions;
   /** Tier of the L1 core that the planner should prefer when the
    *  catalog has multiple matches. Most kits prefer beginner core
-   *  for budget, intermediate for ideal, pro for top — but a few
+   *  for budget, intermediate for ideal, pro for top, but a few
    *  activities (e.g. professional_filmmaker) skew pro at every
    *  tier. Defaults to undefined → standard ladder. */
   tierBias?: Partial<Record<Tier, ProductTier[]>>;
@@ -485,7 +485,7 @@ export const ACTIVITY_HIERARCHIES: Record<string, ActivityHierarchy> = {
   real_estate_aerial: {
     /* L1 filter intentionally omits the `drone_cinema` subtype lock.
      * Real-estate listings are typically shot with whatever pro
-     * drone the realtor owns — Mavic / Air / Mini Pro are all fair
+     * drone the realtor owns, so Mavic / Air / Mini Pro are all fair
      * game. The category lock keeps it drone-anchored; tier
      * laddering naturally surfaces Inspire 3 at top when available. */
     primary: {
@@ -689,7 +689,7 @@ export const ACTIVITY_HIERARCHIES: Record<string, ActivityHierarchy> = {
       { categoryToken: "battery", subtypes: ["acc_battery"], accessoryRole: "power" },
       { categoryToken: "case", subtypes: ["acc_case"], accessoryRole: "storage" },
     ],
-    /* Pro filmmakers buy pro gear at every tier — bias the ladder
+    /* Pro filmmakers buy pro gear at every tier, so bias the ladder
      * toward `pro` cores even for "budget". Better to show a
      * cheaper pro drone than a beginner one. */
     tierBias: {

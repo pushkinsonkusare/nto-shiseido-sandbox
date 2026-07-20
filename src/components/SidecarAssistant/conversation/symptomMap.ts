@@ -15,7 +15,7 @@ import type { AccessoryRole, ProductSeries } from "../../../catalog/catalog";
  *
  * `subtypes` / `capabilities` are intentionally omitted for
  * skincare (the fields they used to filter carry different data
- * now). Keep this list small and curated — the LLM handles the
+ * now). Keep this list small and curated because the LLM handles the
  * long tail.
  * ============================================================= */
 

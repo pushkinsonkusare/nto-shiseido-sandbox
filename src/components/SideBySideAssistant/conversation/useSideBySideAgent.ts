@@ -75,15 +75,15 @@ function toCompactProduct(product: CatalogProduct): CompactResultProduct {
 function buildResultBody(intro: string, count: number): string {
   if (intro && intro.trim()) return intro.trim();
   if (count === 0) {
-    return "I couldn't find a great match — let's narrow that down. What matters most to you?";
+    return "I couldn't find a great match. Let's narrow that down. What matters most to you?";
   }
   return `I curated ${count} option${count === 1 ? "" : "s"} for you. Tap See Results to explore them in the storefront, or pick a follow-up below.`;
 }
 
 /**
  * Title shown above the result-card carousel. Prefer the resolved
- * intent's `categoryLabel` (lightly tier-prefixed) over the raw query
- * — echoing the query reads as "ND filter for Mavic 4 Pro" on a card
+ * intent's `categoryLabel` (lightly tier-prefixed) over the raw query.
+ * Echoing the query reads as "ND filter for Mavic 4 Pro" on a card
  * that's clearly a drone listing, which is confusing.
  */
 function buildResultTitle(query: string, intent?: Intent): string {
@@ -92,7 +92,7 @@ function buildResultTitle(query: string, intent?: Intent): string {
     const capitalized = base.charAt(0).toUpperCase() + base.slice(1);
     // Tier prefix only applies to flagship categories where it's
     // semantically meaningful. Accessory rows ("filters", "mounts",
-    // "cases") aren't tier-graded — keep them clean.
+    // "cases") aren't tier-graded. Keep them clean.
     const FLAGSHIP_LABELS = new Set([
       "serums & treatments", "moisturizers", "sunscreen", "cleansers",
       "eye & lip care",
@@ -128,7 +128,7 @@ function titleCaseModel(model: string): string {
     .map((word) => {
       if (!word) return word;
       // Keep alphanumeric tokens like "4k", "3", "se" as the model
-      // table writes them — uppercase the first letter, leave the
+      // table writes them: uppercase the first letter, leave the
       // rest as-is so "rs", "se", "4k" don't get mangled.
       if (/^\d/.test(word)) return word.toUpperCase();
       if (word.length <= 2) return word.toUpperCase();
@@ -164,7 +164,7 @@ function buildSymptomResultTitle(intent: SymptomAccessoryIntent): string {
  *
  * Keyed on the symptom label (the `label` field on
  * `SYMPTOM_PATTERNS` entries). Falls back to the label itself if
- * unknown — the chip would then route via the regular classifier,
+ * unknown. The chip would then route via the regular classifier,
  * losing the symptom context, but at least won't fail.
  */
 const SYMPTOM_CHIP_PREFIX: Record<string, string> = {
@@ -195,7 +195,7 @@ function buildSymptomIntro(
 ): string {
   const label = intent.symptom.label;
   if (count === 0) {
-    return `I couldn't find a perfect ${label} match — try one of the related options below.`;
+    return `I couldn't find a perfect ${label} match. Try one of the related options below.`;
   }
   if (intent.modelToken) {
     return `Here are the best ${label} for your ${titleCaseModel(intent.modelToken)}:`;
@@ -209,11 +209,11 @@ function buildSymptomIntro(
 /**
  * Build the grounding preamble we prepend to a PDP-origin FAQ prompt
  * before sending it to the LLM. The shopper's bubble in the chat keeps
- * showing the raw question — only the model-facing prompt is enriched.
+ * showing the raw question. Only the model-facing prompt is enriched.
  *
  * Without this, the agent only sees the product TITLE + CATEGORY in the
  * preamble (legacy behaviour) and confabulates concrete facts like
- * what ships in the box, weight, runtime, rated depth, etc. — even when
+ * what ships in the box, weight, runtime, rated depth, etc., even when
  * the catalog already has authoritative scraped data for the SKU.
  *
  * The block is intentionally compact: capped to the most-likely-useful
@@ -243,7 +243,7 @@ function buildPdpFaqGroundedPrompt(
   if (product.useCaseTags.length > 0) {
     facts.push(`- Capabilities: ${product.useCaseTags.join(", ")}.`);
   }
-  // Explicit skin-type suitability line — the most common definitive
+  // Explicit skin-type suitability line: the most common definitive
   // FAQ ("is this good for oily / dry / sensitive skin?"). The
   // assertive phrasing lets the model paraphrase directly without
   // hedging. Skin types live in `subtypes` (dry / oily / combination /
@@ -270,9 +270,9 @@ function buildPdpFaqGroundedPrompt(
     facts.push(`- Key specs: ${usefulSpecs.join("; ")}.`);
   }
 
-  // Feature blocks are free-text marketing prose — useful for "is this
+  // Feature blocks are free-text marketing prose (useful for "is this
   // beginner friendly", "how is the low-light", "what's the
-  // stabilization story" questions. Cap each block to ~240 chars and
+  // stabilization story" questions). Cap each block to ~240 chars and
   // include up to 4 so the preamble doesn't balloon.
   const usefulBlocks = product.featureBlocks
     .map((b) => b.trim())
@@ -296,7 +296,7 @@ function buildPdpFaqGroundedPrompt(
   const factsBlock = facts.length > 0
     ? [
         "",
-        "PRODUCT FACTS (authoritative — answer ONLY from these. Do NOT invent box contents, specs, prices, or features not listed here. If the answer isn't here, say you don't have that detail and point them at the specs section on the page):",
+        "PRODUCT FACTS (authoritative: answer ONLY from these. Do NOT invent box contents, specs, prices, or features not listed here. If the answer isn't here, say you don't have that detail and point them at the specs section on the page):",
         ...facts,
         "",
       ].join("\n")
@@ -319,7 +319,7 @@ function buildPillsFromLabels(labels: ReadonlyArray<string>): NbaPill[] {
 /* ---------- Broad result card builders ----------
  *
  * For a broad/exploratory shopper query (e.g. "Gear for moto vlogging",
- * "Help me pick gear for my New Zealand trip", "I'm a beginner — suggest
+ * "Help me pick gear for my New Zealand trip", "I'm a beginner, suggest
  * equipment") we surface a stack of curated sub-topic rows instead of a
  * single carousel. The recipe + product-resolution logic lives in
  * `./broadRecipes.ts` so the data is easy to tweak. Here we only mint
@@ -357,7 +357,7 @@ function buildBroadSubTopics(
         // handoff: the PLP looks the spec up by id and reapplies the
         // full filter (incl. title patterns the URL can't carry
         // cleanly). Leaving category/capabilities/accessoryRole
-        // undefined keeps the URL clean — the recipe spec is the
+        // undefined keeps the URL clean. The recipe spec is the
         // single source of truth.
         recipeKey: spec.id,
       });
@@ -379,7 +379,7 @@ function buildBroadSubTopics(
 }
 
 /**
- * Tailored body-text by detected activity — mirrors the Figma vlogging
+ * Tailored body-text by detected activity: mirrors the Figma vlogging
  * card copy and gives every other recognised activity a similarly-shaped
  * intro instead of the generic "curated a few directions for you".
  */
@@ -498,7 +498,7 @@ export function useSideBySideAgent() {
 
   const appendMessage = useCallback((message: SxsMessage) => {
     setMessages((current) => {
-      // Only one NBA pill row at a time — drop any earlier pills when new ones land.
+      // Only one NBA pill row at a time: drop any earlier pills when new ones land.
       if (message.kind === "agent_nbas") {
         return [
           ...current.filter((m) => m.kind !== "agent_nbas"),
@@ -541,7 +541,7 @@ export function useSideBySideAgent() {
   const renderRuleBased = useCallback(
     (query: string) => {
       // Hygiene questions (returns, refunds, warranty, shipping,
-      // replacement) short-circuit BEFORE intent classification — they
+      // replacement) short-circuit BEFORE intent classification. They
       // aren't shopping queries, so the broad/direct flow would otherwise
       // surface a curated category card that ignores what the shopper
       // actually asked. Answers are sourced from the shared DJI Help
@@ -608,7 +608,7 @@ export function useSideBySideAgent() {
           // Disambiguation chips: only when the shopper named a family
           // (no version) AND the family has 2+ candidate hosts. Each
           // chip becomes a follow-up shopper turn that re-fires this
-          // branch with a versioned modelToken — the chip label keeps
+          // branch with a versioned modelToken. The chip label keeps
           // the symptom keyword AND adds an explicit "my <model>"
           // clause so OWNS + symptom both match on re-classify.
           const hostCandidates = listSymptomHostCandidates(
@@ -630,7 +630,7 @@ export function useSideBySideAgent() {
           }
           return;
         }
-        // No matches found — let classifyIntent take over so we
+        // No matches found. Let classifyIntent take over so we
         // never dead-end the shopper with an empty card.
       }
 
@@ -655,13 +655,13 @@ export function useSideBySideAgent() {
           }
           return;
         }
-        // Catalog couldn't yield enough sub-topics — fall back to the
+        // Catalog couldn't yield enough sub-topics. Fall back to the
         // legacy text + probing pills response so we never render an
         // empty card.
         appendMessage({
           id: nextId("agent"),
           kind: "agent_text",
-          body: "Tell me a bit more — are you shopping for a cleanser, a serum, a moisturizer, sunscreen, or a full routine?",
+          body: "Tell me a bit more. Are you shopping for a cleanser, a serum, a moisturizer, sunscreen, or a full routine?",
         });
         const probing = buildStageNbas({ stage: "probing", intent });
         appendMessage({
@@ -678,7 +678,7 @@ export function useSideBySideAgent() {
         appendMessage({
           id: nextId("agent"),
           kind: "agent_text",
-          body: "I couldn't find an exact match — let's narrow that down. What matters most to you?",
+          body: "I couldn't find an exact match. Let's narrow that down. What matters most to you?",
         });
         const probing = buildStageNbas({ stage: "probing", intent });
         appendMessage({
@@ -689,19 +689,19 @@ export function useSideBySideAgent() {
         return;
       }
 
-      // When the intent narrows beyond the bare category — by a
+      // The intent can narrow beyond the bare category: by a
       // specific model (e.g. "ND filter for Mavic 4 Pro"), required
       // use-case tags (e.g. "accessories for deep sea" → waterproof),
       // a buyer tier ("Pro drones", "Beginner action cam"), or a
-      // budget cap ("drones under $500") — use the already-narrowed
-      // `matches` instead of the full category preview row. Otherwise
-      // the carousel ignores the narrowing filter and shows the whole
-      // category (e.g. "Pro drones" leaking Mini/Neo).
+      // budget cap ("drones under $500"). In that case, use the
+      // already-narrowed `matches` instead of the full category preview
+      // row. Otherwise the carousel ignores the narrowing filter and
+      // shows the whole category (e.g. "Pro drones" leaking Mini/Neo).
       //
       // GENERIC ACCESSORIES FOR A MODEL ("Accessories for Mavic 4
       // Pro"): the categoryLabel resolves to "accessories" which maps
       // to 14 categories internally, but the URL only carries one
-      // category — that narrows the PLP to a single bucket (Lens
+      // category, which narrows the PLP to a single bucket (Lens
       // filters, etc.). Drop the category so the PLP shows ALL
       // accessory categories matching the named model.
       const isGenericAccessoriesForModel =
@@ -798,7 +798,7 @@ export function useSideBySideAgent() {
             // for Mavic 4 Pro") asks for everything across multiple
             // accessory categories (filters + batteries + cases +
             // propellers). The model may still pass a single category
-            // like "Lens filters" — that narrows the PLP to ONE
+            // like "Lens filters", which narrows the PLP to ONE
             // bucket. Detect the generic case and drop the category
             // so the PLP shows all accessories for the named model.
             const isGenericAccessoryQuery =
@@ -836,7 +836,7 @@ export function useSideBySideAgent() {
                 .filter((p) => {
                   // Drop bundles when ANY narrowing filter is set so
                   // the carousel matches the rule-based path's bundle
-                  // semantics — "Pro drones" shouldn't show Fly More
+                  // semantics: "Pro drones" shouldn't show Fly More
                   // Combo bundles even though some have pro tier.
                   if (p.isBundle) return false;
                   // Generic-accessories-for-model query: keep only
@@ -887,7 +887,7 @@ export function useSideBySideAgent() {
               // When the narrowing produces zero matches we DO NOT
               // silently fall back to the model's slug list (which
               // would contradict the constraint by showing items that
-              // violate it — e.g. "$709 Action 5 Pro" inside a
+                  // violate it, e.g. "$709 Action 5 Pro" inside a
               // "Action cam under $300" card). Instead, render a
               // reasoning text + NBA alternatives so the shopper
               // knows the budget/tier/etc didn't match anything and
@@ -945,7 +945,7 @@ export function useSideBySideAgent() {
                   body,
                 });
 
-                // Alternative NBAs — widen the budget, drop the tier,
+                // Alternative NBAs: widen the budget, drop the tier,
                 // browse the full category.
                 const altLabels: string[] = [];
                 if (
@@ -1025,7 +1025,7 @@ export function useSideBySideAgent() {
                 // Synthesise a transient spec from the agent's row so
                 // the count + filter logic matches what the PLP will
                 // do for the same URL. This spec doesn't get
-                // registered for `getRecipeSpecById` lookup — it lives
+                // registered for `getRecipeSpecById` lookup. It lives
                 // only for this builder pass.
                 const spec: BroadSubTopicSpec = {
                   id: `openai-${rawRow.title}`,
@@ -1077,7 +1077,7 @@ export function useSideBySideAgent() {
             break;
           }
           case "propose_broad_recipe": {
-            // The model emitted filter SPECS (no slugs) — we resolve
+            // The model emitted filter SPECS (no slugs). We resolve
             // each one via the same `buildRowProductsFromSpec` the
             // rule-based recipes use, register the spec in the runtime
             // registry so the PLP can re-resolve it when the row is
@@ -1086,7 +1086,7 @@ export function useSideBySideAgent() {
             broadEmitted = true;
             for (const rawSpec of action.specs) {
               // The agent's executor already validated the vocab; here
-              // we just adopt the spec object verbatim — same shape as
+              // we just adopt the spec object verbatim, the same shape as
               // BroadSubTopicSpec. accessoryRole tightens to the
               // recipe spec union via a defensive cast (vocab match
               // already enforced upstream).
@@ -1140,7 +1140,7 @@ export function useSideBySideAgent() {
             appendMessage({
               id: nextId("result"),
               kind: "agent_result_card",
-              bodyText: `Here's the ${product.title} — ${product.shortDescription}`,
+              bodyText: `Here's the ${product.title}: ${product.shortDescription}`,
               title: product.title,
               products: [toCompactProduct(product)],
               productSlugs: [product.slug],
@@ -1173,7 +1173,7 @@ export function useSideBySideAgent() {
       // listing (specific OR broad), synthesise stage-aware pills from
       // the rule-based engine. Broad cards fall back to probing pills so
       // the shopper still gets refining suggestions.
-      // Do not use messagesRef here — the welcome row's agent_nbas is still in
+      // Do not use messagesRef here. The welcome row's agent_nbas is still in
       // the ref until after commit, which incorrectly skipped synthesis.
       const agentEmittedNbas = actions.some((a) => a.type === "suggest_nbas");
       if (!agentEmittedNbas && lastListing) {
@@ -1225,7 +1225,7 @@ export function useSideBySideAgent() {
       // PDP. They render the AgentPdpUtterance variant matching their
       // Figma node and skip both the loader and the rule-based /
       // OpenAI flow. Falls through to the standard flow when
-      // productSlug is missing (defensive — PDP pills always supply it).
+      // productSlug is missing (defensive: PDP pills always supply it).
       const pillKind = ctx?.pillKind;
       const productSlug = ctx?.productSlug;
 
@@ -1280,7 +1280,7 @@ export function useSideBySideAgent() {
         const product = getProductBySlug(productSlug);
         const body = product
           ? resolveProductFaq(product, trimmed)
-          : `Here's what I know — full details are on this page.`;
+          : `Here's what I know. Full details are on this page.`;
         appendMessage({
           id: nextId("pdp-utterance"),
           kind: "agent_pdp_utterance",
@@ -1293,18 +1293,18 @@ export function useSideBySideAgent() {
       if (agent) {
         // PDP-aware grounding: when the turn carries a product context
         // (a PDP FAQ pill click, OR a free-typed input dispatched while
-        // the shopper is on a PDP — see `dispatchOnPage` in
+        // the shopper is on a PDP, see `dispatchOnPage` in
         // SideBySideAssistant.tsx), prepend a structured preamble that
         // names the product AND inlines the catalog's authoritative
         // facts (in-the-box list, top specs, highlights). Without the
         // facts block the LLM happily invents box contents and spec
-        // values for any SKU it hasn't memorised — the bug surfaced
+        // values for any SKU it hasn't memorised. The bug surfaced
         // most loudly on the Osmo Action 5 Pro Standard Combo where
         // the model fabricated a generic "camera + accessories"
         // unboxing list while the catalog had the real 9-item
         // inventory scraped from the PDP.
         // The shopper bubble in the chat keeps showing the raw `trimmed`
-        // text — only the prompt sent to OpenAI is enriched.
+        // text. Only the prompt sent to OpenAI is enriched.
         let groundedText = trimmed;
         if (pillKind === "faq" && productSlug) {
           const product = getProductBySlug(productSlug);
@@ -1322,7 +1322,7 @@ export function useSideBySideAgent() {
             // even when the LLM returns tool calls (commonly
             // `show_product_detail` for the same SKU the shopper is
             // already viewing), we drop the structured actions and
-            // surface the say text — falling back to the catalog-derived
+            // surface the say text, falling back to the catalog-derived
             // FAQ answer when the model emitted no usable text.
             // Without this guard, the structured action would emit an
             // `agent_result_card`, which the auto-sync useEffect in
@@ -1412,7 +1412,7 @@ export function useSideBySideAgent() {
     setIsResponding(false);
 
     if (products.length === 0) {
-      // Catalog hasn't loaded yet — clear the surface and let the seed
+      // Catalog hasn't loaded yet. Clear the surface and let the seed
       // effect re-run when products become available.
       seededRef.current = false;
       setMessages([]);

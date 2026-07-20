@@ -31,16 +31,16 @@ type FilterGroup = {
   options: FilterGroupOption[];
   /**
    * `single-select` renders radios (e.g. price tier).
-   * `multi-select` renders checkboxes (e.g. category — shoppers can
-   * stack several at once).
+   * `multi-select` renders checkboxes (e.g. category, where shoppers
+   * can stack several at once).
    * `static` keeps the original cosmetic checkboxes (no behaviour
-   * wired yet — used for placeholder filter groups).
+   * wired yet, used for placeholder filter groups).
    */
   kind?: "single-select" | "multi-select" | "static";
 };
 
 /**
- * Sidebar price buckets — kept as a fixed ladder so the filter UI stays
+ * Sidebar price buckets, kept as a fixed ladder so the filter UI stays
  * stable as the catalog evolves. Mirrors common e-com price tiers
  * (accessories under $100, entry / mid / prosumer / pro / enterprise).
  * Buckets with zero products in the active basis are dropped at render
@@ -98,9 +98,9 @@ export function ProductListingPage() {
 
   // Free-form Min/Max inputs for the price filter. Drafts mirror the
   // active URL params (so a fresh page load with `?priceMin=200` shows
-  // 200 in the field) and commit on blur or Enter — typing without
-  // triggering a navigation per keystroke avoids hammering the URL
-  // history with intermediate values.
+  // 200 in the field) and commit on blur or Enter. Committing this way,
+  // rather than on every keystroke, avoids hammering the URL history
+  // with intermediate values.
   const [minDraft, setMinDraft] = useState<string>(
     typeof currentPriceMin === "number" ? String(currentPriceMin) : "",
   );
@@ -154,12 +154,12 @@ export function ProductListingPage() {
   const searchResultProducts = searchResultPayload?.results ?? null;
   // When the URL carries a `recipe=<id>` and we can resolve the spec,
   // mirror the broad result card's curated subset 1:1 (incl. the title
-  // patterns the URL can't represent). When the spec is missing — e.g.
-  // the recipe was renamed since the user bookmarked the URL — fall
+  // patterns the URL can't represent). When the spec is missing (e.g.
+  // the recipe was renamed since the user bookmarked the URL), fall
   // back to the loose category + useCases + role filter so the page
   // still renders something reasonable.
   const recipeSpec = currentRecipeKey ? getRecipeSpecById(currentRecipeKey) : null;
-  // Whether the price filter has any active narrowing — used to decide
+  // Whether the price filter has any active narrowing, used to decide
   // whether to surface the "Clear" link inside the price group.
   const isPriceFilterActive =
     typeof activePriceMin === "number" || typeof activePriceMax === "number";
@@ -197,14 +197,14 @@ export function ProductListingPage() {
   // Generic-accessories-for-model handoff: URL carries a compat token
   // but no category and no subtypes (e.g. "Accessories for Mavic 4 Pro"
   // → ?compat=mavic+4+pro). The shopper wants ACCESSORIES across every
-  // category — we must drop the device itself (its title contains the
+  // category. We must drop the device itself (its title contains the
   // compat token, so the compat filter would otherwise let it through).
   const isGenericAccessoriesHandoff =
     Boolean(activeCompatibleWith) &&
     activeCategories.length === 0 &&
     !activeAccessoryRole &&
     activeSubtypes.length === 0;
-  // Explicit slug union takes precedence over every other filter —
+  // Explicit slug union takes precedence over every other filter,
   // used by the Broad result card's "Show all" handoff so the PLP
   // surfaces the union of every row's products rather than the full
   // 252-row catalog. Order matches the URL so a stable scan order
@@ -297,12 +297,12 @@ export function ProductListingPage() {
         }
         return true;
       });
-  // Compatibility narrowing — when the URL carries `?compat=mavic 4 pro`,
+  // Compatibility narrowing: when the URL carries `?compat=mavic 4 pro`,
   // restrict to SKUs whose `compatibleWithModels` or `title` contain
   // the model token. Mirrors the filterProducts logic in the rule-based
   // path so card and PLP show the same subset. Soft filter: if no SKU
   // matches we keep the broader pool so the page never renders empty.
-  // Skipped when an explicit slug union is active — the broad-card
+  // Skipped when an explicit slug union is active: the broad-card
   // "Show all" handoff is already a curated subset; further compat
   // narrowing would only drop legitimate picks.
   const products = (() => {
@@ -361,7 +361,7 @@ export function ProductListingPage() {
       return activeSearchQuery;
     }
     if (slugFilteredProducts) {
-      // Explicit slug union from the broad card's "Show all" — keep
+      // Explicit slug union from the broad card's "Show all". Keep
       // the heading neutral and let the count badge carry the meaning.
       return "Curated picks";
     }
@@ -376,7 +376,7 @@ export function ProductListingPage() {
         : recipeSpec.title;
     }
     // When the user has selected several categories from the sidebar
-    // we can't summarise with a single nav-item label — fall back to
+    // we can't summarise with a single nav-item label, so fall back to
     // the catalog heading and let the active categories surface in the
     // suffix list below.
     const singleActiveCategory =
@@ -403,7 +403,7 @@ export function ProductListingPage() {
   })();
 
   // Build a navigation payload that preserves every currently-active
-  // facet — sidebar clicks should narrow the result set, not reset it.
+  // facet. Sidebar clicks should narrow the result set, not reset it.
   // Individual options pass overrides for the single facet they touch
   // (e.g. price clicks override priceMin/priceMax only).
   const buildNavOptions = (
@@ -452,7 +452,7 @@ export function ProductListingPage() {
   };
 
   // Drop empty price buckets relative to the *unfiltered* catalog so the
-  // ladder stays stable — using `products` here would collapse every
+  // ladder stays stable. Using `products` here would collapse every
   // bucket except the active one once a price is selected.
   const priceBuckets = PRICE_BUCKETS.map((bucket) => {
     const count = allProducts.filter(
@@ -488,7 +488,7 @@ export function ProductListingPage() {
   // Category sidebar is multi-select. Each click toggles the clicked
   // value in/out of the combined active list, then promotes the result
   // into the plural `categories` URL param. We deliberately drop the
-  // singular `category` once the user touches the sidebar — keeping
+  // singular `category` once the user touches the sidebar, since keeping
   // both populated would let stale top-nav state shadow the user's
   // checkbox choices.
   const categoryOptions: FilterGroupOption[] = categories.slice(0, 6).map((cat) => {
@@ -569,7 +569,7 @@ export function ProductListingPage() {
                 : [opt.value];
             overrides.primaryActivities = next.length > 0 ? next : undefined;
           } else if (facet.paramKey === "tier") {
-            // Tier is single-select — clicking the active row clears it,
+            // Tier is single-select: clicking the active row clears it,
             // clicking a different row replaces.
             overrides.tier = isActive
               ? undefined

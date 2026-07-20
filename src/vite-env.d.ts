@@ -28,7 +28,7 @@ interface ImportMeta {
 }
 
 /* ---------- Web Speech API ----------
- * Minimal ambient declarations — TypeScript's lib.dom.d.ts still doesn't
+ * Minimal ambient declarations. TypeScript's lib.dom.d.ts still doesn't
  * ship the SpeechRecognition surface (it's a Living Standard, not in DOM
  * Level 3). We only declare what `useSpeechRecognition.ts` actually
  * touches; if you need more callbacks (onaudiostart, onnomatch, etc.) add

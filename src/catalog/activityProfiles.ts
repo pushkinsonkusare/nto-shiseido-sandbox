@@ -42,7 +42,7 @@ export type ActivityConstraints = {
 };
 
 /* Exported for the hierarchy-alignment validator in
- * `activityHierarchies.ts`. Read-only — do not mutate. */
+ * `activityHierarchies.ts`. Read-only: do not mutate. */
 export const ACTIVITY_PROFILES: ActivityProfile[] = [
   {
     id: "scuba_diving_snorkeling",
@@ -199,7 +199,7 @@ export const ACTIVITY_PROFILES: ActivityProfile[] = [
     disallowedTitleTokens: ["underwater", "dirt bike", "motocross"],
   },
   {
-    /* Phone-creator wave activity — narrow ranking layer that mirrors
+    /* Phone-creator wave activity: a narrow ranking layer that mirrors
      * the `phone_photography` broad-recipe routing. The broad recipe
      * already chooses Mobile gimbals as the core via the flagship
      * row, so this profile's job is mostly defensive: bias accessory
@@ -209,7 +209,7 @@ export const ACTIVITY_PROFILES: ActivityProfile[] = [
      *
      * Keyword pattern mirrors the broad-recipe routing:
      *   - Bare `iphone` / `smartphone` always count (no ambiguity on
-     *     a DJI commerce site — these are explicit phone signals).
+     *     a DJI commerce site, so these are explicit phone signals).
      *   - Bare `phone` / `mobile` / `android` must pair with a
      *     creator modifier so we don't disallow drones in queries
      *     like "mobile drone documentary" where "mobile" is just an

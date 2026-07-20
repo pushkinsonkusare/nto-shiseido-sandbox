@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 
 /* =============================================================
- * useBodyScrollLock — reference-counted body scroll lock.
+ * useBodyScrollLock: reference-counted body scroll lock.
  *
  * PROBLEM this solves:
  *   Multiple modal surfaces (KitDetailsPanel, ProductReviewsPanel,
  *   KitComparePanel, …) can be layered on top of each other. The
- *   naive per-component pattern —
+ *   naive per-component pattern:
  *
  *     const original = document.body.style.overflow;
  *     document.body.style.overflow = "hidden";
@@ -50,7 +50,7 @@ function releaseLock(): void {
 
 /**
  * Lock body scroll while `active` is true. Safe to nest across many
- * simultaneously-mounted components — the body only unlocks once every
+ * simultaneously-mounted components, the body only unlocks once every
  * active lock has released.
  *
  * @param active whether this consumer currently wants scroll locked.

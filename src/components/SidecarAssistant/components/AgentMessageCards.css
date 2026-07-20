@@ -302,6 +302,248 @@
   right: 12px;
 }
 
+/* ---------- Compare card (comparison table) ---------- */
+
+.agent-compare {
+  width: 100%;
+  height: fit-content;
+  background: var(--agentic-card-bg);
+  border: 1px solid rgba(236, 236, 236, 1);
+  border-radius: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 0;
+  font-family: var(--font-family-base);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.agent-compare__intro {
+  margin: 0;
+  padding: 0 20px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--agentic-foreground);
+}
+
+.agent-compare__scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Flush to the card edges so the row separators read full-bleed; the intro
+   * and recommendation keep their own horizontal padding. */
+  padding: 0;
+}
+
+.agent-compare__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.agent-compare__table {
+  border-collapse: collapse;
+  /* Fixed layout makes the column widths below authoritative, so a long
+   * product title truncates (see __product-title) and long values clamp
+   * (see __cell-text) instead of stretching the column. The concrete pixel
+   * width is set inline on the element (legend + N * column) so the fixed
+   * layout has a definite width to divide and the table overflows the scroll
+   * viewport, letting later columns peek in. */
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.agent-compare__corner {
+  width: 100px;
+  min-width: 100px;
+  /* Top-left of the grid: contributes the left segment of the divider under
+   * the intro and the top of the legend / product vertical divider. */
+  border-top: 1px solid rgba(236, 236, 236, 1);
+  border-right: 1px solid rgba(236, 236, 236, 1);
+}
+
+.agent-compare__col-head {
+  vertical-align: bottom;
+  text-align: left;
+  padding: 16px 16px 12px 16px;
+  width: 180px;
+  border-top: 1px solid rgba(236, 236, 236, 1);
+}
+
+.agent-compare__product {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.agent-compare__thumb {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--agentic-secondary-bg);
+}
+
+.agent-compare__product-title {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--agentic-card-foreground);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Price + strike-through compare price shown in each column header. */
+.agent-compare__price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.agent-compare__price {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--agentic-card-foreground);
+}
+
+.agent-compare__price--strike {
+  margin: 0;
+  font-size: 13px;
+  color: var(--agentic-muted-foreground);
+  text-decoration: line-through;
+}
+
+.agent-compare__row-head {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--agentic-muted-foreground);
+  white-space: nowrap;
+  padding: 12px 12px 12px 20px;
+  border-top: 1px solid rgba(236, 236, 236, 1);
+  border-right: 1px solid rgba(236, 236, 236, 1);
+  vertical-align: top;
+}
+
+.agent-compare__cell {
+  color: var(--agentic-card-foreground);
+  padding: 12px 16px 12px 16px;
+  border-top: 1px solid rgba(236, 236, 236, 1);
+  vertical-align: top;
+}
+
+/* Clamp long attribute values to two lines within the fixed column width. */
+.agent-compare__cell-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Trailing row of per-column "Add to cart" actions. */
+.agent-compare__action-head,
+.agent-compare__action-cell {
+  border-top: 1px solid rgba(236, 236, 236, 1);
+  padding-top: 16px;
+}
+
+.agent-compare__action-head {
+  border-right: 1px solid rgba(236, 236, 236, 1);
+}
+
+.agent-compare__action-cell {
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 4px;
+  vertical-align: top;
+}
+
+.agent-compare__cart-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
+  padding: 11px 14px;
+  border-radius: 0px;
+  border: 1px solid var(--agentic-card-border, rgba(0, 0, 0, 0.14));
+  background: var(--agentic-card-bg);
+  color: var(--agentic-card-foreground);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.agent-compare__cart-btn:hover {
+  background: var(--agentic-secondary-bg);
+}
+
+.agent-compare__cart-btn:focus-visible {
+  outline: 2px solid #2f7df6;
+  outline-offset: 2px;
+}
+
+/* Closing recommendation beneath the table, separated by a full-bleed rule. */
+.agent-compare__recommendation {
+  margin: 0;
+  padding: 16px 20px 0;
+  border-top: 1px solid rgba(236, 236, 236, 1);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--agentic-foreground);
+}
+
+.agent-compare__recommendation strong {
+  font-weight: var(--font-weight-regular);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Widescreen (detached) overlay: the panel is much wider than the docked
+ * column, so stretch the table to fill it instead of leaving empty space on
+ * the right. Overrides the inline pixel width set on the table element; the
+ * `!important` is required only because that width is an inline style. */
+.sxs-layout__panel--detached .agent-compare__table {
+  width: 100% !important;
+}
+
+/* Widen the legend/attribute column proportionately in the wide overlay. The
+ * first column width is taken from the corner cell under `table-layout: fixed`,
+ * so a percentage lets it scale with the panel; the auto product columns below
+ * then divide the remaining width equally. */
+.sxs-layout__panel--detached .agent-compare__corner {
+  width: 18%;
+}
+
+/* Let the product columns flex so the fixed table layout divides the leftover
+ * width (after the legend column) equally among the 2-3 products. */
+.sxs-layout__panel--detached .agent-compare__col-head,
+.sxs-layout__panel--detached .agent-compare__cell,
+.sxs-layout__panel--detached .agent-compare__action-cell {
+  width: auto;
+}
+
+/* Keep the header thumbnail from ballooning once the columns are much wider. */
+.sxs-layout__panel--detached .agent-compare__thumb {
+  max-width: 220px;
+}
+
 /* ---------- Product card (used inside PLP carousel) ---------- */
 
 .agent-product-card {
@@ -453,6 +695,43 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.agent-product-card__price-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-product-card__cart-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--agentic-secondary-bg);
+  color: var(--agentic-secondary-foreground);
+  border: 1px solid var(--agentic-card-border);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.agent-product-card__cart-btn:hover {
+  background: #ffffff;
+}
+
+.agent-product-card__cart-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--agentic-focus);
 }
 
 .agent-product-card__price-row {

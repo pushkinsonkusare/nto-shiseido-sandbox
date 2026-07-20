@@ -33,6 +33,9 @@ export type AgentProductCardProps = {
   badgeLabel?: string;
   /** Optional click handler for the card. */
   onSelect?: () => void;
+  /** Optional handler for the add-to-cart icon button. Button is hidden when
+   * omitted. */
+  onAddToCart?: () => void;
   /** Optional click handler for the wishlist (heart) button. */
   onWishlist?: () => void;
   /** Optional click handler for the store / building button. */
@@ -95,7 +98,7 @@ function SwatchRow({ swatches }: { swatches: AgentProductSwatch[] }) {
 }
 
 /**
- * AgentProductCard — single product tile rendered inside the agentic
+ * AgentProductCard renders a single product tile inside the agentic
  * PLP carousel.  Mirrors `Agentic Product Card / Type=Product Card`
  * (node-id 32748:34714).
  */
@@ -109,6 +112,7 @@ export function AgentProductCard({
   reviewCount,
   swatches,
   onSelect,
+  onAddToCart,
   selected,
   onToggleSelect,
   selectDisabled,
@@ -152,10 +156,25 @@ export function AgentProductCard({
           <StarRow rating={rating} reviewCount={reviewCount} />
         ) : null}
 
-        <div className="agent-product-card__price-row">
-          <p className="agent-product-card__price">{price.replace(/^From\s+/i, "")}</p>
-          {comparePrice ? (
-            <p className="agent-product-card__price--strike">{comparePrice}</p>
+        <div className="agent-product-card__price-footer">
+          <div className="agent-product-card__price-row">
+            <p className="agent-product-card__price">{price.replace(/^From\s+/i, "")}</p>
+            {comparePrice ? (
+              <p className="agent-product-card__price--strike">{comparePrice}</p>
+            ) : null}
+          </div>
+          {onAddToCart ? (
+            <button
+              type="button"
+              className="agent-product-card__cart-btn"
+              aria-label="Add to cart"
+              onClick={(event) => {
+                event.stopPropagation();
+                onAddToCart();
+              }}
+            >
+              <PlusIcon width={18} height={18} />
+            </button>
           ) : null}
         </div>
       </div>
@@ -173,7 +192,7 @@ export type AgentShowMoreCardProps = {
 };
 
 /**
- * AgentShowMoreCard — terminal tile inside the PLP carousel.  Mirrors
+ * AgentShowMoreCard is the terminal tile inside the PLP carousel.  Mirrors
  * `Agentic Product Card / Type=Show more card` (node-id 32748:34734).
  */
 export function AgentShowMoreCard({

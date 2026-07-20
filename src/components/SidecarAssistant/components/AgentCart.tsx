@@ -70,7 +70,7 @@ export type AgentCartProps = {
   footnote?: string;
   /**
    * When provided, renders a primary "Checkout" button beneath the totals.
-   * Receives no arguments — the host orchestrates the actual checkout step.
+   * Receives no arguments; the host orchestrates the actual checkout step.
    */
   onCheckout?: () => void;
   /** Visible label of the primary checkout CTA. Defaults to "Checkout". */
@@ -82,7 +82,7 @@ export type AgentCartProps = {
 };
 
 /**
- * AgentCart — agentic Cart card rendered inside the SidecarAssistant chat
+ * AgentCart is the agentic Cart card rendered inside the SidecarAssistant chat
  * panel. The acknowledgement sits above a bordered accordion card whose header
  * (summary + chevron) toggles a detailed review of line items, per-item
  * quantity/remove controls, promotions and coupon chips, followed by the promo

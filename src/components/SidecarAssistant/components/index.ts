@@ -1,7 +1,7 @@
 /* =============================================================
  * Barrel export for the React components that live inside the
  * SidecarAssistant chat panel.  Each component matches a frame in
- * the Figma design system (Branch — INTERNAL — Storefront Future
+ * the Figma design system (Branch: INTERNAL, Storefront Future
  * Components).  See the individual component files for the matching
  * Figma node ids and prop documentation.
  * ============================================================= */
@@ -32,6 +32,13 @@ export {
   type AgentPDPSizeOption,
   type AgentPDPCardProps,
 } from "./AgentPDPCard";
+
+export {
+  AgentCompareCard,
+  type AgentCompareColumn,
+  type AgentCompareRow,
+  type AgentCompareCardProps,
+} from "./AgentCompareCard";
 
 export {
   AgentCart,

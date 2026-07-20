@@ -396,7 +396,7 @@ a.prototype-brand-link.figma-storefront__brand-mark {
   gap: 32px;
   /* Sizing container for the featured grid below. The grid's
    * `@container` queries adapt the visible card count to the
-   * section's *actual* width — which is what shrinks when the
+   * section's *actual* width, which is what shrinks when the
    * side-by-side / sidecar assistant docks alongside the storefront.
    * Plain `@media (max-width)` couldn't see that change because the
    * viewport stays the same when the assistant opens. */
@@ -418,7 +418,7 @@ a.prototype-brand-link.figma-storefront__brand-mark {
    * `:nth-child(n+N+1) { display: none }` rules below so the row
    * never clips a partial card and never wraps to a second row.
    *
-   * Step thresholds = `N * 260 + (N - 1) * 24` — the exact width
+   * Step thresholds = `N * 260 + (N - 1) * 24`: the exact width
    * needed to fit N cards with 24px gaps:
    *   ≥ 1680px  →  6 cards
    *   1396–1679 →  5 cards
