@@ -60,6 +60,9 @@ export type CatalogProduct = {
   /** Long-form marketing overview copy from the source dataset. */
   overview: string;
   featureBlocks: string[];
+  /** Raw ingredient copy from the source dataset (key highlights + INCI list).
+   * Empty string when the dataset has no meaningful ingredient data ("N/A"). */
+  ingredients: string;
   specs: CatalogSpec[];
   inTheBox: string[];
   productUrl: string;
@@ -474,6 +477,7 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     shortDescription: record.shortDescription,
     overview: record.overview,
     featureBlocks,
+    ingredients: /^\s*n\/?a\s*$/i.test(record.ingredients) ? "" : record.ingredients,
     specs: buildSpecs(record),
     inTheBox: [],
     productUrl: record.pdpUrl,

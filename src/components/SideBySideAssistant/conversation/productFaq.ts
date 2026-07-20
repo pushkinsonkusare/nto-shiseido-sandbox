@@ -396,6 +396,63 @@ function lowLightAnswer(product: CatalogProduct): string {
     : `The ${product.title} is formulated to deliver visible results over time.`;
 }
 
+/**
+ * Parse the highlighted "- Key: description" lines from the raw ingredient
+ * copy (the curated hero ingredients shown above the full INCI list).
+ */
+function parseKeyIngredients(raw: string): { name: string; desc: string }[] {
+  const out: { name: string; desc: string }[] = [];
+  for (const line of raw.split(/\n+/)) {
+    const trimmed = line.trim();
+    if (/^ingredients:/i.test(trimmed)) continue;
+    const withDesc = trimmed.match(/^[-•]\s*([^:]+):\s*(.+)$/);
+    if (withDesc) {
+      out.push({
+        name: withDesc[1].trim(),
+        desc: withDesc[2].trim().replace(/[.\s]+$/, ""),
+      });
+      continue;
+    }
+    const nameOnly = trimmed.match(/^[-•]\s*(.+)$/);
+    if (nameOnly) out.push({ name: nameOnly[1].trim(), desc: "" });
+  }
+  return out;
+}
+
+/** Pull the first `limit` entries from the full "INGREDIENTS: ..." INCI list,
+ * title-cased so the all-caps source reads naturally. */
+function parseInciTop(raw: string, limit: number): string[] {
+  const match = raw.match(/ingredients:\s*([\s\S]*)/i);
+  if (!match) return [];
+  return match[1]
+    .split(/[･·・,\n]/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, limit)
+    .map((token) => token.toLowerCase().replace(/\b([a-z])/g, (c) => c.toUpperCase()));
+}
+
+function ingredientsAnswer(product: CatalogProduct): string {
+  const raw = product.ingredients?.trim();
+  if (raw) {
+    const keys = parseKeyIngredients(raw);
+    if (keys.length > 0) {
+      const parts = keys
+        .slice(0, 3)
+        .map((k) => (k.desc ? `${k.name} (${k.desc.toLowerCase()})` : k.name));
+      return `The ${product.title}'s key ingredients are ${joinNatural(parts)}.`;
+    }
+    const inci = parseInciTop(raw, 5);
+    if (inci.length > 0) {
+      return `The ${product.title} is formulated with ${joinNatural(inci)}, among others.`;
+    }
+  }
+  if (product.isBundle) {
+    return `The ${product.title} is a set — each product inside has its own formula and ingredient list.`;
+  }
+  return `I don't have a detailed ingredient list for the ${product.title}.`;
+}
+
 function waterResistanceAnswer(product: CatalogProduct): string {
   // Grounded in category + capability tags + feature copy. Skincare
   // isn't sold on a "waterproof" spec, so the only genuine water-
@@ -486,14 +543,17 @@ export function resolveProductFaq(
   if (/\beveryday|daily\s+use|prestige|advanced\s+care|luxur\w*|splurge\b/.test(q)) {
     return travelAnswer(product);
   }
-  if (/\btarget\w*|concern\w*|benefit\w*|what\s+does\s+it\s+do|good\s+for\b/.test(q)) {
-    return resolutionAnswer(product);
-  }
-
-  // v2 patterns: high-fidelity question shapes that previously fell
-  // through to the shortDescription dump.
+  // Skin-type / sensitivity questions are checked BEFORE the generic "good
+  // for" benefit pattern, so "is this good for sensitive skin?" / "good for
+  // dry skin" get a real answer instead of a benefit blurb.
   if (/\b(sensitive|gentle|fragrance[-\s]?free|non[-\s]?comedogenic|irritat\w*|reactive|allerg\w*|hypoallergenic)\b/.test(q)) {
     return waterproofAnswer(product);
+  }
+  if (/\b(skin\s*type|dry\s+skin|oily\s+skin|combination\s+skin|normal\s+skin|all\s+skin|who\s+is\s+it\s+for|suitable\s+for)\b/.test(q)) {
+    return connectivityAnswer(product);
+  }
+  if (/\btarget\w*|concern\w*|benefit\w*|what\s+does\s+it\s+do|good\s+for\b/.test(q)) {
+    return resolutionAnswer(product);
   }
   if (/\b(how\s+to\s+use|how\s+do\s+i\s+use|apply|application|routine|morning|evening|night|am\b|pm\b|how\s+often|how\s+long\s+(does\s+it\s+last|will\s+it\s+last)|last)\b/.test(q)) {
     return batteryAnswer(product);
@@ -510,10 +570,12 @@ export function resolveProductFaq(
   if (/\b(texture|finish|absorb\w*|greasy|sticky|feel\b|lightweight|rich\b|cream\b|gel\b|lotion\b|emulsion\b|consistency)\b/.test(q)) {
     return stabilizationAnswer(product);
   }
-  if (/\b(skin\s*type|dry\s+skin|oily\s+skin|combination\s+skin|normal\s+skin|all\s+skin|who\s+is\s+it\s+for|suitable\s+for)\b/.test(q)) {
-    return connectivityAnswer(product);
+  // Ingredient-specific questions get the curated ingredient list; broader
+  // "does it work / results" questions fall through to the benefits answer.
+  if (/\b(ingredients?|what'?s?\s+in\s+it|inci|actives?|retinol|vitamin|hyaluronic)\b/.test(q)) {
+    return ingredientsAnswer(product);
   }
-  if (/\b(ingredient\w*|result\w*|does\s+it\s+work|effective\w*|proven|how\s+long\s+to\s+see|what'?s?\s+in\s+it|active\w*|retinol|vitamin|hyaluronic)\b/.test(q)) {
+  if (/\b(result\w*|does\s+it\s+work|effective\w*|proven|how\s+long\s+to\s+see)\b/.test(q)) {
     return lowLightAnswer(product);
   }
   if (/\bwaterproof\b|water[-\s]?resist\w*|\bsweat\b|\bswim\w*/.test(q)) {

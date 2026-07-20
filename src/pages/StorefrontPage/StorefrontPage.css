@@ -764,10 +764,10 @@ a.prototype-brand-link.figma-storefront__brand-mark {
 }
 
 .figma-storefront__tagline-banner {
-  width: 100%;
+  --tagline-banner-pad: var(--space-page-desktop, 64px);
   height: fit-content;
-  margin-top: -24px;
-  padding: 36px 0;
+  margin: -24px calc(var(--tagline-banner-pad) * -1) 0;
+  padding: 36px var(--tagline-banner-pad);
   border-bottom: 1px solid rgba(236, 236, 236, 1);
   display: flex;
   justify-content: flex-start;
@@ -828,6 +828,10 @@ a.prototype-brand-link.figma-storefront__brand-mark {
     padding-right: 24px;
   }
 
+  .figma-storefront__tagline-banner {
+    --tagline-banner-pad: 24px;
+  }
+
   .figma-storefront__promo-grid {
     grid-template-columns: 1fr;
   }
@@ -875,6 +879,10 @@ a.prototype-brand-link.figma-storefront__brand-mark {
     height: 64px;
     padding-left: max(var(--space-page-mobile, 16px), var(--safe-area-left, 0px));
     padding-right: max(var(--space-page-mobile, 16px), var(--safe-area-right, 0px));
+  }
+
+  .figma-storefront__tagline-banner {
+    --tagline-banner-pad: var(--space-page-mobile, 16px);
   }
 
   .figma-storefront__top-actions {

@@ -98,13 +98,20 @@
 
 .agent-msg__btn--secondary {
   background: var(--agentic-secondary-bg);
+  background-color: rgba(248, 248, 248, 1);
   color: var(--agentic-secondary-foreground);
   border-color: var(--agentic-card-border);
   box-shadow: none;
 }
 
 .agent-msg__btn--secondary:hover:not(:disabled) {
-  background: #ffffff;
+  background: #ececec;
+  border-color: rgba(0, 0, 0, 0.24);
+}
+
+.agent-msg__btn--secondary:active:not(:disabled) {
+  background: #e2e2e2;
+  border-color: rgba(0, 0, 0, 0.28);
 }
 
 .agent-msg__btn--full {
@@ -368,7 +375,7 @@
   border-radius: 0px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0px;
   padding: 20px 0;
   font-family: var(--font-family-base);
   overflow: hidden;
@@ -377,6 +384,7 @@
 
 .agent-compare__intro {
   margin: 0;
+  margin-bottom: 16px;
   padding: 0 20px;
   font-size: 14px;
   line-height: 20px;
@@ -521,7 +529,7 @@
 .agent-compare__action-cell {
   padding-left: 16px;
   padding-right: 16px;
-  padding-bottom: 4px;
+  padding-bottom: 16px;
   vertical-align: top;
 }
 
@@ -536,6 +544,7 @@
   border-radius: 0px;
   border: 1px solid var(--agentic-card-border, rgba(0, 0, 0, 0.14));
   background: var(--agentic-card-bg);
+  background-color: rgba(248, 248, 248, 1);
   color: var(--agentic-card-foreground);
   font-family: inherit;
   font-size: 13px;
@@ -547,7 +556,13 @@
 }
 
 .agent-compare__cart-btn:hover {
-  background: var(--agentic-secondary-bg);
+  background: #ececec;
+  border-color: rgba(0, 0, 0, 0.24);
+}
+
+.agent-compare__cart-btn:active {
+  background: #e2e2e2;
+  border-color: rgba(0, 0, 0, 0.28);
 }
 
 .agent-compare__cart-btn:focus-visible {
@@ -720,6 +735,16 @@
 .agent-product-card__store-btn--selected .agent-product-card__check {
   background: rgba(23, 23, 27, 1);
   border-color: rgba(23, 23, 27, 1);
+  color: #ffffff;
+}
+
+/* Hovering a selected checkbox must keep the filled box + white checkmark
+ * (otherwise the generic hover rule above dims the checkmark to near-black on
+ * the black fill, so it reads as a solid black square). Lighten slightly for
+ * hover feedback. */
+.agent-product-card__store-btn--selected:hover .agent-product-card__check {
+  background: rgba(23, 23, 27, 0.82);
+  border-color: rgba(23, 23, 27, 0.82);
   color: #ffffff;
 }
 

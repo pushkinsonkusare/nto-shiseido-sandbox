@@ -1375,10 +1375,15 @@ function buildPlpNbas(
   const ladder = nextPriceLadder(intent.priceMax);
   const items: StageNbaItem[] = [];
 
-  items.push({
-    label: `Show ${humanCategory(intent.categories?.[0])} under $${ladder}`,
-    lane: "refinement",
-  });
+  // Only offer a price refinement when it is genuinely tighter than the
+  // shopper's current budget. Otherwise the pill just repeats the query they
+  // already made (e.g. "under $60" -> "Show ... under $60").
+  if (intent.priceMax == null || ladder < intent.priceMax) {
+    items.push({
+      label: `Show ${humanCategory(intent.categories?.[0])} under $${ladder}`,
+      lane: "refinement",
+    });
+  }
 
   if (intent.categories?.includes("Sunscreen")) {
     items.push({ label: "Top rated sunscreen", lane: "refinement" });

@@ -158,4 +158,7 @@ export type AgentNbasMessage = {
    * contextual pill handler and stays visible even while a product is selected
    * (it is exempt from the selection-suppression applied to normal NBA rows). */
   contextual?: boolean;
+  /** For contextual follow-up rows: the product the pills are about, so they
+   * resolve correctly even if the live selection has since changed/cleared. */
+  productSlug?: string;
 };

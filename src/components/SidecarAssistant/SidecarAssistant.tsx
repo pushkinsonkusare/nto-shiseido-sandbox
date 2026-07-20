@@ -524,6 +524,10 @@ export function SidecarAssistant({
   const welcomeNbasMessageIdRef = useRef<string | null>(null);
   const firstShopperTurnHandledRef = useRef(false);
   const previousSelectedCountRef = useRef(0);
+  // The intent behind the currently-shown PLP, so refinement NBA pills can
+  // narrow the current result set (keeping category + filters) instead of
+  // re-running as a fresh, context-less query.
+  const activePlpIntentRef = useRef<Intent | null>(null);
   const lastStageNbaClickRef = useRef<{
     stage: NbaStage | "welcome";
     lane?: NbaLane;
@@ -1360,6 +1364,8 @@ export function SidecarAssistant({
           }
         }
         const intent = classifyIntent(latestShopperText);
+        // Remember the intent behind this PLP so refinement pills can narrow it.
+        activePlpIntentRef.current = intent;
         const items = buildStageNbas({
           stage: "plp",
           intent,
@@ -1388,6 +1394,55 @@ export function SidecarAssistant({
   );
 
   /* ---------- shopper input + dispatch ---------- */
+
+  // Shared PLP renderer: filter -> rank -> render carousel + plp NBAs (or a
+  // no-match probing fallback). Records the intent behind the shown PLP so
+  // refinement pills can narrow it while preserving category + filters.
+  const renderRankedPlp = useCallback(
+    (query: string, intent: Intent) => {
+      activePlpIntentRef.current = intent;
+      const matches = filterProducts(intent, products);
+      const ranked = pickRecommendations(matches, matches.length, intent);
+      const firstPage = ranked.slice(0, PLP_PAGE_SIZE);
+      const rest = ranked.slice(PLP_PAGE_SIZE);
+
+      if (firstPage.length === 0) {
+        appendMessage({
+          id: nextId("agent"),
+          kind: "agent_simple",
+          body: "I couldn't find an exact match. Let's narrow that down. What matters most to you?",
+        });
+        const probingItems = buildStageNbas({ stage: "probing", intent });
+        appendMessage(buildStageNbasMessage("probing", probingItems));
+        emitAssistantTelemetry("nba_impression", {
+          stage: "probing",
+          labels: probingItems.map((item) => item.label),
+          lanes: probingItems.map((item) => item.lane),
+        });
+        return;
+      }
+
+      renderPlpCard(
+        buildPlpIntro(query, intent, firstPage.length),
+        firstPage.map((p) => p.slug),
+        rest.length > 0,
+        { remainingSlugs: rest.map((p) => p.slug), searchTerm: query },
+      );
+      const plpItems = buildStageNbas({
+        stage: "plp",
+        intent,
+        matchCount: matches.length,
+        bundleProducts: findBundlesForIntent(intent, products),
+      });
+      appendMessage(buildStageNbasMessage("plp", plpItems));
+      emitAssistantTelemetry("nba_impression", {
+        stage: "plp",
+        labels: plpItems.map((item) => item.label),
+        lanes: plpItems.map((item) => item.lane),
+      });
+    },
+    [appendMessage, products, renderPlpCard],
+  );
 
   const dispatchRuleBasedResponse = useCallback(
     (trimmed: string) => {
@@ -1450,53 +1505,50 @@ export function SidecarAssistant({
         return;
       }
 
-      const matches = filterProducts(intent, products);
-      const ranked = pickRecommendations(matches, matches.length, intent);
-      const firstPage = ranked.slice(0, PLP_PAGE_SIZE);
-      const rest = ranked.slice(PLP_PAGE_SIZE);
-
-      if (firstPage.length === 0) {
-        appendMessage({
-          id: nextId("agent"),
-          kind: "agent_simple",
-          body: "I couldn't find an exact match. Let's narrow that down. What matters most to you?",
-        });
-        const probingItems = buildStageNbas({ stage: "probing", intent });
-        appendMessage(buildStageNbasMessage("probing", probingItems));
-        emitAssistantTelemetry("nba_impression", {
-          stage: "probing",
-          labels: probingItems.map((item) => item.label),
-          lanes: probingItems.map((item) => item.lane),
-        });
-        return;
-      }
-
-      renderPlpCard(
-        buildPlpIntro(trimmed, intent, firstPage.length),
-        firstPage.map((p) => p.slug),
-        rest.length > 0,
-        { remainingSlugs: rest.map((p) => p.slug), searchTerm: trimmed },
-      );
-      const plpItems = buildStageNbas({
-        stage: "plp",
-        intent,
-        matchCount: matches.length,
-        bundleProducts: findBundlesForIntent(intent, products),
-      });
-      appendMessage(buildStageNbasMessage("plp", plpItems));
-      emitAssistantTelemetry("nba_impression", {
-        stage: "plp",
-        labels: plpItems.map((item) => item.label),
-        lanes: plpItems.map((item) => item.lane),
-      });
+      renderRankedPlp(trimmed, intent);
     },
     [
       appendMessage,
       products,
-      renderPlpCard,
+      renderRankedPlp,
       renderRecentOrderSummary,
       renderRoutineCard,
     ],
+  );
+
+  // Refine the current PLP from a stage NBA pill: merge the active PLP intent
+  // (category + budget/tier/tags) with the pill's added constraint, then
+  // re-render directly - bypassing routine detection and the LLM so context is
+  // never lost.
+  const dispatchPlpRefinement = useCallback(
+    (label: string) => {
+      const base = activePlpIntentRef.current;
+      const patch = classifyIntent(label);
+      const requiredTags = Array.from(
+        new Set([...(base?.requiredTags ?? []), ...(patch.requiredTags ?? [])]),
+      );
+      const merged: Intent = {
+        kind: "direct",
+        rawQuery: label,
+        categories: base?.categories ?? patch.categories,
+        categoryLabel: base?.categoryLabel ?? patch.categoryLabel,
+        priceMax: patch.priceMax ?? base?.priceMax,
+        priceMin: patch.priceMin ?? base?.priceMin,
+        tier: patch.tier ?? base?.tier,
+        includeBundles: Boolean(patch.includeBundles || base?.includeBundles),
+        requiredTags: requiredTags.length > 0 ? requiredTags : undefined,
+        activities: base?.activities,
+      };
+
+      appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
+      const loaderId = nextId("loader");
+      appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
+      scheduleResponse(() => {
+        removeMessage(loaderId);
+        renderRankedPlp(label, merged);
+      });
+    },
+    [appendMessage, removeMessage, renderRankedPlp, scheduleResponse],
   );
 
   const dispatchShopperMessage = useCallback(
@@ -1592,8 +1644,13 @@ export function SidecarAssistant({
    *  - "Compare" renders a comparison table of the selected products, then
    *    collapses the tray. */
   const handleContextualPill = useCallback(
-    (label: string) => {
-      const selectedProducts = selectedSlugs
+    (label: string, contextSlug?: string) => {
+      // Contextual follow-up rows carry the product they're about, so they keep
+      // resolving correctly even if the live selection changed or cleared since
+      // the row was shown. Tray pills omit `contextSlug` and use the current
+      // selection.
+      const contextSlugs = contextSlug ? [contextSlug] : selectedSlugs;
+      const selectedProducts = contextSlugs
         .map((slug) => getProductBySlug(slug))
         .filter((p): p is CatalogProduct => Boolean(p));
       const firstProduct = selectedProducts[0];
@@ -1619,6 +1676,7 @@ export function SidecarAssistant({
             id: nextId("nbas"),
             kind: "agent_nbas",
             contextual: true,
+            productSlug: firstProduct.slug,
             regenerateButton: false,
             nbas: buildNbaItems(
               buildContextualFollowupLabels(firstProduct, label),
@@ -1644,14 +1702,14 @@ export function SidecarAssistant({
         appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
         scheduleResponse(() => {
           removeMessage(loaderId);
-          const selectedSet = new Set(selectedSlugs);
+          const excluded = new Set(contextSlugs);
           const related: CatalogProduct[] = [];
           const seen = new Set<string>();
-          for (const slug of selectedSlugs) {
+          for (const slug of contextSlugs) {
             // Pull a deep pool so the carousel can paginate the same way the
             // normal PLP flow does (first page + "Show more" for the rest).
             for (const candidate of getRelatedProducts(slug, 18)) {
-              if (selectedSet.has(candidate.slug) || seen.has(candidate.slug)) {
+              if (excluded.has(candidate.slug) || seen.has(candidate.slug)) {
                 continue;
               }
               seen.add(candidate.slug);
@@ -1770,10 +1828,33 @@ export function SidecarAssistant({
           lastStageNbaClickRef.current = { stage: parent.stage, lane, label };
         }
       }
+      // PLP refinement/capture/cross-sell pills narrow the current result set
+      // (keeping category + filters) rather than starting a fresh query, so
+      // they never lose context or fall into the broad routine card.
+      const clicked = messagesRef.current.find((m) => m.id === messageId);
+      const clickedLane =
+        clicked?.kind === "agent_nbas" ? clicked.laneByLabel?.[label] : undefined;
+      const isPlpRefinement =
+        clicked?.kind === "agent_nbas" &&
+        clicked.stage === "plp" &&
+        (clickedLane === "refinement" ||
+          clickedLane === "capture" ||
+          clickedLane === "crossSell");
+
       removeMessage(messageId);
+
+      if (isPlpRefinement && activePlpIntentRef.current?.categories?.length) {
+        dispatchPlpRefinement(label);
+        return;
+      }
       dispatchShopperMessage(label);
     },
-    [dispatchShopperMessage, removeMessage, welcomeRefreshCount],
+    [
+      dispatchPlpRefinement,
+      dispatchShopperMessage,
+      removeMessage,
+      welcomeRefreshCount,
+    ],
   );
 
   const handleNbaRegenerate = useCallback(
@@ -2184,7 +2265,7 @@ export function SidecarAssistant({
                 }
                 onSelect={(nba) =>
                   message.contextual
-                    ? handleContextualPill(nba.label)
+                    ? handleContextualPill(nba.label, message.productSlug)
                     : handleNbaSelect(message.id, nba.label)
                 }
                 onRegenerate={() => handleNbaRegenerate(message.id)}
