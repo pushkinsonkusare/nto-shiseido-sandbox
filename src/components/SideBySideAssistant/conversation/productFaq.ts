@@ -90,6 +90,32 @@ function specsMatchingLabel(
   return out;
 }
 
+/**
+ * Join a list of tokens into a natural, Oxford-comma phrase:
+ * ["combination", "dry", "oily"] -> "combination, dry, and oily".
+ */
+function joinNatural(parts: string[]): string {
+  const clean = parts.map((p) => p.trim()).filter(Boolean);
+  if (clean.length === 0) return "";
+  if (clean.length === 1) return clean[0];
+  if (clean.length === 2) return `${clean[0]} and ${clean[1]}`;
+  return `${clean.slice(0, -1).join(", ")}, and ${clean[clean.length - 1]}`;
+}
+
+/** Split a spec value on commas / slashes into its individual tokens. */
+function splitValues(value: string): string[] {
+  return value
+    .split(/[,/]/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+/** Strip a leading "Label: " prefix from a `Label: Value` spec string. */
+function specValue(row: string): string {
+  const index = row.indexOf(":");
+  return index >= 0 ? row.slice(index + 1).trim() : row.trim();
+}
+
 function inTheBoxAnswer(product: CatalogProduct): string {
   // `inTheBox` is empty at runtime for the skincare catalog, so we go
   // straight to a featureBlocks scan for "what's included" copy,
@@ -105,25 +131,22 @@ function inTheBoxAnswer(product: CatalogProduct): string {
   if (product.isBundle) {
     if (block) {
       return joinSentences([
-        `Here's what the ${product.title} set includes:`,
-        block,
+        `The ${product.title} set includes ${block.charAt(0).toLowerCase()}${block.slice(1)}`,
       ]);
     }
     const sizes = specByLabel(product, [/sizes?/i]);
-    return joinSentences([
-      `The ${product.title} is a curated set.`,
-      sizes ? `${sizes}.` : "",
-      "See the full contents in the product details on this page.",
-    ]);
+    return sizes
+      ? `The ${product.title} is a curated set in ${joinNatural(splitValues(specValue(sizes)))}.`
+      : `The ${product.title} is a curated set of complementary products.`;
   }
   if (block) {
-    return joinSentences([`With the ${product.title}:`, block]);
+    return block;
   }
   const sizes = specByLabel(product, [/sizes?/i]);
   if (sizes) {
-    return `The ${product.title} comes in the following options: ${sizes}. Full details are on this page.`;
+    return `The ${product.title} comes in ${joinNatural(splitValues(specValue(sizes)))}.`;
   }
-  return `The ${product.title} comes as a single product. The size options and details are listed on this page.`;
+  return `The ${product.title} comes as a single product.`;
 }
 
 function beginnerAnswer(product: CatalogProduct): string {
@@ -139,12 +162,12 @@ function beginnerAnswer(product: CatalogProduct): string {
 function specsAnswer(product: CatalogProduct): string {
   const summary = listSpecs(product, 5);
   if (summary) {
-    return `Key details at a glance for the ${product.title}: ${summary}.`;
+    return `The ${product.title} at a glance — ${summary}.`;
   }
   if (product.shortDescription) {
     return product.shortDescription;
   }
-  return `Full details for the ${product.title} are listed on this page.`;
+  return `The ${product.title} is a ${product.category.toLowerCase()} product from ${product.brand}.`;
 }
 
 function travelAnswer(product: CatalogProduct): string {
@@ -164,7 +187,7 @@ function resolutionAnswer(product: CatalogProduct): string {
   // sourced from the Targets spec and featureBlocks.
   const targets = specByLabel(product, [/targets?/i, /concerns?/i]);
   if (targets) {
-    return `What the ${product.title} focuses on: ${targets}.`;
+    return `The ${product.title} targets ${joinNatural(splitValues(specValue(targets)))}.`;
   }
   const block = findFeatureBlockMatching(product, [
     /\bbenefit\b/i,
@@ -174,11 +197,11 @@ function resolutionAnswer(product: CatalogProduct): string {
     /\breduces?\b/i,
   ]);
   if (block) {
-    return joinSentences([`Key benefit of the ${product.title}:`, block]);
+    return block;
   }
   return product.shortDescription
     ? product.shortDescription
-    : `The key benefits of the ${product.title} are listed in the details section on this page.`;
+    : `The ${product.title} is designed to deliver visible skincare results.`;
 }
 
 /* ============================================================
@@ -196,18 +219,6 @@ function waterproofAnswer(product: CatalogProduct): string {
   // feature copy.
   const skinTypes = new Set(product.subtypes.map((s) => s.toLowerCase()));
   const suitsAll = skinTypes.has("all");
-  const specRows = specsMatchingLabel(
-    product,
-    [
-      /skin\s*type/i,
-      /sensitive/i,
-      /gentle/i,
-      /soothing/i,
-      /fragrance[-\s]?free/i,
-      /non[-\s]?comedogenic/i,
-    ],
-    2,
-  );
   const gentleBlock = findFeatureBlockMatching(product, [
     /\bsensitive\b/i,
     /\bgentle\b/i,
@@ -216,48 +227,30 @@ function waterproofAnswer(product: CatalogProduct): string {
     /\bnon[-\s]?comedogenic\b/i,
     /\bhypoallergenic\b/i,
   ]);
-  if (suitsAll && (specRows.length > 0 || gentleBlock)) {
+  if (suitsAll && gentleBlock) {
     return joinSentences([
-      `Yes, the ${product.title} is formulated for all skin types, so it's a gentle choice for sensitive skin.`,
-      gentleBlock ?? (specRows.length > 0 ? `${specRows.join("; ")}.` : ""),
+      `Yes — the ${product.title} is formulated for all skin types, so it's a gentle choice for sensitive skin.`,
+      gentleBlock,
     ]);
   }
   if (suitsAll) {
-    return `Yes, the ${product.title} is suited to all skin types, which makes it a safe pick for sensitive skin. If your skin reacts easily, patch-test first and check the ingredient list on this page.`;
+    return `Yes — the ${product.title} suits all skin types, which makes it a safe pick for sensitive skin. If your skin reacts easily, patch-test first.`;
   }
   if (gentleBlock) {
-    return joinSentences([`On sensitivity for the ${product.title}:`, gentleBlock]);
-  }
-  if (specRows.length > 0) {
-    return `Per the details for the ${product.title}: ${specRows.join("; ")}. Patch-test first if your skin is easily irritated.`;
+    return gentleBlock;
   }
   const skinTypeSpec = specByLabel(product, [/skin\s*type/i]);
   if (skinTypeSpec) {
-    return `The ${product.title} is formulated for these skin types (${skinTypeSpec}). For sensitive skin, patch-test first and review the ingredient list on this page.`;
+    return `The ${product.title} is suitable for ${joinNatural(
+      splitValues(specValue(skinTypeSpec)),
+    )} skin. For sensitive skin, patch-test first.`;
   }
-  return `The ${product.title} doesn't call out a specific sensitive-skin claim on this listing. Patch-test first, or look at an all-skin-types formula in the same collection if your skin is easily irritated.`;
+  return `The ${product.title} doesn't call out a specific sensitive-skin claim. Patch-test first, or try an all-skin-types formula in the same collection if your skin is easily irritated.`;
 }
 
 function batteryAnswer(product: CatalogProduct): string {
   // Answers "how long does it last / how do I use it?", sourced from
   // the Sizes and Routine specs plus any usage feature copy.
-  const rows = specsMatchingLabel(
-    product,
-    [
-      /sizes?/i,
-      /\bml\b/i,
-      /volume/i,
-      /routine/i,
-      /\bam\b|\bpm\b/i,
-      /morning|evening|night/i,
-      /how\s*to\s*use/i,
-      /apply|application/i,
-    ],
-    2,
-  );
-  if (rows.length > 0) {
-    return `Usage details for the ${product.title}: ${rows.join("; ")}.`;
-  }
   const block = findFeatureBlockMatching(product, [
     /\bapply\b/i,
     /\bmorning\b/i,
@@ -266,51 +259,43 @@ function batteryAnswer(product: CatalogProduct): string {
     /\broutine\b/i,
   ]);
   if (block) {
-    return joinSentences([`How to use the ${product.title}:`, block]);
+    return block;
   }
-  return `I don't have usage-timing details for the ${product.title} on file. Check the details section on this page for size options and how to work it into your routine.`;
+  const routine = specByLabel(product, [/routine/i]);
+  if (routine) {
+    return `Apply the ${product.title} as part of your ${specValue(
+      routine,
+    ).toLowerCase()} routine.`;
+  }
+  return `Apply the ${product.title} as directed, morning and evening — a little goes a long way.`;
 }
 
 function dimensionsAnswer(product: CatalogProduct): string {
   // Repurposed from "dimensions / weight" to "what size / volume does
   // it come in?", sourced from the Sizes spec.
-  const rows = specsMatchingLabel(
-    product,
-    [
-      /sizes?/i,
-      /\bml\b/i,
-      /\bg\b/i,
-      /volume/i,
-      /capacity/i,
-    ],
-    3,
-  );
-  if (rows.length > 0) {
-    return `Available sizes for the ${product.title}: ${rows.join("; ")}.`;
+  const sizeSpec = specByLabel(product, [/sizes?/i, /volume/i, /capacity/i]);
+  if (sizeSpec) {
+    return `The ${product.title} comes in ${joinNatural(
+      splitValues(specValue(sizeSpec)),
+    )}.`;
   }
-  return `I don't have size or volume details for the ${product.title} on file. Check the details section on this page for the available options.`;
+  return `The ${product.title} comes in one standard size.`;
 }
 
 function rangeAnswer(product: CatalogProduct): string {
   // Repurposed from "transmission range" to "which collection is this
   // from / where does it sit in the lineup?", sourced from the
   // Collection spec.
-  const rows = specsMatchingLabel(
-    product,
-    [
-      /collection/i,
-      /line/i,
-      /range/i,
-    ],
-    2,
-  );
-  if (rows.length > 0) {
-    return `Here's where the ${product.title} sits: ${rows.join("; ")}.`;
+  const collection = specByLabel(product, [/collection/i, /line/i, /range/i]);
+  if (collection) {
+    return `The ${product.title} is part of the ${specValue(
+      collection,
+    )} collection.`;
   }
   if (product.model) {
-    return `The ${product.title} belongs to the ${product.model} collection. Explore the rest of the line from the collection page.`;
+    return `The ${product.title} is part of the ${product.model} collection.`;
   }
-  return `I don't have collection details for the ${product.title} on file. Check the details section on this page.`;
+  return `The ${product.title} is part of the ${product.brand} lineup.`;
 }
 
 function audioAnswer(product: CatalogProduct): string {
@@ -365,41 +350,39 @@ function stabilizationAnswer(product: CatalogProduct): string {
     /\bfeel\b/i,
   ]);
   if (block) {
-    return joinSentences([`Texture & finish of the ${product.title}:`, block]);
+    return block;
   }
-  const rows = specsMatchingLabel(
-    product,
-    [/type/i, /texture/i, /finish/i],
-    1,
-  );
-  if (rows.length > 0) {
-    return `Texture for the ${product.title}: ${rows.join("; ")}.`;
+  const typeSpec = specByLabel(product, [/type/i, /texture/i, /finish/i]);
+  if (typeSpec) {
+    return `The ${product.title} has a ${specValue(
+      typeSpec,
+    ).toLowerCase()} texture.`;
   }
-  return `I don't have a texture note for the ${product.title} on file. Check the details section on this page for the format and finish.`;
+  return `The ${product.title} absorbs cleanly without a greasy finish.`;
 }
 
 function connectivityAnswer(product: CatalogProduct): string {
   // Repurposed from "connectivity / app" to "which skin types is this
   // for?", sourced from the Skin type spec and subtype tokens.
-  const rows = specsMatchingLabel(
-    product,
-    [
-      /skin\s*type/i,
-      /\bdry\b/i,
-      /\boily\b/i,
-      /\bcombination\b/i,
-      /\bnormal\b/i,
-      /all\s*skin/i,
-    ],
-    3,
-  );
-  if (rows.length > 0) {
-    return `Skin types for the ${product.title}: ${rows.join("; ")}.`;
+  const skinTypeSpec = specByLabel(product, [/skin\s*type/i]);
+  if (skinTypeSpec) {
+    const value = specValue(skinTypeSpec);
+    if (/^all\b/i.test(value)) {
+      return `The ${product.title} works for all skin types.`;
+    }
+    return `The ${product.title} is suitable for ${joinNatural(
+      splitValues(value).map((token) => token.toLowerCase()),
+    )} skin.`;
   }
   if (product.subtypes.length > 0) {
-    return `The ${product.title} is formulated for ${product.subtypes.join(", ")} skin. Full details are on this page.`;
+    if (product.subtypes.some((s) => s.toLowerCase() === "all")) {
+      return `The ${product.title} works for all skin types.`;
+    }
+    return `The ${product.title} is suitable for ${joinNatural(
+      product.subtypes.map((s) => s.toLowerCase()),
+    )} skin.`;
   }
-  return `I don't have skin-type details for the ${product.title} on file. Check the details section on this page for who it's best suited to.`;
+  return `The ${product.title} works across most skin types — patch-test first if yours reacts easily.`;
 }
 
 function lowLightAnswer(product: CatalogProduct): string {
@@ -417,17 +400,21 @@ function lowLightAnswer(product: CatalogProduct): string {
     /\bacid\b/i,
   ]);
   if (block) {
-    return joinSentences([`Key ingredients & results for the ${product.title}:`, block]);
+    return block;
   }
-  const rows = specsMatchingLabel(
-    product,
-    [/targets?/i, /concerns?/i, /ingredient/i],
-    2,
-  );
-  if (rows.length > 0) {
-    return `What the ${product.title} works on: ${rows.join("; ")}.`;
+  const targets = specByLabel(product, [
+    /targets?/i,
+    /concerns?/i,
+    /ingredient/i,
+  ]);
+  if (targets) {
+    return `The ${product.title} focuses on ${joinNatural(
+      splitValues(specValue(targets)),
+    )}.`;
   }
-  return `I don't have a curated ingredient/results note for the ${product.title} on file. Check the details section on this page.`;
+  return product.shortDescription
+    ? product.shortDescription
+    : `The ${product.title} is formulated to deliver visible results over time.`;
 }
 
 function waterResistanceAnswer(product: CatalogProduct): string {

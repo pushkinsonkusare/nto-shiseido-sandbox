@@ -483,14 +483,28 @@ export function SidecarAssistant({
     );
   }, [selectedSlugs, getProductBySlug]);
 
+  // When products are selected, the input invites a product-scoped question.
+  const inputPlaceholder = useMemo(() => {
+    if (selectedSlugs.length === 1) {
+      const product = getProductBySlug(selectedSlugs[0]);
+      if (product) return `Ask me anything about ${product.title}`;
+    }
+    if (selectedSlugs.length > 1) {
+      return `Ask me anything about your ${selectedSlugs.length} selected products`;
+    }
+    return PLACEHOLDER_INPUT;
+  }, [selectedSlugs, getProductBySlug]);
+
   const chatRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const previousMessageIdsRef = useRef<string[]>([]);
   const panelRef = useRef<HTMLElement>(null);
   const pendingTimeouts = useRef<number[]>([]);
   const messagesRef = useRef<ChatMessage[]>([]);
   const welcomeNbasMessageIdRef = useRef<string | null>(null);
   const firstShopperTurnHandledRef = useRef(false);
+  const previousSelectedCountRef = useRef(0);
   const lastStageNbaClickRef = useRef<{
     stage: NbaStage | "welcome";
     lane?: NbaLane;
@@ -500,6 +514,15 @@ export function SidecarAssistant({
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  // Selecting a product moves focus to the composer (cursor blinking) so the
+  // shopper can immediately ask about it; the placeholder names the product.
+  useEffect(() => {
+    if (selectedSlugs.length > previousSelectedCountRef.current) {
+      inputRef.current?.focus();
+    }
+    previousSelectedCountRef.current = selectedSlugs.length;
+  }, [selectedSlugs]);
 
   /* ---------- mutation helpers ---------- */
 
@@ -2325,9 +2348,10 @@ export function SidecarAssistant({
         ) : null}
         <div className="sidecar-assistant__input-shell">
           <input
+            ref={inputRef}
             type="text"
             className="sidecar-assistant__input"
-            placeholder={PLACEHOLDER_INPUT}
+            placeholder={inputPlaceholder}
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
             aria-label="Ask the personal assistant"
