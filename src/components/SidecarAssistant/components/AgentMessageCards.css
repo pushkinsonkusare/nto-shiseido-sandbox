@@ -27,7 +27,7 @@
 }
 
 .agent-msg__card--padded {
-  padding: 24px 0;
+  padding: 24px 0 20px;
   gap: 24px;
 }
 
@@ -100,7 +100,7 @@
   background: var(--agentic-secondary-bg);
   color: var(--agentic-secondary-foreground);
   border-color: var(--agentic-card-border);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
 }
 
 .agent-msg__btn--secondary:hover:not(:disabled) {
@@ -129,7 +129,7 @@
 }
 
 .agent-msg__btn--apple {
-  background: #000000;
+  background: rgba(26, 26, 26, 1);
   color: #ffffff;
   height: 40px;
   width: 100%;
@@ -138,7 +138,7 @@
 }
 
 .agent-msg__btn--apple:hover:not(:disabled) {
-  background: #1a1a1a;
+  background: #222222;
 }
 
 .agent-msg__apple-pay-mark {
@@ -161,6 +161,7 @@
 /* ---------- Agent simple utterance (#3) ---------- */
 
 .agent-msg__hero {
+  position: relative;
   width: 100%;
   height: 300px;
   background: var(--agentic-secondary-bg);
@@ -175,6 +176,16 @@
   display: block;
 }
 
+.agent-msg__hero img.agent-msg__hero-logo {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  width: 105px;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .agent-msg__content {
   display: flex;
   flex-direction: column;
@@ -182,7 +193,7 @@
 }
 
 .agent-msg__row {
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 .agent-msg__ctas {
@@ -203,7 +214,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 24px 0;
+  padding: 20px 0;
   font-family: var(--font-family-base);
   overflow: hidden;
   box-sizing: border-box;
@@ -211,7 +222,7 @@
 
 .agent-plp__intro {
   margin: 0;
-  padding: 0 24px;
+  padding: 0 20px;
   font-size: 14px;
   line-height: 20px;
   color: var(--agentic-foreground);
@@ -219,7 +230,7 @@
 
 .agent-plp__carousel {
   position: relative;
-  padding-left: 24px;
+  padding-left: 20px;
 }
 
 .agent-plp__track {
@@ -227,9 +238,11 @@
   gap: 12px;
   overflow-x: auto;
   scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 20px;
   scrollbar-width: none;
   padding-right: 24px;
-  padding-bottom: 4px;
+  padding-bottom: 0px;
   height: fit-content;
 }
 
@@ -268,6 +281,19 @@
   box-shadow: 0 0 0 3px var(--agentic-focus);
 }
 
+.agent-plp__nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.agent-plp__nav:disabled:hover {
+  background: var(--agentic-secondary-bg);
+}
+
+.agent-plp__nav:disabled:active {
+  transform: translateY(-50%);
+}
+
 .agent-plp__nav--prev {
   left: 12px;
 }
@@ -280,8 +306,9 @@
 
 .agent-product-card {
   flex: 0 0 auto;
-  width: 240px;
-  height: 420px;
+  width: 220px;
+  height: 350px;
+  scroll-snap-align: start;
   background: var(--agentic-card-bg);
   border: 1px solid var(--agentic-card-border);
   border-color: rgba(236, 236, 236, 1);
@@ -290,6 +317,20 @@
   flex-direction: column;
   overflow: hidden;
   font-family: var(--font-family-base);
+  cursor: pointer;
+  transition: border-color 260ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .agent-product-card:hover {
+    border-color: rgba(163, 163, 163, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-product-card {
+    transition: none;
+  }
 }
 
 .agent-product-card__gallery {
@@ -359,16 +400,46 @@
   top: 12px;
 }
 
-.agent-product-card__store-btn input {
-  width: 16px;
-  height: 16px;
+.agent-product-card__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid rgba(196, 196, 196, 1);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  color: transparent;
+  pointer-events: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.agent-product-card__store-btn:hover .agent-product-card__check {
+  border-color: rgba(23, 23, 27, 0.55);
+  color: rgba(23, 23, 27, 0.35);
+}
+
+.agent-product-card__store-btn--selected .agent-product-card__check {
+  background: rgba(23, 23, 27, 1);
+  border-color: rgba(23, 23, 27, 1);
+  color: #ffffff;
+}
+
+.agent-product-card__store-btn--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.agent-product-card__store-btn--disabled:hover .agent-product-card__check {
+  border-color: rgba(196, 196, 196, 1);
+  color: transparent;
 }
 
 .agent-product-card__content {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 20px;
+  padding: 20px 20px 24px;
 }
 
 .agent-product-card__title {
@@ -395,6 +466,7 @@
 
 .agent-product-card__price {
   margin: 0;
+  font-size: 16px;
   font-weight: var(--font-weight-semibold);
   line-height: 1;
 }
@@ -405,7 +477,7 @@
   line-height: 1.2;
   text-decoration: line-through;
   color: var(--agentic-strike);
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .agent-product-card__desc {
@@ -482,11 +554,14 @@
 
 .agent-product-card--show-more {
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px;
+  justify-content: flex-start;
+  gap: 0;
+  /* Top padding keeps the plus icon at its original position while the title
+     and body drop down to line up with the title and star rows of the
+     product cards beside it. */
+  padding: 124px 24px 24px;
   text-align: center;
-  min-height: 420px;
+  min-height: 350px;
 }
 
 .agent-product-card__show-more-icon {
@@ -499,7 +574,7 @@
 }
 
 .agent-product-card__show-more-title {
-  margin: 0;
+  margin: 87px 0 0;
   font-size: 18px;
   font-weight: var(--font-weight-semibold);
   line-height: 1.2;
@@ -508,7 +583,7 @@
 }
 
 .agent-product-card__show-more-body {
-  margin: 0;
+  margin: 8px 0 0;
   font-size: 14px;
   line-height: 20px;
   color: var(--agentic-foreground);
@@ -522,6 +597,7 @@
   flex-direction: column;
   background: var(--agentic-card-bg);
   border: 1px solid var(--agentic-card-border);
+  border-color: rgba(236, 236, 236, 1);
   font-family: var(--font-family-base);
   overflow: hidden;
   box-sizing: border-box;
@@ -585,16 +661,70 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 24px 0;
+  padding: 20px 0;
+  color: rgba(236, 236, 236, 1);
   border-top: 1px solid rgb(236, 236, 236);
   border-right: 0;
   border-bottom: 0;
   border-left: 0;
 }
 
+/* Detached (fullscreen modal) PDP card: gallery on the left, product content
+ * on the right, since the modal is far wider than the docked panel. */
+.sxs-layout__panel--detached .agent-pdp__card {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.sxs-layout__panel--detached .agent-pdp__gallery {
+  flex: 1 1 50%;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 360px;
+}
+
+.sxs-layout__panel--detached .agent-pdp__content {
+  flex: 1 1 50%;
+  min-width: 0;
+  padding: 20px 0;
+  border-top: 0;
+  border-left: 1px solid rgb(236, 236, 236);
+  overflow-y: auto;
+}
+
+/* Detached (fullscreen modal) Cart card: item list on the left, totals on the
+ * right, since the modal is far wider than the docked panel. */
+.sxs-layout__panel--detached .agent-summary__details {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 24px;
+}
+
+.sxs-layout__panel--detached .agent-summary__items {
+  order: 1;
+  flex: 1 1 calc(50% - 12px);
+  min-width: 0;
+}
+
+.sxs-layout__panel--detached .agent-summary__lines {
+  order: 2;
+  flex: 1 1 calc(50% - 12px);
+  min-width: 0;
+  padding-top: 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--agentic-card-border);
+}
+
+.sxs-layout__panel--detached .agent-summary__chips--cart {
+  order: 3;
+  flex-basis: 100%;
+}
+
 .agent-pdp__title {
   margin: 0;
-  padding: 0 24px;
+  padding: 0 20px;
   font-size: 18px;
   font-weight: var(--font-weight-semibold);
   line-height: 1.2;
@@ -602,11 +732,57 @@
   color: var(--agentic-card-foreground);
 }
 
+.agent-pdp__rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  font-size: 13px;
+  line-height: 1;
+  color: rgba(64, 64, 64, 1);
+}
+
+.agent-pdp__rating-value {
+  font-weight: var(--font-weight-semibold);
+}
+
+.agent-pdp__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--agentic-star);
+}
+
+.agent-pdp__star {
+  position: relative;
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  color: var(--agentic-card-border);
+}
+
+.agent-pdp__star svg {
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.agent-pdp__star-fill {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  overflow: hidden;
+  color: var(--agentic-star);
+}
+
+.agent-pdp__rating-count {
+  color: rgba(115, 115, 115, 1);
+}
+
 .agent-pdp__price-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding: 0 24px;
+  padding: 0 20px;
   font-size: 20px;
   letter-spacing: -0.03em;
   color: var(--agentic-card-foreground);
@@ -627,20 +803,69 @@
   color: var(--agentic-strike);
 }
 
+.agent-pdp__desc-wrap {
+  position: relative;
+  padding: 0 20px;
+}
+
 .agent-pdp__desc {
   margin: 0;
-  padding: 0 24px;
   font-size: 14px;
   font-weight: var(--font-weight-regular);
   line-height: 20px;
   color: rgba(64, 64, 64, 1);
+  white-space: pre-line;
+}
+
+.agent-pdp__desc--clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+/* "Read more" affordance pinned to the end of the 4th (last) visible line,
+   with a fade so the truncated copy reads cleanly into the link. */
+.agent-pdp__desc-toggle {
+  position: absolute;
+  right: 24px;
+  bottom: 0;
+  padding: 0 0 0 28px;
+  border: none;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0),
+    var(--agentic-card-bg, #fff) 40%
+  );
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: var(--font-weight-medium, 500);
+  color: rgba(64, 64, 64, 1);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* When expanded, the "Show less" link flows inline at the end of the copy
+   rather than being pinned/faded over a truncated last line. */
+.agent-pdp__desc-toggle--inline {
+  position: static;
+  padding: 0;
+  background: none;
+  white-space: nowrap;
+}
+
+.agent-pdp__desc-toggle:hover {
+  color: rgba(0, 0, 0, 1);
 }
 
 .agent-pdp__group {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 .agent-pdp__group-label {
@@ -746,8 +971,9 @@
   flex-direction: column;
   gap: 8px;
   padding-top: 16px;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: 20px;
+  padding-right: 20px;
+  width: 100%;
 }
 
 /* ---------- Cart / Order summary ---------- */
@@ -763,6 +989,7 @@
   width: 100%;
   background: var(--agentic-card-bg);
   border: 1px solid var(--agentic-card-border);
+  border-color: rgba(236, 236, 236, 1);
   display: flex;
   flex-direction: column;
   font-family: var(--font-family-base);
@@ -773,12 +1000,13 @@
 .agent-summary__card-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px 0;
+  gap: 16px;
+  padding: 20px 0;
+  color: rgba(237, 237, 237, 1);
 }
 
 .agent-summary__row {
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 .agent-summary__acknowledgement {
@@ -789,57 +1017,15 @@
   color: rgba(64, 64, 64, 1);
 }
 
-.agent-summary__divider {
-  height: 1px;
-  background: var(--agentic-card-border);
-  margin: 8px 24px;
-}
-
-.agent-summary__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.agent-summary__head p {
-  margin: 0;
-  flex: 1 1 auto;
-  font-size: 14px;
-  font-weight: var(--font-weight-regular);
-  line-height: 20px;
-  color: rgba(64, 64, 64, 1);
-}
-
-.agent-summary__expand-btn {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--agentic-secondary-bg);
-  border: 1px solid var(--agentic-card-border);
-  color: var(--agentic-secondary-foreground);
-  cursor: pointer;
-  transition: background-color 120ms ease;
-}
-
-.agent-summary__expand-btn:hover {
-  background: #ffffff;
-}
-
-.agent-summary__expand-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--agentic-focus);
-}
-
-/* Nested summary accordion (AgentCart) */
+/* Nested summary accordion (AgentCart + AgentOrderSummary) */
 .agent-summary__box {
   display: flex;
   flex-direction: column;
   background: var(--agentic-card-bg);
   border: 1px solid var(--agentic-card-border);
+  border-color: rgba(236, 236, 236, 1);
   overflow: hidden;
+  color: rgba(236, 236, 236, 1);
 }
 
 .agent-summary__box-header {
@@ -959,8 +1145,8 @@
 
 .agent-summary__item-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
+  font-size: 18px;
+  font-weight: 600;
   line-height: 1.4;
   letter-spacing: -0.025em;
   color: var(--agentic-card-foreground);
@@ -1206,11 +1392,17 @@
   font-weight: var(--font-weight-bold);
 }
 
+.agent-summary__line--total .agent-summary__line-label,
+.agent-summary__line--total .agent-summary__line-value {
+  font-size: 18px;
+  font-weight: 500;
+}
+
 .agent-summary__promo {
   display: flex;
   gap: 8px;
   align-items: stretch;
-  padding: 8px 24px 0;
+  padding: 0 20px 0;
 }
 
 .agent-summary__promo-input {
@@ -1271,7 +1463,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 24px;
+  padding: 0 20px;
 }
 
 .agent-summary__footnote {
@@ -1291,6 +1483,15 @@
   gap: 8px;
   width: 100%;
   font-family: var(--font-family-base);
+  transition: opacity 160ms ease, max-height 200ms ease;
+}
+
+.agent-nba__set--suppressed {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin: 0;
+  pointer-events: none;
 }
 
 .agent-nba__pill {
@@ -1298,12 +1499,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--agentic-primary-foreground, #ffffff);
+  background: unset;
   border: 1px solid var(--agentic-card-border);
+  border-radius: 0px;
   color: var(--agentic-secondary-foreground);
   font-family: inherit;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 20px;
   padding: 8px 16px;
   cursor: pointer;
@@ -1372,8 +1574,22 @@
 .agent-stars {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   color: var(--agentic-star);
+}
+
+.agent-stars__rating {
+  font-size: 13px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--agentic-card-foreground);
+  line-height: 1;
+}
+
+.agent-stars__reviews {
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  color: var(--agentic-muted-foreground);
+  line-height: 1;
 }
 
 .agent-stars__icon {

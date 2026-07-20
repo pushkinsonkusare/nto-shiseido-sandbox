@@ -21,6 +21,9 @@ export function SidecarDockLayout({ children }: Props) {
   const isMobileViewport = viewportMode === "mobile";
 
   const [panelOpen, setPanelOpen] = useState(false);
+  // When detached the assistant floats as a centered modal and the storefront
+  // reflows to full width. Desktop-only; mobile keeps the overlay sheet.
+  const [detached, setDetached] = useState(false);
   // Once the assistant mounts we keep it in the tree for the rest of the
   // session so the chat history survives a close -> reopen. The close
   // transition is driven entirely by CSS (grid collapses to 0px and the panel
@@ -34,6 +37,15 @@ export function SidecarDockLayout({ children }: Props) {
 
   const openPanel = () => setPanelOpen(true);
   const closePanel = () => setPanelOpen(false);
+  const toggleDetach = () => setDetached((value) => !value);
+
+  // Re-dock whenever the panel closes or we drop into mobile, so the modal
+  // state never lingers when the docked shell isn't visible.
+  useEffect(() => {
+    if (!panelOpen || isMobileViewport) setDetached(false);
+  }, [panelOpen, isMobileViewport]);
+
+  const isDetached = detached && !isMobileViewport;
 
   useEffect(() => {
     if (panelOpen) {
@@ -100,10 +112,19 @@ export function SidecarDockLayout({ children }: Props) {
           onClick={closePanel}
         />
       ) : null}
+      {isDetached ? (
+        <button
+          type="button"
+          className="sxs-layout__detach-backdrop"
+          aria-label="Dock assistant panel"
+          onClick={() => setDetached(false)}
+        />
+      ) : null}
       <div
         className={
           (panelOpen ? "sxs-layout" : "sxs-layout sxs-layout--panel-collapsed") +
-          (isMobileViewport ? " sxs-layout--mobile" : "")
+          (isMobileViewport ? " sxs-layout--mobile" : "") +
+          (isDetached ? " sxs-layout--detached" : "")
         }
       >
         <div className="sxs-layout__main">{children}</div>
@@ -114,7 +135,8 @@ export function SidecarDockLayout({ children }: Props) {
               (panelOpen
                 ? "sxs-layout__panel sxs-layout__panel--open"
                 : "sxs-layout__panel sxs-layout__panel--closing") +
-              (isMobileViewport ? " sxs-layout__panel--mobile" : "")
+              (isMobileViewport ? " sxs-layout__panel--mobile" : "") +
+              (isDetached ? " sxs-layout__panel--detached" : "")
             }
             aria-label="Personal Assistant"
             aria-hidden={!panelOpen}
@@ -166,6 +188,8 @@ export function SidecarDockLayout({ children }: Props) {
               docked
               open={panelOpen}
               onRequestClose={closePanel}
+              detached={isDetached}
+              onToggleDetach={toggleDetach}
             />
           </aside>
         ) : null}

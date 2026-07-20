@@ -1,5 +1,6 @@
 import {
   ArrowRightIcon,
+  CheckIcon,
   PlusIcon,
   StarIcon,
 } from "../../icons/StorefrontIcons";
@@ -24,6 +25,8 @@ export type AgentProductCardProps = {
   description?: string;
   /** Optional rating between 0 and 5. Star row is hidden when omitted. */
   rating?: number;
+  /** Optional number of reviews shown next to the rating. */
+  reviewCount?: number;
   /** Optional list of color swatches. The first is treated as selected. */
   swatches?: AgentProductSwatch[];
   /** Optional badge label rendered on top of the gallery (e.g. "Sale"). */
@@ -34,29 +37,33 @@ export type AgentProductCardProps = {
   onWishlist?: () => void;
   /** Optional click handler for the store / building button. */
   onStoreInfo?: () => void;
+  /** When true, the card's checkbox control renders as selected. */
+  selected?: boolean;
+  /** Toggle handler for the card's selection checkbox. */
+  onToggleSelect?: () => void;
+  /** When true, the selection checkbox is disabled (selection cap hit). */
+  selectDisabled?: boolean;
 };
 
-/** Five-star rating row matching the agentic PLP design. */
-function StarRow({ rating }: { rating: number }) {
-  const filled = Math.max(0, Math.min(5, Math.round(rating)));
+/** Compact rating row: numeric rating, a star, and the review count. */
+function StarRow({ rating, reviewCount }: { rating: number; reviewCount?: number }) {
+  const clamped = Math.max(0, Math.min(5, rating));
+  const ratingLabel = clamped.toFixed(1);
   return (
     <div
       className="agent-stars"
       role="img"
-      aria-label={`${filled} out of 5 stars`}
+      aria-label={
+        typeof reviewCount === "number"
+          ? `Rated ${ratingLabel} out of 5 stars from ${reviewCount} reviews`
+          : `Rated ${ratingLabel} out of 5 stars`
+      }
     >
-      {Array.from({ length: 5 }).map((_, index) => (
-        <StarIcon
-          key={index}
-          width={12}
-          height={12}
-          className={
-            index < filled
-              ? "agent-stars__icon"
-              : "agent-stars__icon agent-stars__icon--empty"
-          }
-        />
-      ))}
+      <span className="agent-stars__rating">{ratingLabel}</span>
+      <StarIcon width={12} height={12} className="agent-stars__icon" />
+      {typeof reviewCount === "number" ? (
+        <span className="agent-stars__reviews">({reviewCount} reviews)</span>
+      ) : null}
     </div>
   );
 }
@@ -98,11 +105,13 @@ export function AgentProductCard({
   title,
   price,
   comparePrice,
-  description,
   rating,
+  reviewCount,
   swatches,
   onSelect,
-  onStoreInfo,
+  selected,
+  onToggleSelect,
+  selectDisabled,
 }: AgentProductCardProps) {
   return (
     <article
@@ -114,19 +123,23 @@ export function AgentProductCard({
         <img src={imageUrl} alt={imageAlt} />
         <button
           type="button"
-          className="agent-product-card__icon-btn agent-product-card__store-btn"
-          aria-label="View store availability"
+          className={
+            "agent-product-card__icon-btn agent-product-card__store-btn" +
+            (selected ? " agent-product-card__store-btn--selected" : "") +
+            (selectDisabled ? " agent-product-card__store-btn--disabled" : "")
+          }
+          aria-label={selected ? "Deselect product" : "Select product"}
+          aria-pressed={selected}
+          disabled={selectDisabled}
           onClick={(event) => {
             event.stopPropagation();
-            onStoreInfo?.();
+            if (selectDisabled) return;
+            onToggleSelect?.();
           }}
         >
-          <input
-            type="checkbox"
-            tabIndex={-1}
-            aria-hidden="true"
-            onClick={(event) => event.stopPropagation()}
-          />
+          <span className="agent-product-card__check" aria-hidden="true">
+            <CheckIcon width={13} height={13} />
+          </span>
         </button>
       </div>
 
@@ -135,18 +148,16 @@ export function AgentProductCard({
 
         <h4 className="agent-product-card__title">{title}</h4>
 
-        {typeof rating === "number" ? <StarRow rating={rating} /> : null}
+        {typeof rating === "number" ? (
+          <StarRow rating={rating} reviewCount={reviewCount} />
+        ) : null}
 
         <div className="agent-product-card__price-row">
-          <p className="agent-product-card__price">{price}</p>
+          <p className="agent-product-card__price">{price.replace(/^From\s+/i, "")}</p>
           {comparePrice ? (
             <p className="agent-product-card__price--strike">{comparePrice}</p>
           ) : null}
         </div>
-
-        {description ? (
-          <p className="agent-product-card__desc">{description}</p>
-        ) : null}
       </div>
     </article>
   );

@@ -3,8 +3,12 @@ import { useCatalog } from "../../catalog/CatalogContext";
 import {
   CloseIcon,
   EllipsisVerticalIcon,
+  ExpandIcon,
+  SaveIcon,
   SendHorizontalIcon,
+  ShrinkIcon,
   SparkleIcon,
+  Trash2Icon,
 } from "../icons/StorefrontIcons";
 import {
   AgentCart,
@@ -56,6 +60,19 @@ const NUDGE_INTERVAL_MS = 90_000;
 const NUDGE_DURATION_MS = 2500;
 
 const RESPONSE_LATENCY_MS = 1200;
+const PLP_PAGE_SIZE = 5;
+
+/** Maximum number of products a shopper can select at once. */
+const MAX_SELECTED_PRODUCTS = 3;
+
+/** Placeholder contextual NBAs shown beneath selected-product pills. The real
+ * action logic is a follow-up; these render the pill UI for now. */
+const CONTEXTUAL_NBA_PLACEHOLDERS = [
+  "Show similar",
+  "Is this waterproof?",
+  "Compare",
+  "Ingredients",
+];
 const TALL_CARD_VIEWPORT_RATIO = 0.92;
 const TALL_CARD_ANCHOR_RATIO = 0.6;
 const TALL_CARD_TOP_INSET_PX = 16;
@@ -65,6 +82,67 @@ let messageIdCounter = 0;
 function nextId(prefix: string) {
   messageIdCounter += 1;
   return `${prefix}-${messageIdCounter}`;
+}
+
+/**
+ * Serialize the current conversation into a plain-text transcript suitable for
+ * downloading. Each message is rendered from the shopper's or the assistant's
+ * point of view so the exported file reads like a chat log.
+ */
+function buildTranscriptText(messages: ChatMessage[]): string {
+  const lines: string[] = [
+    "Shiseido Personal Assistant — Session Transcript",
+    `Exported: ${new Date().toLocaleString()}`,
+    "",
+  ];
+
+  for (const message of messages) {
+    switch (message.kind) {
+      case "shopper_text":
+        lines.push(`Shopper: ${message.text}`);
+        break;
+      case "agent_simple":
+        lines.push(
+          `Assistant: ${message.title ? `${message.title} — ` : ""}${message.body}`,
+        );
+        break;
+      case "agent_plp":
+        lines.push(`Assistant: ${message.intro}`);
+        for (const product of message.products) {
+          lines.push(`  • ${product.title} (${product.price})`);
+        }
+        break;
+      case "agent_pdp":
+        lines.push(`Assistant: ${message.title} (${message.price})`);
+        break;
+      case "agent_cart":
+      case "agent_order":
+        if (message.acknowledgement) {
+          lines.push(`Assistant: ${message.acknowledgement}`);
+        }
+        lines.push(`Assistant: ${message.summary}`);
+        for (const item of message.items) {
+          lines.push(`  • ${item.title}`);
+        }
+        for (const lineItem of message.lineItems) {
+          lines.push(`    ${lineItem.label}: ${lineItem.value}`);
+        }
+        break;
+      case "agent_nbas":
+        lines.push(
+          `Assistant (suggestions): ${message.nbas
+            .map((nba) => nba.label)
+            .join(", ")}`,
+        );
+        break;
+      case "agent_loader":
+        break;
+      default:
+        break;
+    }
+  }
+
+  return lines.join("\n");
 }
 
 /** Format a number as a USD currency string (used for promo math). */
@@ -83,8 +161,10 @@ function toPlpProduct(
     imageAlt: product.imageAlt,
     title: product.title,
     price: product.priceFormatted,
+    comparePrice: product.comparePriceFormatted ?? undefined,
     description: product.shortDescription,
     rating: product.rating ?? undefined,
+    reviewCount: product.reviewCount ?? undefined,
     swatches: product.swatches.map((color) => ({ color })),
     badgeLabel: product.badgeLabel,
     onSelect: () => onSelect(product.slug),
@@ -99,6 +179,7 @@ function toCartItem(product: CatalogProduct, quantity: number): AgentCartItem {
     title: product.title,
     meta: [`Brand: ${product.brand}`, `Category: ${product.category}`],
     price: product.priceFormatted,
+    comparePrice: product.comparePriceFormatted ?? undefined,
     quantity,
   };
 }
@@ -135,7 +216,11 @@ function recomputeCartLineItems(
       value: `-${usd.format(discount)}`,
     });
   }
-  lines.push({ label: "Shipping", value: "Calculated at checkout" });
+  // Not yet calculated — shown as placeholders until wired to pricing logic.
+  lines.push({ label: "Promotions", value: "-" });
+  lines.push({ label: "Shipping", value: "-" });
+  lines.push({ label: "Shipping Discount", value: "-" });
+  lines.push({ label: "Tax", value: "TBD" });
   lines.push({
     label: "Estimated total",
     value: usd.format(Math.max(0, subtotal - discount)),
@@ -267,12 +352,18 @@ type SidecarAssistantProps = {
   open?: boolean;
   /** Close request from the docked panel's header button. */
   onRequestClose?: () => void;
+  /** When true (docked only), the panel is floating as a centered modal. */
+  detached?: boolean;
+  /** Toggle between docked and detached modal, driven by the Expand button. */
+  onToggleDetach?: () => void;
 };
 
 export function SidecarAssistant({
   docked = false,
   open = false,
   onRequestClose,
+  detached = false,
+  onToggleDetach,
 }: SidecarAssistantProps = {}) {
   const { products, heroProduct, getProductBySlug, orderHistory } = useCatalog();
   const [isOpen, setIsOpen] = useState(false);
@@ -289,8 +380,16 @@ export function SidecarAssistant({
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [welcomeRefreshCount, setWelcomeRefreshCount] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
+  const selectedSet = useMemo(() => new Set(selectedSlugs), [selectedSlugs]);
+  const contextualNbas = useMemo(
+    () => buildNbaItems(CONTEXTUAL_NBA_PLACEHOLDERS, "nba-contextual"),
+    [],
+  );
 
   const chatRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const previousMessageIdsRef = useRef<string[]>([]);
   const panelRef = useRef<HTMLElement>(null);
   const pendingTimeouts = useRef<number[]>([]);
@@ -366,7 +465,13 @@ export function SidecarAssistant({
             : [{ url: product.imageUrl, alt: product.imageAlt }],
         title: product.title,
         price: product.priceFormatted,
-        description: product.shortDescription,
+        comparePrice: product.comparePriceFormatted ?? undefined,
+        description:
+          product.overview && !/^n\/a\b/i.test(product.overview.trim())
+            ? product.overview
+            : product.shortDescription,
+        rating: product.rating ?? undefined,
+        reviewCount: product.reviewCount ?? undefined,
         colors: product.swatches.slice(0, 3).map((color, index) => ({
           id: `color-${index}`,
           label: index === 0 ? "Default" : `Variant ${index + 1}`,
@@ -619,7 +724,12 @@ export function SidecarAssistant({
   );
 
   const renderPlpCard = useCallback(
-    (intro: string, slugs: string[], showMoreCard: boolean) => {
+    (
+      intro: string,
+      slugs: string[],
+      showMoreCard: boolean,
+      options?: { remainingSlugs?: string[]; searchTerm?: string },
+    ) => {
       const valid = slugs
         .map((slug) => getProductBySlug(slug))
         .filter((p): p is CatalogProduct => Boolean(p));
@@ -630,9 +740,66 @@ export function SidecarAssistant({
         intro,
         products: valid.map((p) => toPlpProduct(p, handleProductSelect)),
         showMoreCard,
+        remainingSlugs: options?.remainingSlugs,
+        searchTerm: options?.searchTerm,
       });
     },
     [appendMessage, getProductBySlug, handleProductSelect],
+  );
+
+  const handleToggleSelect = useCallback((slug: string) => {
+    setSelectedSlugs((current) =>
+      current.includes(slug)
+        ? current.filter((existing) => existing !== slug)
+        : current.length >= MAX_SELECTED_PRODUCTS
+          ? current
+          : [...current, slug],
+    );
+  }, []);
+
+  const handleRemoveSelected = useCallback((slug: string) => {
+    setSelectedSlugs((current) => current.filter((existing) => existing !== slug));
+  }, []);
+
+  const handleShowMore = useCallback(
+    (plpMessageId: string) => {
+      const message = messagesRef.current.find((m) => m.id === plpMessageId);
+      if (!message || message.kind !== "agent_plp") return;
+
+      const remaining = message.remainingSlugs ?? [];
+      if (remaining.length === 0) return;
+      const term = message.searchTerm ?? "";
+
+      // Consume the affordance on the source card so it can't be re-triggered.
+      updateMessage(plpMessageId, (current) =>
+        current.kind === "agent_plp"
+          ? { ...current, showMoreCard: false, remainingSlugs: [] }
+          : current,
+      );
+
+      appendMessage({
+        id: nextId("shopper"),
+        kind: "shopper_text",
+        text: `Show more${term ? ` ${term}` : ""}`,
+      });
+      const loaderId = nextId("loader");
+      appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
+
+      scheduleResponse(() => {
+        removeMessage(loaderId);
+        const nextPage = remaining.slice(0, PLP_PAGE_SIZE);
+        const rest = remaining.slice(PLP_PAGE_SIZE);
+        renderPlpCard(
+          term
+            ? `Here are more options that match "${term}":`
+            : "Here are a few more options:",
+          nextPage,
+          rest.length > 0,
+          { remainingSlugs: rest, searchTerm: term },
+        );
+      });
+    },
+    [appendMessage, removeMessage, renderPlpCard, scheduleResponse, updateMessage],
   );
 
   const handleAddToCart = useCallback(
@@ -996,9 +1163,11 @@ export function SidecarAssistant({
       }
 
       const matches = filterProducts(intent, products);
-      const recs = pickRecommendations(matches, 5, intent);
+      const ranked = pickRecommendations(matches, matches.length, intent);
+      const firstPage = ranked.slice(0, PLP_PAGE_SIZE);
+      const rest = ranked.slice(PLP_PAGE_SIZE);
 
-      if (recs.length === 0) {
+      if (firstPage.length === 0) {
         appendMessage({
           id: nextId("agent"),
           kind: "agent_simple",
@@ -1015,9 +1184,10 @@ export function SidecarAssistant({
       }
 
       renderPlpCard(
-        buildPlpIntro(trimmed, intent, recs.length),
-        recs.map((p) => p.slug),
-        matches.length > recs.length,
+        buildPlpIntro(trimmed, intent, firstPage.length),
+        firstPage.map((p) => p.slug),
+        rest.length > 0,
+        { remainingSlugs: rest.map((p) => p.slug), searchTerm: trimmed },
       );
       const plpItems = buildStageNbas({
         stage: "plp",
@@ -1155,8 +1325,18 @@ export function SidecarAssistant({
 
   useEffect(() => {
     // A docked panel lives inside the page flow (like SideBySide), so Escape
-    // must not tear it down — the layout owns close.
-    if (docked) return;
+    // must not tear it down — the layout owns close. When detached as a modal,
+    // Escape re-docks it instead.
+    if (docked) {
+      if (!detached) return;
+      const onDetachedKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          onToggleDetach?.();
+        }
+      };
+      document.addEventListener("keydown", onDetachedKeyDown);
+      return () => document.removeEventListener("keydown", onDetachedKeyDown);
+    }
     if (!isOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -1165,7 +1345,7 @@ export function SidecarAssistant({
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, docked]);
+  }, [isOpen, docked, detached, onToggleDetach]);
 
   // Lock background page scroll while the sidecar panel is open.
   // Skipped when docked: the docked panel reflows the page (grid column) and
@@ -1270,6 +1450,7 @@ export function SidecarAssistant({
         body: WELCOME_BODY,
         imageUrl: "/Welcome_cover.jpeg",
         imageAlt: "Welcome to the Shiseido store",
+        showBrandLogo: true,
       },
       {
         id: welcomeNbasId,
@@ -1408,6 +1589,7 @@ export function SidecarAssistant({
                 body={message.body}
                 imageUrl={message.imageUrl}
                 imageAlt={message.imageAlt ?? ""}
+                showBrandLogo={message.showBrandLogo}
               />
             );
           case "shopper_text":
@@ -1425,6 +1607,10 @@ export function SidecarAssistant({
                 intro={message.intro}
                 products={message.products}
                 showMoreCard={message.showMoreCard}
+                onShowMore={() => handleShowMore(message.id)}
+                selectedIds={selectedSet}
+                onToggleSelect={handleToggleSelect}
+                selectionLimitReached={selectedSet.size >= MAX_SELECTED_PRODUCTS}
               />
             );
           case "agent_pdp":
@@ -1436,6 +1622,8 @@ export function SidecarAssistant({
                 price={message.price}
                 comparePrice={message.comparePrice}
                 description={message.description}
+                rating={message.rating}
+                reviewCount={message.reviewCount}
                 colors={message.colors}
                 sizes={message.sizes}
                 onAddToCart={({ quantity }) =>
@@ -1479,6 +1667,9 @@ export function SidecarAssistant({
                 key={message.id}
                 nbas={message.nbas}
                 regenerateButton={message.regenerateButton}
+                className={
+                  selectedSet.size > 0 ? "agent-nba__set--suppressed" : undefined
+                }
                 onSelect={(nba) => handleNbaSelect(message.id, nba.label)}
                 onRegenerate={() => handleNbaRegenerate(message.id)}
               />
@@ -1496,6 +1687,9 @@ export function SidecarAssistant({
       handleNbaSelect,
       handleRemoveCartCoupon,
       handleRemoveCartItem,
+      handleShowMore,
+      handleToggleSelect,
+      selectedSet,
       messages,
     ],
   );
@@ -1508,6 +1702,53 @@ export function SidecarAssistant({
     setIsOpen(false);
   };
 
+  // Close the header options menu on outside click or Escape.
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  const handleClearChat = () => {
+    setIsMenuOpen(false);
+    pendingTimeouts.current.forEach((id) => window.clearTimeout(id));
+    pendingTimeouts.current = [];
+    welcomeNbasMessageIdRef.current = null;
+    firstShopperTurnHandledRef.current = false;
+    setWelcomeRefreshCount(0);
+    setSelectedSlugs([]);
+    // Emptying the list lets the welcome-seed effect re-run and restore the
+    // greeting card + NBA row, matching a fresh session.
+    setMessages([]);
+  };
+
+  const handleSaveTranscript = () => {
+    setIsMenuOpen(false);
+    const transcript = buildTranscriptText(messagesRef.current);
+    const blob = new Blob([transcript], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    anchor.href = url;
+    anchor.download = `shiseido-assistant-transcript-${stamp}.txt`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  };
+
   const panelBody = (
     <>
       <header className="sidecar-assistant__header">
@@ -1518,12 +1759,52 @@ export function SidecarAssistant({
           <span className="sidecar-assistant__header-label">Personal Assistant</span>
         </div>
         <div className="sidecar-assistant__header-actions">
+          <div className="sidecar-assistant__menu" ref={menuRef}>
+            <button
+              type="button"
+              className="sidecar-assistant__header-btn"
+              aria-label="More options"
+              aria-haspopup="menu"
+              aria-expanded={isMenuOpen}
+              onClick={() => setIsMenuOpen((open) => !open)}
+            >
+              <EllipsisVerticalIcon width={20} height={20} />
+            </button>
+            {isMenuOpen ? (
+              <div className="sidecar-assistant__menu-popover" role="menu">
+                <button
+                  type="button"
+                  className="sidecar-assistant__menu-item"
+                  role="menuitem"
+                  onClick={handleClearChat}
+                >
+                  <Trash2Icon width={16} height={16} aria-hidden="true" />
+                  <span>Clear chat</span>
+                </button>
+                <button
+                  type="button"
+                  className="sidecar-assistant__menu-item"
+                  role="menuitem"
+                  onClick={handleSaveTranscript}
+                >
+                  <SaveIcon width={14} height={14} aria-hidden="true" />
+                  <span>Save session transcript</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             className="sidecar-assistant__header-btn"
-            aria-label="More options"
+            aria-label={detached ? "Dock assistant" : "Expand"}
+            aria-pressed={detached}
+            onClick={onToggleDetach}
           >
-            <EllipsisVerticalIcon width={20} height={20} />
+            {detached ? (
+              <ShrinkIcon width={16} height={16} />
+            ) : (
+              <ExpandIcon width={16} height={16} />
+            )}
           </button>
           <button
             type="button"
@@ -1541,6 +1822,63 @@ export function SidecarAssistant({
       </div>
 
       <form className="sidecar-assistant__input-bar" onSubmit={handleSubmit}>
+        {selectedSlugs.length > 0 ? (
+          <div className="sidecar-assistant__selection-tray">
+            <div className="sidecar-assistant__selection-header">
+              <span className="sidecar-assistant__selection-count">
+                {selectedSlugs.length} product
+                {selectedSlugs.length === 1 ? "" : "s"} selected ({selectedSlugs.length}/
+                {MAX_SELECTED_PRODUCTS})
+              </span>
+              <button
+                type="button"
+                className="sidecar-assistant__selection-clear"
+                onClick={() => setSelectedSlugs([])}
+              >
+                Clear
+              </button>
+            </div>
+            <div
+              className="sidecar-assistant__selection-pills"
+              role="list"
+              aria-label="Selected products"
+            >
+              {selectedSlugs.map((slug) => {
+                const product = getProductBySlug(slug);
+                if (!product) return null;
+                return (
+                  <span
+                    key={slug}
+                    className="sidecar-assistant__selection-pill"
+                    role="listitem"
+                  >
+                    <img
+                      className="sidecar-assistant__selection-pill-thumb"
+                      src={product.imageUrl}
+                      alt={product.imageAlt}
+                    />
+                    <span className="sidecar-assistant__selection-pill-label">
+                      {product.title}
+                    </span>
+                    <button
+                      type="button"
+                      className="sidecar-assistant__selection-pill-remove"
+                      aria-label={`Remove ${product.title}`}
+                      onClick={() => handleRemoveSelected(slug)}
+                    >
+                      <CloseIcon width={14} height={14} />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+            <AgentNBAs
+              nbas={contextualNbas}
+              regenerateButton={false}
+              onSelect={(nba) => dispatchShopperMessage(nba.label)}
+            />
+          </div>
+        ) : null}
         <div className="sidecar-assistant__input-shell">
           <input
             type="text"

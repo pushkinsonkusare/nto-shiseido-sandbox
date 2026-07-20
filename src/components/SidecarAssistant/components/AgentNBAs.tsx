@@ -1,4 +1,4 @@
-import { ArrowUpRightIcon, RefreshCcwIcon } from "../../icons/StorefrontIcons";
+import { RefreshCcwIcon } from "../../icons/StorefrontIcons";
 import "./AgentMessageCards.css";
 
 export type AgentNBA = {
@@ -58,11 +58,6 @@ export function AgentNBAs({
           }}
         >
           <span className="agent-nba__pill-label">{nba.label}</span>
-          <ArrowUpRightIcon
-            className="agent-nba__pill-icon"
-            width={16}
-            height={16}
-          />
         </button>
       ))}
       {regenerateButton ? (

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeftIcon, ArrowRightIcon } from "../../icons/StorefrontIcons";
 import {
   AgentProductCard,
@@ -21,11 +21,18 @@ export type AgentPLPCardProps = {
   showMoreCard?: boolean;
   /** Click handler invoked when the user activates the "Show more" card. */
   onShowMore?: () => void;
+  /** Set of product ids currently selected (drives each card's checkbox). */
+  selectedIds?: Set<string>;
+  /** Toggle handler invoked with the product id when its checkbox is clicked. */
+  onToggleSelect?: (id: string) => void;
+  /** When true, unselected cards' checkboxes are disabled (selection cap hit). */
+  selectionLimitReached?: boolean;
   /** Optional class name appended to the root element. */
   className?: string;
 };
 
-const SCROLL_DELTA = 300;
+/** Fallback used only when the rendered gap cannot be measured. */
+const FALLBACK_GAP = 12;
 
 /**
  * AgentPLPCard — agentic Product List Page card rendered inside the
@@ -36,16 +43,47 @@ export function AgentPLPCard({
   products,
   showMoreCard = true,
   onShowMore,
+  selectedIds,
+  onToggleSelect,
+  selectionLimitReached,
   className,
 }: AgentPLPCardProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const updateEdges = useCallback(() => {
+    const node = trackRef.current;
+    if (!node) return;
+    const maxScroll = node.scrollWidth - node.clientWidth;
+    setAtStart(node.scrollLeft <= 1);
+    setAtEnd(node.scrollLeft >= maxScroll - 1);
+  }, []);
 
   const scroll = (direction: "left" | "right") => {
     const node = trackRef.current;
     if (!node) return;
-    const delta = direction === "left" ? -SCROLL_DELTA : SCROLL_DELTA;
-    node.scrollBy({ left: delta, behavior: "smooth" });
+    const firstCard = node.children[0] as HTMLElement | undefined;
+    const cardWidth = firstCard?.getBoundingClientRect().width ?? node.clientWidth;
+    const gap = parseFloat(getComputedStyle(node).columnGap) || FALLBACK_GAP;
+    const step = cardWidth + gap;
+    node.scrollBy({
+      left: direction === "left" ? -step : step,
+      behavior: "smooth",
+    });
   };
+
+  useEffect(() => {
+    updateEdges();
+    const node = trackRef.current;
+    if (!node) return;
+    node.addEventListener("scroll", updateEdges, { passive: true });
+    window.addEventListener("resize", updateEdges);
+    return () => {
+      node.removeEventListener("scroll", updateEdges);
+      window.removeEventListener("resize", updateEdges);
+    };
+  }, [updateEdges, products]);
 
   const rootClass = "agent-plp__card" + (className ? " " + className : "");
 
@@ -59,6 +97,7 @@ export function AgentPLPCard({
           className="agent-plp__nav agent-plp__nav--prev"
           aria-label="Previous products"
           onClick={() => scroll("left")}
+          disabled={atStart}
         >
           <ArrowLeftIcon width={16} height={16} />
         </button>
@@ -67,6 +106,7 @@ export function AgentPLPCard({
           className="agent-plp__nav agent-plp__nav--next"
           aria-label="Next products"
           onClick={() => scroll("right")}
+          disabled={atEnd}
         >
           <ArrowRightIcon width={16} height={16} />
         </button>
@@ -82,11 +122,16 @@ export function AgentPLPCard({
               comparePrice={product.comparePrice}
               description={product.description}
               rating={product.rating}
+              reviewCount={product.reviewCount}
               swatches={product.swatches}
               badgeLabel={product.badgeLabel}
               onSelect={product.onSelect}
               onWishlist={product.onWishlist}
-              onStoreInfo={product.onStoreInfo}
+              selected={selectedIds?.has(product.id)}
+              onToggleSelect={() => onToggleSelect?.(product.id)}
+              selectDisabled={
+                selectionLimitReached && !selectedIds?.has(product.id)
+              }
             />
           ))}
           {showMoreCard ? <AgentShowMoreCard onSelect={onShowMore} /> : null}

@@ -32,6 +32,7 @@ export type AgentSimpleMessage = {
   body: string;
   imageUrl?: string;
   imageAlt?: string;
+  showBrandLogo?: boolean;
 };
 
 export type ShopperTextMessage = {
@@ -53,6 +54,10 @@ export type AgentPlpMessage = {
   products: AgentPLPProduct[];
   /** When true, append the "Show more" tile at the end of the carousel. */
   showMoreCard: boolean;
+  /** Ranked-but-not-yet-shown product slugs, paged in by "Show more". */
+  remainingSlugs?: string[];
+  /** The shopper's original query, used for the "Show more <term>" bubble. */
+  searchTerm?: string;
 };
 
 export type AgentPdpMessage = {
@@ -64,6 +69,8 @@ export type AgentPdpMessage = {
   price: string;
   comparePrice?: string;
   description?: string;
+  rating?: number;
+  reviewCount?: number;
   colors?: AgentPDPColorOption[];
   sizes?: AgentPDPSizeOption[];
 };

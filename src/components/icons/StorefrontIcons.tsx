@@ -101,6 +101,14 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+export function CheckIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </BaseIcon>
+  );
+}
+
 export function MinusIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>
@@ -342,6 +350,28 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
+export function ExpandIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M15 3h6v6" />
+      <path d="M9 21H3v-6" />
+      <path d="M21 3l-7 7" />
+      <path d="M3 21l7-7" />
+    </BaseIcon>
+  );
+}
+
+export function ShrinkIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M4 14h6v6" />
+      <path d="M20 10h-6V4" />
+      <path d="M14 10l7-7" />
+      <path d="M3 21l7-7" />
+    </BaseIcon>
+  );
+}
+
 export function MenuIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>
@@ -468,6 +498,27 @@ export function TagIcon(props: IconProps) {
     <BaseIcon {...props}>
       <path d="M3 6.5A3.5 3.5 0 0 1 6.5 3h4.3a2 2 0 0 1 1.42.59l8 8a2 2 0 0 1 0 2.82l-4.3 4.3a2 2 0 0 1-2.82 0l-8-8A2 2 0 0 1 3 9.3V6.5Z" />
       <circle cx="7.5" cy="7.5" r="1.2" />
+    </BaseIcon>
+  );
+}
+
+export function Trash2Icon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" x2="10" y1="11" y2="17" />
+      <line x1="14" x2="14" y1="11" y2="17" />
+    </BaseIcon>
+  );
+}
+
+export function SaveIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <path d="M17 21v-8H7v8" />
+      <path d="M7 3v5h8" />
     </BaseIcon>
   );
 }

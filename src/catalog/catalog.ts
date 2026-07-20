@@ -44,12 +44,21 @@ export type CatalogProduct = {
   sku: string | null;
   price: number | null;
   priceFormatted: string;
+  /**
+   * Deterministic "was" price used to render a strikethrough sale price.
+   * Null when the product is not on promotion (a portion are skipped so the
+   * sale reads as selective rather than site-wide).
+   */
+  compareAtPrice: number | null;
+  comparePriceFormatted: string | null;
   rating: number | null;
   reviewCount: number | null;
   imageUrl: string;
   imageAlt: string;
   gallery: string[];
   shortDescription: string;
+  /** Long-form marketing overview copy from the source dataset. */
+  overview: string;
   featureBlocks: string[];
   specs: CatalogSpec[];
   inTheBox: string[];
@@ -410,10 +419,23 @@ function badgeFor(record: ShiseidoRecord, rating: number): string {
   return "";
 }
 
-function formatCatalogPrice(price: number | null, priceFrom: boolean): string {
+function formatCatalogPrice(price: number | null): string {
   if (price == null) return "Price on request";
-  const formatted = priceFormatter.format(price);
-  return priceFrom ? `From ${formatted}` : formatted;
+  return priceFormatter.format(price);
+}
+
+/* Deterministic "was" / compare-at price for a demo sale. Seeded by the
+ * product id so a given product always shows the same original price and the
+ * same on/off-sale state (never random per render). Roughly 65% of products
+ * are put on sale; the rest return null so the strikethrough is selective. */
+function pseudoComparePrice(id: string, price: number | null): number | null {
+  if (price == null || price <= 0) return null;
+  if (hash(`${id}-sale`) % 100 >= 65) return null;
+  // Proportional markup between 1.15x and 1.40x the current price.
+  const markup = 1.15 + (hash(`${id}-markup`) % 26) / 100;
+  const original = Math.round(price * markup);
+  // Guard against rounding collapsing the markup on very cheap items.
+  return original > price ? original : price + 1;
 }
 
 function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
@@ -423,6 +445,7 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
   const gallery = record.gallery.map(resolveImage).filter(Boolean);
   const primaryImage = resolveImage(record.primaryImage) || gallery[0] || "";
   const tags = buildTags(record);
+  const compareAtPrice = pseudoComparePrice(record.id, record.price);
   const featureBlocks =
     record.keyBenefits.length > 0
       ? record.keyBenefits
@@ -439,13 +462,17 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     model: record.collection || null,
     sku: record.id || null,
     price: record.price,
-    priceFormatted: formatCatalogPrice(record.price, record.priceFrom),
+    priceFormatted: formatCatalogPrice(record.price),
+    compareAtPrice,
+    comparePriceFormatted:
+      compareAtPrice != null ? priceFormatter.format(compareAtPrice) : null,
     rating,
     reviewCount,
     imageUrl: primaryImage,
     imageAlt: record.name,
     gallery: gallery.length > 0 ? gallery : primaryImage ? [primaryImage] : [],
     shortDescription: record.shortDescription,
+    overview: record.overview,
     featureBlocks,
     specs: buildSpecs(record),
     inTheBox: [],

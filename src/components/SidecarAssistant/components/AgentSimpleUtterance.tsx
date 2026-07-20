@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import shiseidoLogo from "../../../assets/shiseido-logo.png";
 import "./AgentMessageCards.css";
 
 export type AgentSimpleUtteranceCTA = {
@@ -21,6 +22,8 @@ export type AgentSimpleUtteranceProps = {
   imageUrl?: string;
   /** Alt text for the hero image. Defaults to an empty string for decorative use. */
   imageAlt?: string;
+  /** When true, overlays the Shiseido brand logo on the hero's bottom-left corner. */
+  showBrandLogo?: boolean;
   /** Optional list of CTAs rendered beneath the body copy. */
   ctas?: AgentSimpleUtteranceCTA[];
   /** Optional class name appended to the root element. */
@@ -40,6 +43,7 @@ export function AgentSimpleUtterance({
   body,
   imageUrl,
   imageAlt = "",
+  showBrandLogo = false,
   ctas,
   className,
 }: AgentSimpleUtteranceProps) {
@@ -51,6 +55,13 @@ export function AgentSimpleUtterance({
       {imageUrl ? (
         <div className="agent-msg__hero">
           <img src={imageUrl} alt={imageAlt} />
+          {showBrandLogo ? (
+            <img
+              className="agent-msg__hero-logo"
+              src={shiseidoLogo}
+              alt="Shiseido"
+            />
+          ) : null}
         </div>
       ) : null}
 

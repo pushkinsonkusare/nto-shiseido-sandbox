@@ -218,7 +218,7 @@ export function AgentCart({
 
                           <div className="agent-summary__item-pricing">
                             <span className="agent-summary__item-pricing--main">
-                              {item.price}
+                              {item.price.replace(/^From\s+/i, "")}
                             </span>
                             {item.comparePrice ? (
                               <span className="agent-summary__item-pricing--strike">

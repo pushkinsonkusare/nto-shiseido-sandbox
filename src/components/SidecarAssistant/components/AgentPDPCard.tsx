@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
   MinusIcon,
   PlusIcon,
   ShoppingCartIcon,
+  StarIcon,
 } from "../../icons/StorefrontIcons";
 import applePayMark from "../../../assets/apple-pay.jpg";
 import "./AgentMessageCards.css";
@@ -37,6 +38,10 @@ export type AgentPDPCardProps = {
   comparePrice?: string;
   /** Body / marketing copy rendered between pricing and pickers. */
   description?: string;
+  /** Optional average rating between 0 and 5. Star row is hidden when omitted. */
+  rating?: number;
+  /** Optional review count rendered beside the star row. */
+  reviewCount?: number;
   /** Color variants. The first option is selected by default. */
   colors?: AgentPDPColorOption[];
   /** Size variants. The first option is selected by default. */
@@ -58,6 +63,51 @@ export type AgentPDPCardProps = {
 };
 
 /**
+ * Five-star rating row with fractional (half-star) fill. Each position
+ * renders an empty star with a filled star clipped to the remaining fill
+ * fraction, so a 4.5 rating shows four full stars and one half star.
+ */
+function StarRating({
+  rating,
+  reviewCount,
+}: {
+  rating: number;
+  reviewCount?: number;
+}) {
+  const clamped = Math.max(0, Math.min(5, rating));
+  return (
+    <div className="agent-pdp__rating">
+      <span className="agent-pdp__rating-value">{clamped.toFixed(1)}</span>
+      <span
+        className="agent-pdp__stars"
+        role="img"
+        aria-label={`${clamped.toFixed(1)} out of 5 stars`}
+      >
+        {Array.from({ length: 5 }).map((_, index) => {
+          const fill = Math.max(0, Math.min(1, clamped - index));
+          return (
+            <span key={index} className="agent-pdp__star">
+              <StarIcon width={14} height={14} />
+              <span
+                className="agent-pdp__star-fill"
+                style={{ width: `${fill * 100}%` }}
+              >
+                <StarIcon width={14} height={14} />
+              </span>
+            </span>
+          );
+        })}
+      </span>
+      {typeof reviewCount === "number" ? (
+        <span className="agent-pdp__rating-count">
+          ({reviewCount.toLocaleString()} reviews)
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * AgentPDPCard — agentic Product Detail Page card rendered inside the
  * SidecarAssistant chat panel.  Mirrors `Agent/PDP_Card` (node-id 32748:34755).
  */
@@ -67,6 +117,8 @@ export function AgentPDPCard({
   price,
   comparePrice,
   description,
+  rating,
+  reviewCount,
   colors,
   sizes,
   initialQuantity = 1,
@@ -76,11 +128,36 @@ export function AgentPDPCard({
   className,
 }: AgentPDPCardProps) {
   const [imageIndex, setImageIndex] = useState(0);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [descClamped, setDescClamped] = useState(false);
+  const descRef = useRef<HTMLParagraphElement | null>(null);
   const [colorId, setColorId] = useState(colors?.[0]?.id);
   const [sizeId, setSizeId] = useState(sizes?.[0]?.id);
   const [quantity, setQuantity] = useState(
     Math.max(1, Math.min(initialQuantity, maxQuantity)),
   );
+
+  // Detect whether the description overflows the 4-line clamp so we only
+  // render the "Read more" affordance when there's actually hidden copy.
+  useLayoutEffect(() => {
+    setDescExpanded(false);
+    const measure = () => {
+      const node = descRef.current;
+      if (!node) return;
+      setDescClamped(node.scrollHeight - node.clientHeight > 1);
+    };
+    measure();
+  }, [description]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const node = descRef.current;
+      if (!node || descExpanded) return;
+      setDescClamped(node.scrollHeight - node.clientHeight > 1);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [descExpanded]);
 
   const total = images.length;
   const goPrev = () =>
@@ -127,14 +204,51 @@ export function AgentPDPCard({
       <div className="agent-pdp__content">
         <h3 className="agent-pdp__title">{title}</h3>
 
+        {typeof rating === "number" ? (
+          <StarRating rating={rating} reviewCount={reviewCount} />
+        ) : null}
+
         <div className="agent-pdp__price-row">
-          <p className="agent-pdp__price">{price}</p>
+          <p className="agent-pdp__price">{price.replace(/^From\s+/i, "")}</p>
           {comparePrice ? (
             <p className="agent-pdp__price--strike">{comparePrice}</p>
           ) : null}
         </div>
 
-        {description ? <p className="agent-pdp__desc">{description}</p> : null}
+        {description ? (
+          <div className="agent-pdp__desc-wrap">
+            <p
+              ref={descRef}
+              className={
+                "agent-pdp__desc" +
+                (descExpanded ? "" : " agent-pdp__desc--clamped")
+              }
+            >
+              {description}
+              {descClamped && descExpanded ? (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    className="agent-pdp__desc-toggle agent-pdp__desc-toggle--inline"
+                    onClick={() => setDescExpanded(false)}
+                  >
+                    Show less
+                  </button>
+                </>
+              ) : null}
+            </p>
+            {descClamped && !descExpanded ? (
+              <button
+                type="button"
+                className="agent-pdp__desc-toggle"
+                onClick={() => setDescExpanded(true)}
+              >
+                Read more
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {colors && colors.length > 0 ? (
           <div className="agent-pdp__group" role="radiogroup" aria-label="Color">
@@ -199,9 +313,7 @@ export function AgentPDPCard({
         ) : null}
 
         <div className="agent-pdp__group">
-          <p className="agent-pdp__group-label">
-            Qty: <span style={{ fontWeight: 400 }}>{quantity}</span>
-          </p>
+          <p className="agent-pdp__group-label">Quantity</p>
           <div className="agent-pdp__qty">
             <button
               type="button"
