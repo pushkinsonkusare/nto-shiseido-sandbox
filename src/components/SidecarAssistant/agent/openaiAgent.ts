@@ -343,7 +343,11 @@ const TOOLS: ChatCompletionTool[] = [
       parameters: {
         type: "object",
         properties: {
-          intro: { type: "string", description: "One short lead-in sentence shown above the carousel." },
+          intro: {
+            type: "string",
+            description:
+              "A warm, store-associate-style acknowledgement (1-2 sentences) shown above the carousel: briefly acknowledge the request, name the key constraint naturally (skin type / budget / concern / brand), and give a light rationale for the picks. Avoid generic 'here are some products' phrasing, don't repeat product names, and don't overpromise outcomes. E.g. 'For a prestige serum under $150, I focused on lightweight, high-performance formulas. Here's what stands out.'",
+          },
           productSlugs: {
             type: "array",
             items: { type: "string" },
@@ -419,7 +423,7 @@ const TOOLS: ChatCompletionTool[] = [
           intro: {
             type: "string",
             description:
-              "One short lead-in sentence shown above the rows (e.g. 'Here are a few directions for a dry-skin routine').",
+              "A warm, store-associate-style acknowledgement (1-2 sentences) shown above the rows: acknowledge the broader goal, name the key constraint naturally, and explain how you're narrowing it into these directions. Avoid generic 'here are some products' phrasing, don't repeat product names, and don't overpromise outcomes. E.g. 'For a dry-skin routine, I'd build around gentle, hydrating steps. Here are a few directions to start with.'",
           },
           rows: {
             type: "array",
@@ -496,7 +500,7 @@ const TOOLS: ChatCompletionTool[] = [
           intro: {
             type: "string",
             description:
-              "One short body-text sentence shown above the rows (e.g. 'I have curated a routine that covers each step for dry skin.').",
+              "A warm, store-associate-style acknowledgement (1-2 sentences) shown above the routine rows: acknowledge the shopper's goal, name the key constraint naturally (skin type / concern / budget), and give a light rationale for how the routine is built before the steps appear. Avoid generic 'here are some products' phrasing, don't repeat product names, and don't overpromise outcomes. E.g. 'For dry skin, I'd focus on gentle, deeply hydrating steps. Here's a routine that covers each one from cleanse to protect.'",
           },
           rows: {
             type: "array",
@@ -746,7 +750,8 @@ function buildSystemPrompt(products: CatalogProduct[]): string {
     "You are the Shiseido Personal Beauty Advisor inside a storefront prototype. You help shoppers discover skincare, build routines, answer product questions, manage their cart, and complete checkout.",
     "",
     "STYLE: Be concise, warm, and helpful. Keep to 1-2 short sentences per turn unless the shopper asks for detail. Never invent product titles, slugs, or prices; always call `search_catalog` first to ground recommendations. Never give medical or dermatological diagnoses. Recommend products and suggest seeing a dermatologist for persistent concerns.",
-    "FORMATTING: Reply in plain conversational prose. Do NOT use Markdown: no `**bold**`, no `*italic*`, no headers, no bullet or numbered lists. When you need to enumerate items, write them inline as a comma-separated sentence (e.g. \"Start with the cleanser, then the softener, then the serum, and finish with a moisturizer.\").",
+    "ACKNOWLEDGEMENT: Every recommendation response (the `intro` on `show_product_listing`, `show_broad_listing`, and `propose_broad_recipe`) MUST open like a helpful store associate, not a system message. In 1-2 sentences: briefly acknowledge what the shopper asked for, name the single most important constraint they gave (skin type, budget, occasion, ingredient, brand, or concern) naturally, and give a light rationale for your picks before the products appear. Reflect their actual request; for a broad ask, acknowledge the broader goal and explain how you're narrowing it. Do NOT use generic phrases like 'Here are some products', do NOT repeat specific product names in the intro, and do NOT overpromise medical or skincare outcomes (favor 'help', 'support', 'designed to'). Example — shopper: 'skincare for oily skin' → 'Got it. For oily skin, I'd focus on lightweight, balancing formulas that help manage shine without over-drying. Here's a simple routine to keep pores clear and skin comfortable through the day.'",
+    "FORMATTING: Reply in plain conversational prose. Do NOT use Markdown: no `**bold**`, no `*italic*`, no headers, no bullet or numbered lists. Do NOT use em dashes (\u2014); use commas, periods, or parentheses instead. When you need to enumerate items, write them inline as a comma-separated sentence (e.g. \"Start with the cleanser, then the softener, then the serum, and finish with a moisturizer.\").",
     "",
     "WORKFLOW:",
     "- BROAD-VS-SPECIFIC PRECEDENCE (read this BEFORE any tier/category routing): routine- or goal-phrased asks of the shape `routine|regimen|set|products|help for {skin goal, concern, or skin type}` are ALWAYS broad and MUST go to `propose_broad_recipe`, NEVER to `show_product_listing`. The {goal} can be a concern ('anti-aging', 'brightening', 'dark spots', 'firming', 'hydration', 'acne / oily skin'), a skin type ('dry skin', 'sensitive skin', 'combination skin'), or an audience ('men's skincare', 'a routine for my mom'). Do NOT collapse these into a single carousel. Produce a multi-step routine (2-6 rows, one per routine step or concern lane).",

@@ -61,6 +61,7 @@ import type { CatalogProduct } from "../../catalog/catalog";
 import { resolveProductFaq } from "../SideBySideAssistant/conversation/productFaq";
 import { createOpenAIAgent, type AgentAction, type OpenAIAgent } from "./agent/openaiAgent";
 import { isLlmConfigured } from "../../lib/openaiClient";
+import { stripEmDashes } from "../../lib/sanitizeText";
 import "./SidecarAssistant.css";
 
 const PLACEHOLDER_INPUT =
@@ -82,6 +83,62 @@ const CONTEXTUAL_ACTION_LABELS = new Set(["Show similar", "Compare", "Add to car
 
 /** Always-present FAQ pill for a single selected product. */
 const INGREDIENTS_FAQ_LABEL = "What are the ingredients?";
+
+/**
+ * Sitewide em-dash scrub for agent utterances. Applied to every message before
+ * it is appended so both deterministic copy and free-form LLM output stay in a
+ * plain, spoken voice. Only agent-authored narrative fields are touched;
+ * shopper text, loaders, and catalog-derived fields (product titles, PDP copy)
+ * are left untouched.
+ */
+function sanitizeAgentMessage(message: ChatMessage): ChatMessage {
+  switch (message.kind) {
+    case "agent_simple":
+      return {
+        ...message,
+        title: message.title ? stripEmDashes(message.title) : message.title,
+        body: stripEmDashes(message.body),
+      };
+    case "agent_plp":
+      return { ...message, intro: stripEmDashes(message.intro) };
+    case "agent_routine":
+      return {
+        ...message,
+        acknowledgement: stripEmDashes(message.acknowledgement),
+        sections: message.sections.map((section) => ({
+          ...section,
+          description: stripEmDashes(section.description),
+        })),
+      };
+    case "agent_compare":
+      return {
+        ...message,
+        intro: stripEmDashes(message.intro),
+        recommendation: message.recommendation
+          ? stripEmDashes(message.recommendation)
+          : message.recommendation,
+      };
+    case "agent_cart":
+    case "agent_order":
+      return {
+        ...message,
+        acknowledgement: message.acknowledgement
+          ? stripEmDashes(message.acknowledgement)
+          : message.acknowledgement,
+        summary: stripEmDashes(message.summary),
+      };
+    case "agent_nbas":
+      return {
+        ...message,
+        nbas: message.nbas.map((nba) => ({
+          ...nba,
+          label: stripEmDashes(nba.label),
+        })),
+      };
+    default:
+      return message;
+  }
+}
 
 /**
  * Follow-up pills shown after a contextual FAQ answer: the product's other
@@ -552,7 +609,8 @@ export function SidecarAssistant({
 
   /* ---------- mutation helpers ---------- */
 
-  const appendMessage = useCallback((message: ChatMessage) => {
+  const appendMessage = useCallback((rawMessage: ChatMessage) => {
+    const message = sanitizeAgentMessage(rawMessage);
     setMessages((current) => {
       // Only ever show the most recent NBA set: when a new one is appended,
       // drop any prior NBA sets so historical ones don't accumulate in the
@@ -585,7 +643,9 @@ export function SidecarAssistant({
   const updateMessage = useCallback(
     (id: string, updater: (message: ChatMessage) => ChatMessage) => {
       setMessages((current) =>
-        current.map((message) => (message.id === id ? updater(message) : message)),
+        current.map((message) =>
+          message.id === id ? sanitizeAgentMessage(updater(message)) : message,
+        ),
       );
     },
     [],
@@ -2004,7 +2064,7 @@ export function SidecarAssistant({
     welcomeNbasMessageIdRef.current = welcomeNbasId;
     setWelcomeRefreshCount(0);
     firstShopperTurnHandledRef.current = false;
-    setMessages([
+    const seedMessages: ChatMessage[] = [
       {
         id: nextId("welcome"),
         kind: "agent_simple",
@@ -2020,7 +2080,8 @@ export function SidecarAssistant({
         regenerateButton: true,
         nbas: buildNbaItems(welcomeLabels, "nba-welcome"),
       },
-    ]);
+    ];
+    setMessages(seedMessages.map(sanitizeAgentMessage));
     emitAssistantTelemetry("landing_nba_impression", {
       labels: welcomeLabels,
       refreshCount: 0,

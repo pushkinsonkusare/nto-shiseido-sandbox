@@ -42,6 +42,55 @@ import {
 import { resolveProductFaq } from "./productFaq";
 import type { SxsMessage } from "./types";
 import { isLlmConfigured } from "../../../lib/openaiClient";
+import { stripEmDashes } from "../../../lib/sanitizeText";
+
+/**
+ * Sitewide em-dash scrub for agent utterances. Applied to every message before
+ * it is appended so both deterministic copy and free-form LLM output stay in a
+ * plain, spoken voice. Only agent-authored narrative fields are touched;
+ * shopper text, loaders, and catalog-derived fields are left untouched.
+ */
+function sanitizeSxsMessage(message: SxsMessage): SxsMessage {
+  switch (message.kind) {
+    case "greeting":
+      return {
+        ...message,
+        greeting: stripEmDashes(message.greeting),
+        body: stripEmDashes(message.body),
+      };
+    case "agent_text":
+    case "agent_pdp_utterance":
+      return {
+        ...message,
+        body: stripEmDashes(message.body),
+      };
+    case "agent_result_card":
+      return {
+        ...message,
+        bodyText: stripEmDashes(message.bodyText),
+        title: stripEmDashes(message.title),
+      };
+    case "agent_broad_result_card":
+      return {
+        ...message,
+        bodyText: stripEmDashes(message.bodyText),
+        rows: message.rows.map((row) => ({
+          ...row,
+          title: stripEmDashes(row.title),
+        })),
+      };
+    case "agent_nbas":
+      return {
+        ...message,
+        pills: message.pills.map((pill) => ({
+          ...pill,
+          label: stripEmDashes(pill.label),
+        })),
+      };
+    default:
+      return message;
+  }
+}
 
 const RESPONSE_LATENCY_MS = 900;
 
@@ -463,7 +512,7 @@ const WELCOME_NBA_LABELS: ReadonlyArray<string> = [
  * stay in lockstep with the welcome experience.
  */
 function buildWelcomeMessages(): SxsMessage[] {
-  return [
+  const seed: SxsMessage[] = [
     {
       id: nextId("greeting"),
       kind: "greeting",
@@ -478,6 +527,7 @@ function buildWelcomeMessages(): SxsMessage[] {
       pills: buildPillsFromLabels(WELCOME_NBA_LABELS),
     },
   ];
+  return seed.map(sanitizeSxsMessage);
 }
 
 export function useSideBySideAgent() {
@@ -496,7 +546,8 @@ export function useSideBySideAgent() {
 
   /* ---------- helpers ---------- */
 
-  const appendMessage = useCallback((message: SxsMessage) => {
+  const appendMessage = useCallback((rawMessage: SxsMessage) => {
+    const message = sanitizeSxsMessage(rawMessage);
     setMessages((current) => {
       // Only one NBA pill row at a time: drop any earlier pills when new ones land.
       if (message.kind === "agent_nbas") {

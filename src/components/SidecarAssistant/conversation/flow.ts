@@ -614,26 +614,31 @@ export const ROUTINE_STEPS: Array<{
   { stepLabel: "5. Protect", categoryTitle: "Sunscreen", categoryKey: "Sunscreen" },
 ];
 
-/** Empathetic opener tailored to the detected concern / skin type. */
+/**
+ * Warm, store-associate-style opener tailored to the detected concern / skin
+ * type. Structured as: brief acknowledgement of the request + light rationale
+ * for the picks + a transition into the routine. Kept to 1-2 sentences, names
+ * no products, and hedges outcome language to avoid overpromising.
+ */
 export function buildRoutineAcknowledgement(intent: RoutineIntent): string {
   const key = intent.concernKey ?? intent.skinType;
   switch (key) {
     case "acne":
-      return "Breakouts can be frustrating — here's a simple, balancing routine to help keep pores clear and calm your skin.";
+      return "Breakouts are frustrating, so I'd focus on gentle, clarifying steps that won't strip your skin. Here's a simple routine to help keep pores clear and calm things down.";
     case "oily":
-      return "For oily skin, here's a balancing routine to manage shine and keep pores clear through the day.";
+      return "Got it, for oily skin I'd lean on lightweight, balancing formulas that manage shine without over-drying. Here's a simple routine to help keep pores clear and comfortable through the day.";
     case "dry":
     case "hydration":
-      return "Dry skin needs gentle, hydrating care — here's a routine to restore moisture and comfort.";
+      return "For dry skin, I'd prioritize gentle, deeply hydrating formulas that rebuild comfort. Here's a routine to help restore moisture morning and night.";
     case "brightening":
-      return "For a brighter, more even tone, here's a routine that targets dullness and dark spots.";
+      return "For a brighter, more even tone, I'd focus on formulas that target dullness and dark spots over time. Here's a routine built around that goal.";
     case "anti-aging":
     case "firming":
-      return "To help with firmness and fine lines, here's a targeted routine for visibly smoother skin.";
+      return "For firmness and fine lines, I'd focus on targeted, smoothing formulas layered in the right order. Here's a routine to help support visibly firmer-looking skin.";
     case "combination":
-      return "For combination skin, here's a balanced routine that hydrates dry areas without overloading oily ones.";
+      return "For combination skin, I'd balance hydration where you're dry without overloading the areas that get oily. Here's a routine to help keep things in balance.";
     default:
-      return "Here's a complete daily routine tailored to your skin.";
+      return "Happy to help. I've put together a simple, well-rounded routine that covers each key step. Here's where I'd start.";
   }
 }
 
@@ -2018,49 +2023,56 @@ export function findMatchingBundle(
   );
 }
 
-const USE_CASE_INTRO_FRAGMENT: Record<string, string> = {
-  dry: "for dry skin",
-  oily: "for oily skin",
-  combination: "for combination skin",
-  normal: "for normal skin",
-  spf: "sun-protecting",
-  "best-seller": "best-selling",
-};
-
-function useCaseIntro(tags: string[] | undefined): string {
-  if (!tags || tags.length === 0) return "";
-  const fragments = tags
-    .map((tag) => USE_CASE_INTRO_FRAGMENT[tag])
-    .filter(Boolean);
-  if (fragments.length === 0) return "";
-  return ` ${fragments.join(", ")}`;
-}
-
-/** Build the agent's intro line for a PLP response based on the query/intent. */
+/**
+ * Build the agent's intro line for a PLP response: a warm, store-associate
+ * acknowledgement that reflects the request, names the single most important
+ * constraint, and gives a light rationale before the carousel. Kept to 1-2
+ * sentences, names no products, and avoids generic "here are some products"
+ * phrasing.
+ */
 export function buildPlpIntro(query: string, intent: Intent, count: number): string {
   if (count === 0) {
-    return "I couldn't find an exact match for that, but here's a curated selection that's close.";
+    return "I didn't find an exact match for that, but I pulled a curated selection that's close. Tell me what matters most and I'll narrow it down.";
   }
 
   if (intent.includeBundles) {
-    const label = intent.categoryLabel ? ` ${intent.categoryLabel}` : "";
-    return `Here are some bundle deals${label} that save you more:`;
+    const label = intent.categoryLabel ? ` of ${intent.categoryLabel}` : "";
+    return `Since you're after a set${label}, I pulled bundles that give you more for your money. Here's what stands out:`;
   }
 
-  const tierClause =
-    intent.tier === "pro"
-      ? " prestige"
-      : intent.tier === "beginner"
-      ? " everyday"
-      : "";
-  const useCaseClause = useCaseIntro(intent.requiredTags);
-  const label = intent.categoryLabel ? ` ${intent.categoryLabel}` : "";
-  const priceClause =
-    typeof intent.priceMax === "number" ? ` under $${intent.priceMax}` : "";
+  const category = intent.categoryLabel ?? "";
+  const noun = category || "options";
+  const budget = typeof intent.priceMax === "number" ? intent.priceMax : null;
+  const skinTag = intent.requiredTags?.find((tag) =>
+    ["dry", "oily", "combination", "normal"].includes(tag),
+  );
+  const wantsSpf = intent.requiredTags?.includes("spf");
+  const wantsBestSeller = intent.requiredTags?.includes("best-seller");
 
-  if (tierClause || useCaseClause || label || priceClause) {
-    return `Here are some great${tierClause}${useCaseClause}${label}${priceClause} that match what you described:`;
+  // Lead with the single most important constraint: budget > tier > skin type
+  // / use-case > category. Everything anchors on the category noun when we
+  // have one so the copy reflects exactly what was asked for.
+  if (budget !== null) {
+    return `Working within a $${budget} budget, I focused on ${noun} that balance results and value. Here's what stands out:`;
+  }
+  if (intent.tier === "pro") {
+    return `For prestige ${noun}, I leaned into the higher-performance formulas. Here's what stands out:`;
+  }
+  if (intent.tier === "beginner") {
+    return `For everyday ${noun}, I kept it to easy, reliable picks. Here's what stands out:`;
+  }
+  if (skinTag) {
+    return `For ${skinTag} skin, I focused on ${noun} that suit it well. Here's what stands out:`;
+  }
+  if (wantsSpf) {
+    return `Since sun protection's the goal, these are the ${noun} I'd trust most:`;
+  }
+  if (wantsBestSeller) {
+    return `These are our best-selling ${noun}, the ones shoppers keep coming back to:`;
+  }
+  if (category) {
+    return `For ${noun}, these are the ones I'd reach for first. Here's what stands out:`;
   }
 
-  return `Here are a few options that match "${query.trim()}":`;
+  return `Good question — here's what I'd start with for "${query.trim()}":`;
 }

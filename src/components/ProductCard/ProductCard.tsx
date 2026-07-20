@@ -1,9 +1,13 @@
+import { useState } from "react";
 import "./ProductCard.css";
 import { ArrowRightIcon, BuildingIcon, HeartIcon } from "../icons/StorefrontIcons";
 
 export type ProductCardProps = {
   imageUrl: string;
   imageAlt: string;
+  /** Optional gallery of image URLs. When more than one is provided, the
+   * hover carousel arrows page through them. Falls back to `imageUrl`. */
+  images?: string[];
   brand: string;
   category: string;
   title: string;
@@ -31,6 +35,7 @@ function renderStars(rating: number | null | undefined) {
 export function ProductCard({
   imageUrl,
   imageAlt,
+  images,
   brand,
   category,
   title,
@@ -46,6 +51,17 @@ export function ProductCard({
 }: ProductCardProps) {
   const visibleSwatches = swatches.slice(0, 4);
   const extraSwatches = Math.max(0, swatches.length - visibleSwatches.length);
+
+  const galleryImages = images && images.length > 0 ? images : [imageUrl];
+  const [activeImage, setActiveImage] = useState(0);
+  const safeActiveImage = activeImage % galleryImages.length;
+  const currentImage = galleryImages[safeActiveImage];
+  const hasCarousel = Boolean(onSelect) && galleryImages.length > 1;
+
+  const stepImage = (event: React.MouseEvent, delta: number) => {
+    event.stopPropagation();
+    setActiveImage((prev) => (prev + delta + galleryImages.length) % galleryImages.length);
+  };
 
   return (
     <article
@@ -66,7 +82,7 @@ export function ProductCard({
     >
       <div className="figma-product-card__gallery">
         <div className="figma-product-card__image-wrap">
-          <img className="figma-product-card__image" src={imageUrl} alt={imageAlt} />
+          <img className="figma-product-card__image" src={currentImage} alt={imageAlt} />
         </div>
         <div className="figma-product-card__badge-row" aria-hidden="true">
           {onSelect ? <span className="figma-product-card__hover-checkbox" /> : null}
@@ -82,12 +98,26 @@ export function ProductCard({
         </div>
         {onSelect ? (
           <>
-            <span className="figma-product-card__carousel-btn figma-product-card__carousel-btn--prev" aria-hidden="true">
-              <ArrowRightIcon width={16} height={16} />
-            </span>
-            <span className="figma-product-card__carousel-btn figma-product-card__carousel-btn--next" aria-hidden="true">
-              <ArrowRightIcon width={16} height={16} />
-            </span>
+            {hasCarousel ? (
+              <>
+                <button
+                  type="button"
+                  className="figma-product-card__carousel-btn figma-product-card__carousel-btn--prev"
+                  aria-label="Previous image"
+                  onClick={(event) => stepImage(event, -1)}
+                >
+                  <ArrowRightIcon width={16} height={16} />
+                </button>
+                <button
+                  type="button"
+                  className="figma-product-card__carousel-btn figma-product-card__carousel-btn--next"
+                  aria-label="Next image"
+                  onClick={(event) => stepImage(event, 1)}
+                >
+                  <ArrowRightIcon width={16} height={16} />
+                </button>
+              </>
+            ) : null}
             <div className="figma-product-card__hover-cta" aria-hidden="true">
               View details
             </div>

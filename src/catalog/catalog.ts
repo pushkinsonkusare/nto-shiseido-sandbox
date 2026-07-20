@@ -656,6 +656,7 @@ export function toProductCardProps(product: CatalogProduct) {
   return {
     imageUrl: product.imageUrl,
     imageAlt: product.imageAlt,
+    images: product.gallery,
     brand: product.brand,
     category: product.category,
     title: product.title,

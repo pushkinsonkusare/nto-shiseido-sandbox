@@ -157,10 +157,34 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  border: none;
   background: #f8f8f8;
   color: #17171b;
   box-shadow: var(--pc-control-shadow);
   transform: translateY(-50%);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.2s ease;
+}
+
+.figma-product-card--interactive:hover .figma-product-card__carousel-btn,
+.figma-product-card--interactive:focus-within .figma-product-card__carousel-btn {
+  pointer-events: auto;
+}
+
+.figma-product-card__carousel-btn:hover {
+  background: #ececec;
+}
+
+.figma-product-card__carousel-btn:active {
+  background: #e0e0e0;
+}
+
+.figma-product-card__carousel-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #17171b);
+  outline-offset: 2px;
 }
 
 .figma-product-card__carousel-btn--prev {
