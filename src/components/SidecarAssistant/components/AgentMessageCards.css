@@ -228,6 +228,62 @@
   color: var(--agentic-foreground);
 }
 
+/* ---------- Broad-intent routine card ---------- */
+
+.agent-routine__card {
+  width: 100%;
+  height: fit-content;
+  background: var(--agentic-card-bg);
+  border: 1px solid var(--agentic-card-border);
+  border-color: rgba(236, 236, 236, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 0;
+  font-family: var(--font-family-base);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.agent-routine__acknowledgement {
+  margin: 0;
+  padding: 0 20px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--agentic-foreground);
+}
+
+.agent-routine__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(236, 236, 236, 1);
+}
+
+.agent-routine__section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.agent-routine__step {
+  margin: 0;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--agentic-card-foreground);
+}
+
+.agent-routine__description {
+  margin: 0;
+  padding: 0 20px;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--agentic-muted-foreground);
+}
+
 .agent-plp__carousel {
   position: relative;
   padding-left: 20px;

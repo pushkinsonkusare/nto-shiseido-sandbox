@@ -21,10 +21,22 @@ export {
 } from "./AgentProductCard";
 
 export {
+  AgentProductCarousel,
+  type AgentCarouselProduct,
+  type AgentProductCarouselProps,
+} from "./AgentProductCarousel";
+
+export {
   AgentPLPCard,
   type AgentPLPProduct,
   type AgentPLPCardProps,
 } from "./AgentPLPCard";
+
+export {
+  AgentRoutineCard,
+  type AgentRoutineSection,
+  type AgentRoutineCardProps,
+} from "./AgentRoutineCard";
 
 export {
   AgentPDPCard,

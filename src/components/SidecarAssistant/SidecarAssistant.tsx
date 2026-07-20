@@ -17,6 +17,7 @@ import {
   AgentOrderSummary,
   AgentPDPCard,
   AgentPLPCard,
+  AgentRoutineCard,
   AgentSimpleUtterance,
   LatencyLoader,
   type AgentNBA,
@@ -37,20 +38,25 @@ import {
   buildStageNbas,
   buildWelcomeNbas,
   buildPlpIntro,
+  buildRoutineAcknowledgement,
+  buildRoutineSectionDescription,
   classifyHygieneTopic,
   classifyIntent,
+  detectRoutineIntent,
   filterProducts,
   findBundlesForIntent,
   findMatchingBundle,
   getLandingNbaLane,
   pickRecommendations,
+  ROUTINE_STEPS,
   type HygieneTopic,
   type Intent,
   type NbaLane,
   type NbaStage,
+  type RoutineIntent,
   type StageNbaItem,
 } from "./conversation/flow";
-import type { ChatMessage } from "./conversation/types";
+import type { ChatMessage, RoutineSection } from "./conversation/types";
 import type { CatalogProduct } from "../../catalog/catalog";
 import { resolveProductFaq } from "../SideBySideAssistant/conversation/productFaq";
 import { createOpenAIAgent, type AgentAction, type OpenAIAgent } from "./agent/openaiAgent";
@@ -847,6 +853,101 @@ export function SidecarAssistant({
     [appendMessage, getProductBySlug, handleProductSelect],
   );
 
+  // Broad-intent "routine" card: one acknowledgement + a section per routine
+  // step. Each section's products are the top matches for that step's category
+  // filtered by the detected skin type (with a category-only fallback so a
+  // step never renders empty), split into a first page (5) + "Show more".
+  const renderRoutineCard = useCallback(
+    (routine: RoutineIntent) => {
+      const sections: RoutineSection[] = [];
+
+      for (const step of ROUTINE_STEPS) {
+        const sectionIntent: Intent = {
+          kind: "direct",
+          rawQuery: routine.rawQuery,
+          categories: [step.categoryKey],
+          requiredTags: routine.skinType ? [routine.skinType] : undefined,
+        };
+
+        let ranked = pickRecommendations(
+          filterProducts(sectionIntent, products),
+          24,
+          sectionIntent,
+        );
+        // Skin-type tags are sparse; if the hard filter zeroes the step, fall
+        // back to a category-only pool so every routine step still populates.
+        if (ranked.length === 0 && routine.skinType) {
+          const categoryOnly: Intent = {
+            kind: "direct",
+            rawQuery: routine.rawQuery,
+            categories: [step.categoryKey],
+          };
+          ranked = pickRecommendations(
+            filterProducts(categoryOnly, products),
+            24,
+            categoryOnly,
+          );
+        }
+        if (ranked.length === 0) continue;
+
+        const firstPage = ranked.slice(0, PLP_PAGE_SIZE);
+        const rest = ranked.slice(PLP_PAGE_SIZE);
+        sections.push({
+          stepLabel: step.stepLabel,
+          categoryTitle: step.categoryTitle,
+          categoryKey: step.categoryKey,
+          description: buildRoutineSectionDescription(step.categoryKey, routine),
+          products: firstPage.map((p) => toPlpProduct(p, handleProductSelect)),
+          showMoreCard: rest.length > 0,
+          remainingSlugs: rest.map((p) => p.slug),
+        });
+      }
+
+      if (sections.length === 0) return false;
+
+      appendMessage({
+        id: nextId("routine"),
+        kind: "agent_routine",
+        acknowledgement: buildRoutineAcknowledgement(routine),
+        sections,
+      });
+      return true;
+    },
+    [appendMessage, getProductBySlug, handleProductSelect, products],
+  );
+
+  const handleRoutineShowMore = useCallback(
+    (routineMessageId: string, sectionIndex: number) => {
+      updateMessage(routineMessageId, (message) => {
+        if (message.kind !== "agent_routine") return message;
+        const section = message.sections[sectionIndex];
+        if (!section) return message;
+        const remaining = section.remainingSlugs ?? [];
+        if (remaining.length === 0) return message;
+
+        const nextPage = remaining
+          .slice(0, PLP_PAGE_SIZE)
+          .map((slug) => getProductBySlug(slug))
+          .filter((p): p is CatalogProduct => Boolean(p))
+          .map((p) => toPlpProduct(p, handleProductSelect));
+        const rest = remaining.slice(PLP_PAGE_SIZE);
+
+        const sections = message.sections.map((existing, index) =>
+          index === sectionIndex
+            ? {
+                ...existing,
+                products: [...existing.products, ...nextPage],
+                remainingSlugs: rest,
+                showMoreCard: rest.length > 0,
+              }
+            : existing,
+        );
+        return { ...message, sections };
+      });
+    },
+    [getProductBySlug, handleProductSelect, updateMessage],
+  );
+
   const handleToggleSelect = useCallback((slug: string) => {
     setSelectedSlugs((current) =>
       current.includes(slug)
@@ -1274,6 +1375,20 @@ export function SidecarAssistant({
         return;
       }
 
+      // Broad intent (skin type / concern / routine cue, no explicit category):
+      // synthesise the full multi-step routine card instead of a single carousel.
+      const routine = detectRoutineIntent(trimmed);
+      if (routine.isRoutine && renderRoutineCard(routine)) {
+        appendMessage(
+          buildNbasMessage([
+            "Show a simpler routine",
+            "Best for sensitive skin",
+            "Budget-friendly picks",
+          ]),
+        );
+        return;
+      }
+
       if (intent.kind === "broad" || intent.kind === "empty") {
         appendMessage({
           id: nextId("agent"),
@@ -1330,7 +1445,13 @@ export function SidecarAssistant({
         lanes: plpItems.map((item) => item.lane),
       });
     },
-    [appendMessage, products, renderPlpCard, renderRecentOrderSummary],
+    [
+      appendMessage,
+      products,
+      renderPlpCard,
+      renderRecentOrderSummary,
+      renderRoutineCard,
+    ],
   );
 
   const dispatchShopperMessage = useCallback(
@@ -1342,6 +1463,29 @@ export function SidecarAssistant({
 
       const loaderId = nextId("loader");
       appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
+
+      // Broad-intent routine requests are rendered deterministically as a
+      // unified routine card on every turn, bypassing the LLM (which would
+      // otherwise return a single-category listing for these queries).
+      const routine = detectRoutineIntent(trimmed);
+      if (routine.isRoutine) {
+        firstShopperTurnHandledRef.current = true;
+        scheduleResponse(() => {
+          removeMessage(loaderId);
+          if (renderRoutineCard(routine)) {
+            appendMessage(
+              buildNbasMessage([
+                "Show a simpler routine",
+                "Best for sensitive skin",
+                "Budget-friendly picks",
+              ]),
+            );
+          } else {
+            dispatchRuleBasedResponse(trimmed);
+          }
+        });
+        return;
+      }
 
       if (!firstShopperTurnHandledRef.current) {
         firstShopperTurnHandledRef.current = true;
@@ -1389,6 +1533,7 @@ export function SidecarAssistant({
       applyAgentActions,
       dispatchRuleBasedResponse,
       removeMessage,
+      renderRoutineCard,
       scheduleResponse,
     ],
   );
@@ -1883,6 +2028,21 @@ export function SidecarAssistant({
                 selectionLimitReached={selectedSet.size >= MAX_SELECTED_PRODUCTS}
               />
             );
+          case "agent_routine":
+            return (
+              <AgentRoutineCard
+                key={message.id}
+                acknowledgement={message.acknowledgement}
+                sections={message.sections}
+                onShowMore={(sectionIndex) =>
+                  handleRoutineShowMore(message.id, sectionIndex)
+                }
+                selectedIds={selectedSet}
+                onToggleSelect={handleToggleSelect}
+                onAddToCart={(slug) => handleAddToCart(slug, 1)}
+                selectionLimitReached={selectedSet.size >= MAX_SELECTED_PRODUCTS}
+              />
+            );
           case "agent_pdp":
             return (
               <AgentPDPCard
@@ -1970,6 +2130,7 @@ export function SidecarAssistant({
       handleNbaSelect,
       handleRemoveCartCoupon,
       handleRemoveCartItem,
+      handleRoutineShowMore,
       handleShowMore,
       handleToggleSelect,
       selectedSet,

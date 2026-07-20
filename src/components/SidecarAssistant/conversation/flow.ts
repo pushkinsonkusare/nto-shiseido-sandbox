@@ -206,7 +206,7 @@ const LANDING_LANES: LandingNbaLane[] = [
 ];
 
 const LANDING_NBA_BASE: Record<LandingNbaLane, string> = {
-  productDiscovery: "Build my skincare routine",
+  productDiscovery: "skincare for oily skin",
   categoryGuidance: "Help me choose a serum",
   decisionSupport: "Find sunscreen under $60",
   supportIntent: "Track my recent order",
@@ -504,6 +504,170 @@ export function classifyIntent(query: string): Intent {
   // a curated card, so this doesn't change the broad-card output for
   // unsignalled inputs on non-PDP routes.
   return { kind: "empty", rawQuery: trimmed, activities: detectedActivities };
+}
+
+/* =============================================================
+ * Broad-intent routine detection.
+ *
+ * When the shopper describes a skin type or a concern (or explicitly
+ * asks for a "routine") but does NOT name a specific product category,
+ * we synthesise a full multi-step routine card instead of a single
+ * carousel. Naming a category (e.g. "brightening serum", "moisturizers
+ * for dry skin") keeps the normal single-carousel flow.
+ * ============================================================= */
+
+/** Explicit product-type vocabulary. When any of these appear the shopper
+ * named a category, so we stay on the single-carousel path. "routine" /
+ * "regimen" are deliberately excluded so they trigger the routine card. */
+const EXPLICIT_PRODUCT_CATEGORY_PATTERN =
+  /\b(sunscreens?|sun\s*screens?|spf|sunblock|sun\s*block|cleansers?|cleansing|face\s*wash|facial\s*wash|micellar|softeners?|toners?|essences?|eye\s*(creams?|care|masks?|contour)|lip\s*(care|balms?|treatments?|masks?)|masks?|sheet\s*masks?|serums?|treatments?|concentrates?|ampoules?|boosters?|facial\s*oils?|moisturi[sz]ers?|face\s*creams?|day\s*creams?|night\s*creams?|gel\s*creams?|emulsions?|\bcreams?\b|bundles?|kits?|combos?|gift\s*sets?|\bsets?\b)\b/i;
+
+const ROUTINE_SKIN_TYPE_PATTERNS: Array<{ test: RegExp; key: string }> = [
+  { test: /\b(dry|dryness|dehydrated)\b/i, key: "dry" },
+  { test: /\b(oily|oil[-\s]?control|greasy)\b/i, key: "oily" },
+  { test: /\b(combination|combo\s*skin)\b/i, key: "combination" },
+  { test: /\b(normal\s*skin)\b/i, key: "normal" },
+];
+
+const ROUTINE_CONCERN_PATTERNS: Array<{ test: RegExp; key: string }> = [
+  {
+    test: /\b(acne|breakouts?|blemish\w*|pimples?|blackheads?|pores?|pore[-\s]?minimi\w*|oil\s*control|shine|shiny)\b/i,
+    key: "acne",
+  },
+  {
+    test: /\b(bright\w*|dark\s*spots?|hyperpigment\w*|pigmentation|dull\w*|radiance|glow\w*|uneven\s*(skin\s*)?tone|even\s*tone)\b/i,
+    key: "brightening",
+  },
+  {
+    test: /\b(anti[-\s]?aging|anti[-\s]?ageing|ageing|aging|wrinkl\w*|fine\s*lines?|mature\s*skin|crepe\w*)\b/i,
+    key: "anti-aging",
+  },
+  {
+    test: /\b(firm\w*|lift\w*|sag\w*|saggy|elasticity|contour\w*|bounce)\b/i,
+    key: "firming",
+  },
+  {
+    test: /\b(hydrat\w*|dryness|dehydrat\w*|moisture|plump\w*)\b/i,
+    key: "hydration",
+  },
+];
+
+const ROUTINE_CUE_PATTERN =
+  /\b(routines?|regimens?|regime|skin\s*care\s*for|skincare\s*for|products?\s*for|what\s*should\s*i\s*use|build\s*(me\s*)?a?\s*routine|help\s*me\s*with\s*my\s*skin|suggest\s*products?)\b/i;
+
+export type RoutineIntent = {
+  isRoutine: boolean;
+  /** Detected skin type token (dry/oily/combination/normal), used as a
+   * product filter tag and to tailor copy. */
+  skinType?: string;
+  /** Detected concern bucket (acne/brightening/anti-aging/firming/hydration),
+   * used to tailor the acknowledgement + section descriptions. */
+  concernKey?: string;
+  rawQuery?: string;
+};
+
+/**
+ * Decide whether a shopper query should render the multi-step routine
+ * card. Fires when there's a skin type, a concern, or an explicit routine
+ * cue AND no explicit product-category word.
+ */
+export function detectRoutineIntent(query: string): RoutineIntent {
+  const trimmed = query.trim();
+  if (!trimmed) return { isRoutine: false };
+  if (EXPLICIT_PRODUCT_CATEGORY_PATTERN.test(trimmed)) {
+    return { isRoutine: false };
+  }
+  const skinType = ROUTINE_SKIN_TYPE_PATTERNS.find((p) =>
+    p.test.test(trimmed),
+  )?.key;
+  const concernKey = ROUTINE_CONCERN_PATTERNS.find((p) =>
+    p.test.test(trimmed),
+  )?.key;
+  const hasCue = ROUTINE_CUE_PATTERN.test(trimmed);
+  return {
+    isRoutine: Boolean(skinType || concernKey || hasCue),
+    skinType,
+    concernKey,
+    rawQuery: trimmed,
+  };
+}
+
+/** Fixed 5-step routine (Cleanse -> Soften -> Treat -> Moisturize -> Protect),
+ * each mapped to the catalog category that fulfils it. */
+export const ROUTINE_STEPS: Array<{
+  stepLabel: string;
+  categoryTitle: string;
+  categoryKey: string;
+}> = [
+  { stepLabel: "1. Cleanse", categoryTitle: "Cleansers", categoryKey: "Cleansers" },
+  { stepLabel: "2. Soften", categoryTitle: "Softeners", categoryKey: "Softeners" },
+  {
+    stepLabel: "3. Treat",
+    categoryTitle: "Serums & Treatments",
+    categoryKey: "Serums & Treatments",
+  },
+  {
+    stepLabel: "4. Moisturize",
+    categoryTitle: "Moisturizers",
+    categoryKey: "Moisturizers",
+  },
+  { stepLabel: "5. Protect", categoryTitle: "Sunscreen", categoryKey: "Sunscreen" },
+];
+
+/** Empathetic opener tailored to the detected concern / skin type. */
+export function buildRoutineAcknowledgement(intent: RoutineIntent): string {
+  const key = intent.concernKey ?? intent.skinType;
+  switch (key) {
+    case "acne":
+      return "Breakouts can be frustrating — here's a simple, balancing routine to help keep pores clear and calm your skin.";
+    case "oily":
+      return "For oily skin, here's a balancing routine to manage shine and keep pores clear through the day.";
+    case "dry":
+    case "hydration":
+      return "Dry skin needs gentle, hydrating care — here's a routine to restore moisture and comfort.";
+    case "brightening":
+      return "For a brighter, more even tone, here's a routine that targets dullness and dark spots.";
+    case "anti-aging":
+    case "firming":
+      return "To help with firmness and fine lines, here's a targeted routine for visibly smoother skin.";
+    case "combination":
+      return "For combination skin, here's a balanced routine that hydrates dry areas without overloading oily ones.";
+    default:
+      return "Here's a complete daily routine tailored to your skin.";
+  }
+}
+
+/** Per-step description, with an optional concern/skin-type clause. */
+export function buildRoutineSectionDescription(
+  categoryKey: string,
+  intent: RoutineIntent,
+): string {
+  const concern = intent.concernKey ?? intent.skinType;
+  const base: Record<string, string> = {
+    Cleansers: "Start by washing away impurities and excess oil to prep your skin.",
+    Softeners: "Balance and hydrate so the next steps absorb better.",
+    "Serums & Treatments": "Target your main concern with a concentrated treatment.",
+    Moisturizers: "Lock in hydration and strengthen your skin barrier.",
+    Sunscreen: "Finish every morning with SPF to protect against UV damage.",
+  };
+  const clause: Record<string, Record<string, string>> = {
+    Cleansers: {
+      acne: " Look for formulas that help clear pore-clogging buildup.",
+      oily: " Gel and foaming textures help control excess oil.",
+    },
+    "Serums & Treatments": {
+      brightening: " Brightening actives help fade dark spots over time.",
+      "anti-aging": " Look for firming, wrinkle-smoothing actives.",
+      acne: " Soothing, clarifying actives help calm breakouts.",
+    },
+    Moisturizers: {
+      dry: " Richer creams give dry skin lasting comfort.",
+      hydration: " Richer creams give dry skin lasting comfort.",
+      oily: " Lightweight, oil-free gels keep skin balanced.",
+    },
+  };
+  const extra = concern ? clause[categoryKey]?.[concern] ?? "" : "";
+  return (base[categoryKey] ?? "") + extra;
 }
 
 /* =============================================================

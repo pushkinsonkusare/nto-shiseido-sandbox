@@ -22,6 +22,7 @@ export type ChatMessage =
   | ShopperTextMessage
   | AgentLoaderMessage
   | AgentPlpMessage
+  | AgentRoutineMessage
   | AgentPdpMessage
   | AgentCompareMessage
   | AgentCartMessage
@@ -61,6 +62,34 @@ export type AgentPlpMessage = {
   remainingSlugs?: string[];
   /** The shopper's original query, used for the "Show more <term>" bubble. */
   searchTerm?: string;
+};
+
+/** One step of a broad-intent routine: a category header, a short
+ * description, and a paged product carousel (5 + optional "Show more"). */
+export type RoutineSection = {
+  /** Ordinal step label, e.g. "1. Cleanse". */
+  stepLabel: string;
+  /** Human category title, e.g. "Cleansers". */
+  categoryTitle: string;
+  /** Catalog category name, used to page in more products on "Show more". */
+  categoryKey: string;
+  /** Concern/skin-type aware description shown under the heading. */
+  description: string;
+  /** Products currently shown in this section's carousel. */
+  products: AgentPLPProduct[];
+  /** When true, append the "Show more" tile to this section's carousel. */
+  showMoreCard: boolean;
+  /** Ranked-but-not-yet-shown slugs for this section, paged in by "Show more". */
+  remainingSlugs?: string[];
+};
+
+/** A unified broad-intent "routine" card: one acknowledgement followed by
+ * ordered category sections, each with its own carousel. */
+export type AgentRoutineMessage = {
+  id: string;
+  kind: "agent_routine";
+  acknowledgement: string;
+  sections: RoutineSection[];
 };
 
 export type AgentPdpMessage = {
