@@ -626,17 +626,30 @@ export function SidecarAssistant({
     if (selectedSlugs.length > 0) {
       return getProductBySlug(selectedSlugs[0]);
     }
-    // Otherwise, during a product FAQ thread the selection is often cleared,
-    // but the current (single, pruned) NBA row is flagged contextual and
-    // carries the product it's about - use that so the island persists.
-    const latestNba = [...messages]
-      .reverse()
-      .find(
-        (m): m is Extract<ChatMessage, { kind: "agent_nbas" }> =>
-          m.kind === "agent_nbas",
-      );
-    if (latestNba?.contextual && latestNba.productSlug) {
-      return getProductBySlug(latestNba.productSlug);
+    // Otherwise walk back through the conversation and let the most recent
+    // context-defining message decide. A product-focused message (PDP card,
+    // contextual FAQ row, or context separator) pins the island to that
+    // product even when newer cart / NBA rows follow - so the product pill
+    // and the cart button can co-exist. A results / routine message means
+    // the shopper has moved to a non-product context, so the pill drops.
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const message = messages[i];
+      if (message.kind === "agent_pdp" && message.productSlug) {
+        return getProductBySlug(message.productSlug);
+      }
+      if (
+        message.kind === "agent_nbas" &&
+        message.contextual &&
+        message.productSlug
+      ) {
+        return getProductBySlug(message.productSlug);
+      }
+      if (message.kind === "context_separator" && message.productSlug) {
+        return getProductBySlug(message.productSlug);
+      }
+      if (message.kind === "agent_plp" || message.kind === "agent_routine") {
+        return undefined;
+      }
     }
     return undefined;
   }, [selectedSlugs, messages, getProductBySlug]);
