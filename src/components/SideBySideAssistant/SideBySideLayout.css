@@ -508,24 +508,18 @@
   touch-action: pan-y;
 }
 
-/* Demo mode: bound the sheet to the simulated iPhone frame (which is
- * centered in the window) using the frame gap variables, so it fills the
- * device rather than the whole browser viewport. */
-html[data-demo-viewport="mobile"] {
-  --demo-frame-h-gap: max((100vw - min(402px, 100vw)) / 2, 0px);
-  --demo-frame-v-gap: max(
-    (100vh - min(874px, calc(100vh - 48px))) / 2,
-    0px
-  );
-}
-
+/* Demo mode: `#root` has `container-type: inline-size` (layout
+ * containment), which makes it the containing block for this fixed
+ * sheet. So the sheet is positioned relative to the simulated iPhone
+ * frame (#root), not the browser viewport - inset:0 fills the device
+ * exactly. */
 html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
-  top: var(--demo-frame-v-gap);
-  bottom: auto;
-  left: var(--demo-frame-h-gap);
-  right: var(--demo-frame-h-gap);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   width: auto;
-  height: min(874px, calc(100vh - 48px));
+  height: auto;
 }
 
 .sxs-layout__panel--mobile::before {
@@ -582,8 +576,8 @@ html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
 }
 
 html[data-demo-viewport="mobile"] .sxs-layout--mobile .sxs-layout__fab {
-  right: calc(var(--demo-frame-h-gap) + 24px);
-  bottom: calc(var(--demo-frame-v-gap) + 24px);
+  right: 24px;
+  bottom: 24px;
 }
 
 .sxs-layout--mobile .sxs-layout__fab:hover,
