@@ -2143,7 +2143,7 @@ export function SidecarAssistant({
         kind: "agent_simple",
         title: WELCOME_TITLE,
         body: WELCOME_BODY,
-        imageUrl: "/Welcome_cover.jpeg",
+        imageUrl: `${import.meta.env.BASE_URL}Welcome_cover.jpeg`,
         imageAlt: "Welcome to the Shiseido store",
         showBrandLogo: true,
       },

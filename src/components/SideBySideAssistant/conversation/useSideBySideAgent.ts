@@ -516,7 +516,7 @@ function buildWelcomeMessages(): SxsMessage[] {
     {
       id: nextId("greeting"),
       kind: "greeting",
-      imageUrl: "/Welcome_cover.jpeg",
+      imageUrl: `${import.meta.env.BASE_URL}Welcome_cover.jpeg`,
       imageAlt: "Welcome to the Shiseido store",
       greeting: "Hello!",
       body: GREETING_BODY,
