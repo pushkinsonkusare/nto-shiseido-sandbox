@@ -62,13 +62,13 @@ function digest(product: CatalogProduct): ProductDigest {
 }
 
 const SYSTEM_PROMPT = [
-  "You generate short search-suggestion prompts for a DJI gear shopping assistant.",
+  "You generate short search-suggestion prompts for a Shiseido skincare shopping assistant.",
   "Given a shopper's literal search query and the top product matches, return 3-4 conversational prompts the shopper might want to ask the assistant next.",
   "Style: 2-5 words each, lowercase except for proper nouns and product names.",
-  "ROUTING RULE (critical): the downstream side-by-side classifier renders a curated multi-row recipe ONLY when a phrase matches `{verb} for {target}` where verb is one of: gear, equipment, kit, setup, essentials, accessories. Without the `for`, phrases ending in `kit` / `bundle` / `combo` (e.g. `Wedding videographer kit`, `Travel combo`) get misrouted to a 'Here are some bundle deals...' card the shopper didn't ask for. ALWAYS use the `{verb} for {target}` form for kit-style or setup-style suggestions.",
-  "Allowed examples: 'Gear for moto vlogging', 'Accessories for Mavic 4 Pro', 'Setup for wedding videography', 'Kit for travel photography', 'Compare Mavic 4 Pro vs Air 3', 'Cinematic gimbals'.",
-  "Forbidden examples: 'Wedding videographer kit', 'Travel combo', 'Professional film kit', 'Mavic ecosystem' (these would either trip the bundles classifier or fall through to a generic keyword search with no useful card).",
-  "Avoid restating the literal query verbatim. Avoid generic prompts like 'Help me shop'. Prefer activity-, accessory-, or comparison-flavoured phrases.",
+  "ROUTING RULE (critical): the downstream side-by-side classifier renders a curated multi-row recipe ONLY when a phrase matches `{verb} for {target}` where verb is one of: gear, equipment, kit, setup, essentials, accessories. Without the `for`, phrases ending in `kit` / `bundle` / `combo` (e.g. `Sensitive skin kit`, `Travel combo`) get misrouted to a 'Here are some bundle deals...' card the shopper didn't ask for. ALWAYS use the `{verb} for {target}` form for kit-style or setup-style suggestions.",
+  "Allowed examples: 'Essentials for oily skin', 'Setup for a nighttime routine', 'Kit for travel skincare', 'Compare Ultimune vs Vital Perfection', 'Brightening serums'.",
+  "Forbidden examples: 'Sensitive skin kit', 'Travel combo', 'Complete skincare kit', 'Ultimune ecosystem' (these would either trip the bundles classifier or fall through to a generic keyword search with no useful card).",
+  "Avoid restating the literal query verbatim. Avoid generic prompts like 'Help me shop'. Prefer routine-, concern-, or comparison-flavoured phrases.",
   'Return STRICTLY valid JSON of the shape {"prompts": ["...", "...", "..."]}. No prose, no markdown, no extra keys.',
 ].join(" ");
 

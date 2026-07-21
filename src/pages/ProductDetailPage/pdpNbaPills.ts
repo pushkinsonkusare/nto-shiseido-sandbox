@@ -141,7 +141,7 @@ const HYGIENE_ROTATION: readonly PdpNbaPill[] = [
   {
     id: "hygiene-warranty",
     label: "Is there a warranty?",
-    prompt: "Is there a warranty included? What does DJI Care cover?",
+    prompt: "Is there a warranty included, and what does it cover?",
     kind: "hygiene",
   },
   {
@@ -211,7 +211,7 @@ const DRONE_LANE: LanePack = {
     {
       id: "faq-drone-crash",
       label: "What if I crash it?",
-      prompt: `If I crash the ${product.title}, is there DJI Care or accidental damage coverage available?`,
+      prompt: `If I crash the ${product.title}, is there accidental damage coverage available?`,
       kind: "faq",
     },
     {
@@ -623,8 +623,8 @@ const ACCESSORY_LANE: LanePack = {
       },
       {
         id: "faq-acc-genuine",
-        label: "Is this genuine DJI?",
-        prompt: `Is the ${product.title} a genuine DJI accessory, and is it covered by DJI's warranty?`,
+        label: "Is this authentic?",
+        prompt: `Is the ${product.title} a genuine Shiseido product, and is it covered by warranty?`,
         kind: "faq",
       },
       {
