@@ -104,14 +104,6 @@ export function SidecarDockLayout({ children }: Props) {
 
   return (
     <div className="sxs-shell">
-      {isMobileViewport && panelOpen ? (
-        <button
-          type="button"
-          className="sxs-layout__backdrop"
-          aria-label="Close assistant panel"
-          onClick={closePanel}
-        />
-      ) : null}
       {isDetached ? (
         <button
           type="button"
@@ -156,9 +148,10 @@ export function SidecarDockLayout({ children }: Props) {
               if (!panel || startX === null || startY === null || !touch) return;
               const dx = touch.clientX - startX;
               const dy = touch.clientY - startY;
-              if (dx <= 0 || Math.abs(dx) < Math.abs(dy)) return;
+              // Bottom sheet: only engage a downward, vertically-dominant drag.
+              if (dy <= 0 || Math.abs(dy) < Math.abs(dx)) return;
               panel.style.transition = "none";
-              panel.style.transform = `translate3d(${Math.min(dx, 140)}px, 0, 0)`;
+              panel.style.transform = `translate3d(0, ${Math.min(dy, 220)}px, 0)`;
             }}
             onTouchEnd={(event) => {
               if (!isMobileViewport || !panelOpen) return;
@@ -173,7 +166,8 @@ export function SidecarDockLayout({ children }: Props) {
               }
               const dx = touch.clientX - startX;
               const dy = touch.clientY - startY;
-              if (dx > 88 && Math.abs(dx) > Math.abs(dy)) {
+              // Swipe down far enough (and vertically) dismisses the sheet.
+              if (dy > 120 && Math.abs(dy) > Math.abs(dx)) {
                 closePanel();
                 return;
               }
