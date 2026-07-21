@@ -1,4 +1,5 @@
 import type { CatalogProduct } from "../../../catalog/catalog";
+import { getBundleComponents } from "../../../catalog/catalog";
 
 /**
  * Programmatic FAQ floor for PDP-origin shopper questions.
@@ -22,6 +23,16 @@ const TIER_LABEL: Record<CatalogProduct["tier"], string> = {
   beginner: "everyday essentials",
   intermediate: "daily-care skincare",
   pro: "prestige, advanced care",
+};
+
+/**
+ * Curated one-liners for components whose only catalog match is a
+ * gender-/line-specific SKU (e.g. Men's Ultimune standing in for the
+ * women's Ultimune that isn't in this dataset). Keyed by slug.
+ */
+const COMPONENT_TARGET_OVERRIDES: Record<string, string> = {
+  "shiseido-men-ultimune-power-infusing-serum":
+    "helps strengthen skin's natural defenses and visibly correct signs of aging (fine lines, firmness, and dullness)",
 };
 
 function joinSentences(parts: string[]): string {
@@ -60,9 +71,9 @@ function isMarketingHype(sentence: string): boolean {
  */
 function overviewLead(product: CatalogProduct): string | null {
   const raw = product.overview?.trim();
-  if (!raw) return null;
+  if (!raw || /^n\/?a\b/i.test(raw)) return null;
   const firstLine = raw.split(/\n+/).map((s) => s.trim()).find(Boolean);
-  if (!firstLine) return null;
+  if (!firstLine || /^n\/?a\b/i.test(firstLine)) return null;
   const sentences = firstLine
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
@@ -76,6 +87,127 @@ function overviewLead(product: CatalogProduct): string | null {
   // so a product whose whole overview is a single slogan still answers.
   const first = sentences[0];
   return first && first.split(/\s+/).length >= 6 ? first : null;
+}
+
+/** Prefer "Benefiance Wrinkle Smoothing Eye Cream" over a bare product name. */
+function componentDisplayTitle(product: CatalogProduct): string {
+  // Men's Ultimune stands in for the women's Ultimune missing from this
+  // catalog — never surface the men-line branding on mixed/women sets.
+  if (
+    /ultimune/i.test(product.title) &&
+    /shiseido-men/i.test(product.series || "")
+  ) {
+    return "Ultimune Power Infusing Serum";
+  }
+  const collection = product.model?.trim();
+  if (
+    collection &&
+    !/^shiseido\s*men$/i.test(collection) &&
+    !new RegExp(collection.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i").test(
+      product.title,
+    )
+  ) {
+    return `${collection} ${product.title}`;
+  }
+  return product.title;
+}
+
+function trimTrailingPunctuation(text: string): string {
+  return text.replace(/[.!?;,:]+$/u, "").trim();
+}
+
+/**
+ * One-line "what it does" blurb for a bundle component. Prefers real
+ * benefit bullets; falls back to curated overrides when the only match
+ * is a gender-specific stand-in SKU.
+ */
+function componentTargetBlurb(
+  component: CatalogProduct,
+  bundle: CatalogProduct,
+): string {
+  const override = COMPONENT_TARGET_OVERRIDES[component.slug];
+  const bundleIsMens = /\bmen'?s?\b|shiseido-men/i.test(
+    `${bundle.title} ${bundle.model || ""} ${bundle.series || ""}`,
+  );
+  const componentIsMens = /shiseido-men/i.test(component.series || "");
+  if (override && componentIsMens && !bundleIsMens) {
+    return override;
+  }
+
+  const benefits = benefitBlocks(component);
+  if (benefits.length > 0) {
+    const lead = benefits[0];
+    // Tag-style benefit rows ("Anti-Aging, Hydrating, Skin Strengthening")
+    // read better as a short lowercase list than as a fake sentence.
+    if (/,\s*/.test(lead) && lead.length < 120 && !/[.!?]$/.test(lead)) {
+      const tags = lead
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean)
+        .slice(0, 4);
+      if (tags.length >= 2) return tags.join(", ");
+    }
+    return trimTrailingPunctuation(lead);
+  }
+
+  const lead = overviewLead(component);
+  if (lead) return trimTrailingPunctuation(lead);
+
+  const short = component.shortDescription?.trim();
+  if (short && !/^n\/?a\b/i.test(short)) {
+    return trimTrailingPunctuation(short);
+  }
+  return "delivers complementary skincare benefits in this set";
+}
+
+/** True when the set/bundle lacks its own usable benefit/overview copy. */
+function needsComponentComposition(product: CatalogProduct): boolean {
+  if (!product.isBundle && product.bundleComponentSlugs.length === 0) {
+    return false;
+  }
+  const components = getBundleComponents(product);
+  if (components.length < 2) return false;
+  const hasRealBenefits = benefitBlocks(product).length > 0;
+  const hasOverview = Boolean(overviewLead(product));
+  return !hasRealBenefits && !hasOverview;
+}
+
+/**
+ * Break a thin bundle FAQ into what each included product does.
+ * Example: "This set pairs two products. Ultimune … — …. Benefiance … — …."
+ */
+function composeComponentTargetAnswer(product: CatalogProduct): string | null {
+  const components = getBundleComponents(product);
+  if (components.length < 2) return null;
+
+  const lines = components.map((component) => {
+    const title = componentDisplayTitle(component);
+    const blurb = componentTargetBlurb(component, product);
+    const body = /^[a-z]/.test(blurb) ? blurb : lowerFirst(blurb);
+    return `${title} — ${body}.`;
+  });
+
+  const lead =
+    components.length === 2
+      ? "This set pairs two products."
+      : `This set includes ${components.length} products.`;
+  return joinSentences([lead, ...lines]);
+}
+
+function composeComponentIncludedAnswer(product: CatalogProduct): string | null {
+  const components = getBundleComponents(product);
+  if (components.length < 2) return null;
+  const names = components.map(componentDisplayTitle);
+  return `The ${product.title} includes ${joinNatural(names)}.`;
+}
+
+function composeComponentHowToUseAnswer(product: CatalogProduct): string | null {
+  const components = getBundleComponents(product);
+  if (components.length < 2) return null;
+  const names = components.map(componentDisplayTitle);
+  return `Use each product in the ${product.title} on its own routine step — apply ${joinNatural(
+    names,
+  )} as you normally would for that category (serum before eye cream, essence before serum, and so on).`;
 }
 
 /**
@@ -183,6 +315,16 @@ function decodeSkinJargon(block: string): string {
 }
 
 function inTheBoxAnswer(product: CatalogProduct): string {
+  // Prefer resolved component SKUs for thin "&"-style combos that have no
+  // "Set Includes" copy of their own.
+  const composed = composeComponentIncludedAnswer(product);
+  if (composed && needsComponentComposition(product)) {
+    return composed;
+  }
+  if (composed && product.isBundle && benefitBlocks(product).length === 0) {
+    return composed;
+  }
+
   // `inTheBox` is empty at runtime for the skincare catalog, so we go
   // straight to a featureBlocks scan for "what's included" copy,
   // useful for Sets & Bundles where the set contents are described in
@@ -200,6 +342,7 @@ function inTheBoxAnswer(product: CatalogProduct): string {
         `The ${product.title} set includes ${block.charAt(0).toLowerCase()}${block.slice(1)}`,
       ]);
     }
+    if (composed) return composed;
     const sizes = specByLabel(product, [/sizes?/i]);
     return sizes
       ? `The ${product.title} is a curated set in ${joinNatural(splitValues(specValue(sizes)))}.`
@@ -255,6 +398,13 @@ function resolutionAnswer(product: CatalogProduct): string {
   if (targets) {
     return `The ${product.title} targets ${joinNatural(splitValues(specValue(targets)))}.`;
   }
+
+  // Thin bundle/combo pages: speak to each component individually.
+  if (needsComponentComposition(product)) {
+    const composed = composeComponentTargetAnswer(product);
+    if (composed) return composed;
+  }
+
   // Ground the answer in the product's real benefit bullets (keyBenefits)
   // before any marketing overview copy. Lead with a benefit-worded block
   // when one exists, otherwise summarise the top two benefit bullets.
@@ -273,15 +423,19 @@ function resolutionAnswer(product: CatalogProduct): string {
     /\bfirm\w*/i,
     /\bsmooth\w*/i,
   ]);
-  if (block) {
+  if (block && !/^n\/?a\b/i.test(block)) {
     return block;
   }
-  const benefits = benefitBlocks(product);
+  const benefits = benefitBlocks(product).filter((b) => !/^n\/?a\b/i.test(b));
   if (benefits.length > 0) {
     return joinSentences(
       benefits.slice(0, 2).map((b) => (/[.!?]$/.test(b) ? b : `${b}.`)),
     );
   }
+
+  const composedFallback = composeComponentTargetAnswer(product);
+  if (composedFallback) return composedFallback;
+
   return (
     overviewLead(product) ??
     `The ${product.title} is designed to deliver visible skincare results — want the full product page?`
@@ -340,6 +494,10 @@ function waterproofAnswer(product: CatalogProduct): string {
 function batteryAnswer(product: CatalogProduct): string {
   // Answers "how long does it last / how do I use it?", sourced from
   // the Sizes and Routine specs plus any usage feature copy.
+  if (needsComponentComposition(product)) {
+    const composed = composeComponentHowToUseAnswer(product);
+    if (composed) return composed;
+  }
   const block = findFeatureBlockMatching(product, [
     /\bapply\b/i,
     /\bmorning\b/i,
@@ -347,7 +505,7 @@ function batteryAnswer(product: CatalogProduct): string {
     /\bdaily\b/i,
     /\broutine\b/i,
   ]);
-  if (block) {
+  if (block && !/^n\/?a\b/i.test(block)) {
     return block;
   }
   const routine = specByLabel(product, [/routine/i]);
@@ -356,6 +514,8 @@ function batteryAnswer(product: CatalogProduct): string {
       routine,
     ).toLowerCase()} routine.`;
   }
+  const composed = composeComponentHowToUseAnswer(product);
+  if (composed) return composed;
   return `Apply the ${product.title} as directed, morning and evening — a little goes a long way.`;
 }
 

@@ -762,6 +762,15 @@ export function SidecarAssistant({
           message,
         ];
       }
+      // Cart is a stage change (add-to-cart or cart FAB). Drop prior PDP/PLP
+      // chips immediately so they don't linger under the cart while the
+      // cart-stage NBA set is being appended.
+      if (message.kind === "agent_cart") {
+        return [
+          ...current.filter((m) => m.kind !== "agent_nbas"),
+          message,
+        ];
+      }
       return [...current, message];
     });
   }, []);
@@ -886,8 +895,8 @@ export function SidecarAssistant({
   );
 
   // Surface the shopper's current cart as a fresh cart card at the bottom of
-  // the conversation. Used by the context-island cart button so a tap always
-  // brings the up-to-date cart back into view.
+  // the conversation. Used by the context-island / cart FAB so a tap always
+  // reads as a shopper turn ("Show my cart") and gets a cart-stage reply.
   const showCartCard = useCallback(() => {
     const list = messagesRef.current;
     const previousCart = [...list]
@@ -897,13 +906,55 @@ export function SidecarAssistant({
       );
     if (!previousCart) return;
 
-    removeMessage(previousCart.id);
+    // Snapshot so the delayed response still has the cart even if the
+    // prior card is removed before the loader finishes.
+    const cartSnapshot = previousCart;
+
     appendMessage({
-      ...previousCart,
-      id: nextId("cart"),
-      acknowledgement: "Here's your cart.",
+      id: nextId("shopper"),
+      kind: "shopper_text",
+      text: "Show my cart",
     });
-  }, [appendMessage, removeMessage]);
+    const loaderId = nextId("loader");
+    appendMessage({ id: loaderId, kind: "agent_loader", variant: "thinking" });
+
+    scheduleResponse(() => {
+      removeMessage(loaderId);
+      // Drop the older cart card if it's still in the transcript so we only
+      // keep one up-to-date cart utterance.
+      removeMessage(cartSnapshot.id);
+      appendMessage({
+        ...cartSnapshot,
+        id: nextId("cart"),
+        acknowledgement: "Here's your cart.",
+      });
+
+      const cartProducts = cartSnapshot.items
+        .map((item) => getProductBySlug(item.id.replace(/^cart-/, "")))
+        .filter((product): product is CatalogProduct => Boolean(product));
+      if (cartProducts.length === 0) return;
+
+      const primary = cartProducts[0];
+      const items = buildStageNbas({
+        stage: "cart",
+        cartProducts,
+        matchingBundle: findMatchingBundle(primary, products),
+        catalog: products,
+      });
+      appendMessage(buildStageNbasMessage("cart", items));
+      emitAssistantTelemetry("nba_impression", {
+        stage: "cart",
+        labels: items.map((item) => item.label),
+        lanes: items.map((item) => item.lane),
+      });
+    });
+  }, [
+    appendMessage,
+    getProductBySlug,
+    products,
+    removeMessage,
+    scheduleResponse,
+  ]);
 
   const renderRecentOrderSummary = useCallback(() => {
     const latestOrder = orderHistory[0];
@@ -2391,6 +2442,42 @@ export function SidecarAssistant({
     inputRef.current?.blur();
   };
 
+  /* When the simulated keyboard is open, a tap on an NBA/button first blurs
+   * the input. If we collapse the keyboard on that blur, layout shifts and
+   * the click never lands. Suppress the blur for interactive targets, let
+   * their click handlers run, then dismiss the keyboard. */
+  const isSimKeyboardChromeTarget = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return false;
+    return Boolean(
+      target.closest(".sim-ios-keyboard, .sidecar-assistant__input-shell, .sidecar-assistant__input"),
+    );
+  };
+
+  const isSimKeyboardClickTarget = (target: EventTarget | null) => {
+    if (!(target instanceof Element) || isSimKeyboardChromeTarget(target)) {
+      return false;
+    }
+    return Boolean(
+      target.closest(
+        "button, a, [role='button'], [role='menuitem'], label, summary",
+      ),
+    );
+  };
+
+  const handleSimKeyboardMouseDownCapture = (
+    event: React.MouseEvent<HTMLElement>,
+  ) => {
+    if (!simKeyboardOpen) return;
+    if (!isSimKeyboardClickTarget(event.target)) return;
+    event.preventDefault();
+  };
+
+  const handleSimKeyboardClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (!simKeyboardOpen) return;
+    if (!isSimKeyboardClickTarget(event.target)) return;
+    dismissSimulatedKeyboard();
+  };
+
   /* ---------- render ---------- */
 
   const renderedMessages = useMemo(
@@ -2842,7 +2929,8 @@ export function SidecarAssistant({
             }}
             onBlur={() => {
               if (!simulateMobileKeyboard) return;
-              /* Defer so keyboard mousedown preventDefault can win first. */
+              /* Defer so keyboard key mousedown / NBA mousedown preventDefault
+               * can keep focus when the tap should both act and dismiss. */
               window.setTimeout(() => {
                 if (document.activeElement === inputRef.current) return;
                 setSimKeyboardOpen(false);
@@ -2885,6 +2973,8 @@ export function SidecarAssistant({
         }
         role="complementary"
         aria-label="Personal Assistant"
+        onMouseDownCapture={handleSimKeyboardMouseDownCapture}
+        onClick={handleSimKeyboardClick}
       >
         {panelBody}
       </aside>

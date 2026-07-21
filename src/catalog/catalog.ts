@@ -77,6 +77,13 @@ export type CatalogProduct = {
   isBundle: boolean;
   bundleBaseSlug: string | null;
   /**
+   * Catalog slugs for the individual products packed into a set/bundle.
+   * Empty for single SKUs. Resolved from the bundle title (and a small
+   * alias table) so FAQ answers can speak to each component instead of
+   * the empty "N/A bundle page" crawl stub.
+   */
+  bundleComponentSlugs: string[];
+  /**
    * Lowercased filter/search tokens fused from skin type, concern,
    * collection, and category. Powers the generic search index and the
    * PLP facet filters.
@@ -427,6 +434,141 @@ function formatCatalogPrice(price: number | null): string {
   return priceFormatter.format(price);
 }
 
+/** True when crawl/export left a placeholder instead of real PDP copy. */
+function isPlaceholderCopy(value: string | null | undefined): boolean {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return true;
+  return /^n\/?a\b/i.test(trimmed);
+}
+
+function detectIsBundle(record: ShiseidoRecord): boolean {
+  if (record.category === "Sets & Bundles") return true;
+  if (/\bbundle\b|\bduo\b/i.test(record.productType)) return true;
+  if (/\bbundle\b|\bduo\b/i.test(record.name)) return true;
+  // Named gift sets (e.g. "Smooth & Strengthen Set") live outside the
+  // Sets & Bundles category in a few rows; treat trailing "Set" as a signal.
+  if (/\bset\b/i.test(record.name) && /set includes/i.test(record.overview)) {
+    return true;
+  }
+  // Crawl stub used when Shiseido didn't publish a separate bundle PDP.
+  if (
+    isPlaceholderCopy(record.overview) &&
+    /bundle|set page/i.test(record.overview)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Explicit title-fragment → slug aliases for the common "&"-style combos
+ * where fuzzy matching is ambiguous (collection nickname in the title,
+ * missing women's Ultimune SKU, etc.).
+ */
+const BUNDLE_PART_ALIASES: Record<string, string> = {
+  "benefiance eye cream": "benefiance-wrinkle-smoothing-eye-cream",
+  "wrinkle smoothing eye cream": "benefiance-wrinkle-smoothing-eye-cream",
+  eudermine: "eudermine-activating-essence",
+  "eudermine activating essence": "eudermine-activating-essence",
+  "ultimune power infusing serum": "shiseido-men-ultimune-power-infusing-serum",
+  "clarifying cleansing foam": "essentials-clarifying-cleansing-foam",
+  "protector clear stick spf 60+": "shiseido-men-protector-clear-stick-spf-60",
+  "ultimate sun protector clear stick spf 60+":
+    "shiseido-men-protector-clear-stick-spf-60",
+  "urban mineral sunscreen": "urban-environment-mineral-clear-sunscreen-spf-50",
+};
+
+function normalizeMatchText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function parseBundleTitleParts(title: string): string[] {
+  let clean = title.replace(/\s*\(\$?\d[\d,.]*\s*Value\)\s*$/i, "").trim();
+  clean = clean.replace(/\s*(Bundle|Duo|Set)\s*$/i, "").trim();
+  return clean
+    .split(/\s*(?:&| and )\s*/i)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+}
+
+function scoreBundlePartMatch(
+  part: string,
+  candidate: CatalogProduct,
+): number {
+  const partNorm = normalizeMatchText(part);
+  const nameNorm = normalizeMatchText(candidate.title);
+  if (!partNorm || partNorm.length < 3) return 0;
+  if (nameNorm === partNorm) return 100;
+
+  const collectionNorm = normalizeMatchText(candidate.model || "");
+  const stop = new Set(["the", "a", "an", "and", "with", "for", "of"]);
+  const tokens = partNorm.split(/\s+/).filter((t) => t && !stop.has(t));
+  if (tokens.length === 0) return 0;
+
+  const nameHits = tokens.filter((t) => nameNorm.includes(t)).length;
+  const collectionHit = Boolean(
+    collectionNorm && partNorm.includes(collectionNorm),
+  );
+
+  if (nameHits === tokens.length) return 80 + tokens.length;
+  if (collectionHit) {
+    const rest = tokens.filter((t) => !collectionNorm.includes(t));
+    if (rest.length > 0 && rest.every((t) => nameNorm.includes(t))) {
+      return 70 + rest.length;
+    }
+  }
+  if (nameHits >= 2 && nameHits / tokens.length >= 0.6) return 40 + nameHits;
+  if (tokens.length === 1 && (nameNorm.includes(tokens[0]) || collectionNorm.includes(tokens[0]))) {
+    return 30;
+  }
+  return 0;
+}
+
+function resolveBundleComponentSlugs(
+  bundle: CatalogProduct,
+  singles: CatalogProduct[],
+  bySlug: Map<string, CatalogProduct>,
+): string[] {
+  if (!bundle.isBundle) return [];
+
+  const parts = parseBundleTitleParts(bundle.title);
+  if (parts.length < 2) return [];
+
+  const resolved: string[] = [];
+  const used = new Set<string>();
+
+  for (const part of parts) {
+    const aliasSlug = BUNDLE_PART_ALIASES[normalizeMatchText(part)];
+    if (aliasSlug && bySlug.has(aliasSlug) && !used.has(aliasSlug)) {
+      resolved.push(aliasSlug);
+      used.add(aliasSlug);
+      continue;
+    }
+
+    let best: { slug: string; score: number } | null = null;
+    for (const candidate of singles) {
+      if (used.has(candidate.slug)) continue;
+      const score = scoreBundlePartMatch(part, candidate);
+      if (!best || score > best.score) {
+        best = { slug: candidate.slug, score };
+      }
+    }
+    // Require a confident match so marketing set names ("Firm & Sculpt")
+    // don't latch onto unrelated firming creams.
+    if (best && best.score >= 60) {
+      resolved.push(best.slug);
+      used.add(best.slug);
+    }
+  }
+
+  return resolved.length >= 2 ? resolved : [];
+}
+
 /* Deterministic "was" / compare-at price for a demo sale. Seeded by the
  * product id so a given product always shows the same original price and the
  * same on/off-sale state (never random per render). Roughly 65% of products
@@ -451,13 +593,18 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
   const compareAtPrice = pseudoComparePrice(record.id, record.price);
   const realBenefits = record.keyBenefits
     .map((b) => b.trim())
-    .filter((b) => b && !/^n\/?a$/i.test(b));
+    .filter((b) => b && !isPlaceholderCopy(b));
+  // Never promote the "N/A. This is a bundle/set page…" crawl stub into
+  // featureBlocks — FAQ resolution was treating that sentence as a benefit.
+  const overviewUsable =
+    Boolean(record.overview?.trim()) && !isPlaceholderCopy(record.overview);
   const featureBlocks =
     realBenefits.length > 0
       ? realBenefits
-      : record.overview
+      : overviewUsable
         ? record.overview.split(/\n+/).map((s) => s.trim()).filter(Boolean)
         : [];
+  const isBundle = detectIsBundle(record);
 
   return {
     id: record.id,
@@ -478,9 +625,9 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     imageAlt: record.name,
     gallery: gallery.length > 0 ? gallery : primaryImage ? [primaryImage] : [],
     shortDescription: record.shortDescription,
-    overview: record.overview,
+    overview: isPlaceholderCopy(record.overview) ? "" : record.overview,
     featureBlocks,
-    ingredients: /^\s*n\/?a\s*$/i.test(record.ingredients) ? "" : record.ingredients,
+    ingredients: isPlaceholderCopy(record.ingredients) ? "" : record.ingredients,
     specs: buildSpecs(record),
     inTheBox: [],
     productUrl: record.pdpUrl,
@@ -490,8 +637,9 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     // render it.
     swatches: [],
     tier: tierFromPrice(record.price),
-    isBundle: record.category === "Sets & Bundles",
+    isBundle,
     bundleBaseSlug: null,
+    bundleComponentSlugs: [],
     useCaseTags: tags,
     capabilities: tags,
     // Neutralized legacy (drone) fields. See type declarations above.
@@ -534,6 +682,18 @@ function buildCatalogStore(): CatalogStore {
     });
 
   const productBySlug = new Map(products.map((product) => [product.slug, product]));
+
+  // Resolve set/bundle → component SKU links once the full catalog exists.
+  const singles = products.filter((product) => !product.isBundle);
+  for (const product of products) {
+    if (!product.isBundle) continue;
+    product.bundleComponentSlugs = resolveBundleComponentSlugs(
+      product,
+      singles,
+      productBySlug,
+    );
+  }
+
   const categorySet = new Set(products.map((product) => product.category));
   const categories = orderCategories(categorySet).slice(0, 8);
 
@@ -646,6 +806,16 @@ function buildCatalogStore(): CatalogStore {
 }
 
 export const catalogStore = buildCatalogStore();
+
+/** Individual products packed into a set/bundle, when resolvable. */
+export function getBundleComponents(
+  product: CatalogProduct | null | undefined,
+): CatalogProduct[] {
+  if (!product?.bundleComponentSlugs?.length) return [];
+  return product.bundleComponentSlugs
+    .map((slug) => catalogStore.getProductBySlug(slug))
+    .filter((entry): entry is CatalogProduct => Boolean(entry));
+}
 
 export function buildProductDetailPath(slug: string) {
   return `/products/${slug}`;

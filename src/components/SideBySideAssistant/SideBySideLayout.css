@@ -509,7 +509,7 @@ html[data-demo-viewport="mobile"] .sxs-layout--mobile {
   right: 0 !important;
   bottom: 0 !important;
   left: 0 !important;
-  width: 100% !important;
+  width: 402px !important;
   max-width: none !important;
   height: 100% !important;
   margin: 0 !important;
@@ -561,7 +561,7 @@ html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
   right: 0 !important;
   bottom: 0 !important;
   left: 0 !important;
-  width: 100% !important;
+  width: 402px !important;
   height: 100% !important;
   max-height: 100% !important;
   min-height: 100% !important;

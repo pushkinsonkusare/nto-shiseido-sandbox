@@ -979,13 +979,13 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
 
 @media (max-width: 767px) {
   .sidecar-assistant__input {
-    font-size: 16px;
+    font-size: 14px;
     line-height: 24px;
   }
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant__input {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 24px;
 }
 
