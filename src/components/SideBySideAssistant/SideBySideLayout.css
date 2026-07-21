@@ -501,7 +501,10 @@
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   overflow: hidden;
-  z-index: 12;
+  /* Above the storefront's sticky top header (z-index: 50) and mobile nav
+   * drawer (z-index: 90) so the full-screen sheet - including the
+   * assistant's own header - covers the storefront chrome. */
+  z-index: 120;
   touch-action: pan-y;
 }
 
