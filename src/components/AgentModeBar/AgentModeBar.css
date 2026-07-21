@@ -6,10 +6,10 @@
   z-index: 5000;
 }
 
+/* `#root` is the fixed containing block in mobile demo mode, so use
+ * frame-local coordinates (no viewport frame-gap offsets). */
 html[data-demo-viewport="mobile"] .agent-mode-bar {
-  left: calc(
-    24px + var(--safe-area-left, 0px) + max((100vw - min(402px, 100vw)) / 2, 0px)
-  );
+  left: calc(24px + var(--safe-area-left, 0px));
 }
 
 .agent-mode-bar__fab {

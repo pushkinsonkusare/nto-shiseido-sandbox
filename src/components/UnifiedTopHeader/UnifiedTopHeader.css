@@ -259,13 +259,15 @@ html[data-demo-viewport="mobile"] .unified-top-header__mobile-menu-trigger {
   flex: 0 0 auto;
 }
 
+/* `#root` is the fixed containing block — pin drawers to the phone
+ * frame edge (no viewport frame-gap offsets). */
 html[data-demo-viewport="mobile"] .unified-top-header__mobile-drawer {
-  --demo-mobile-frame-left: max((100vw - min(402px, 100vw)) / 2, 0px);
-  left: var(--demo-mobile-frame-left);
-  width: min(calc(min(402px, 100vw) * 0.84), 340px);
+  left: 0;
+  width: min(calc(402px * 0.84), 340px);
+  height: 100%;
 }
 
 html[data-demo-viewport="mobile"]
   .unified-top-header__mobile-drawer:not(.unified-top-header__mobile-drawer--open) {
-  transform: translateX(calc(-105% - var(--demo-mobile-frame-left)));
+  transform: translateX(-105%);
 }

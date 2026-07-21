@@ -187,8 +187,8 @@ body,
  *
  * Every responsive rule in the immersive Wingman flow that needs to
  * fire BOTH on real narrow devices AND inside the simulated phone
- * frame (`html[data-demo-viewport="mobile"]` clamps `#root` to
- * 402px while the browser viewport stays at desktop width) keys off
+ * frame (`html[data-demo-viewport="mobile"]` fixes `#root` at
+ * 402×874 while the browser viewport stays at desktop width) keys off
  * `@container viewport (max-width: ...)` instead of `@media`. The
  * container's inline-size matches `#root`'s rendered width, which
  * tracks the visible frame in both modes, so a single set of
@@ -257,29 +257,39 @@ body {
 html[data-demo-viewport="mobile"] body {
   background: #eceff3;
   min-height: 100vh;
+  min-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 0;
+  padding: 24px;
   box-sizing: border-box;
+  overflow: auto;
 }
 
-/* Simulated iPhone 17 Pro frame: 402 x 874 CSS px (6.3" display, @3x
- * logical resolution — the device's true logical viewport). The frame is
- * sized by height and keeps the exact 402:874 aspect ratio, so it shows
- * at full 402 x 874 when the window is tall enough and scales down
- * proportionally (never distorted) on shorter windows. The app's content
- * scrolls inside the frame. */
+/* Simulated iPhone 17 Pro frame: fixed 402 × 874 CSS px (6.3" display,
+ * @3x logical resolution). Always that exact size and centered in the
+ * browser window; if the window is smaller, body scrolls so the frame
+ * stays intact.
+ *
+ * `#root` itself does NOT scroll — storefront scrolling lives on
+ * `.sxs-shell` so overlays (assistant panel, FAB, drawers) that are
+ * `position: absolute/fixed` against this frame stay pinned while only
+ * page content (or the chat area inside the agent) scrolls.
+ *
+ * `transform` makes this frame the containing block for `position: fixed`
+ * descendants. */
 html[data-demo-viewport="mobile"] #root {
-  height: min(874px, calc(100vh - 48px));
-  aspect-ratio: 402 / 874;
-  width: auto;
-  max-width: min(402px, 100%);
+  position: relative;
+  width: 402px;
+  height: 874px;
+  min-width: 402px;
+  min-height: 874px;
+  max-width: 402px;
   flex: 0 0 auto;
-  margin: 0 auto;
-  overflow-y: auto;
-  overflow-x: hidden;
+  margin: 0;
+  overflow: hidden;
   background: #ffffff;
+  transform: translateZ(0);
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.08),
     0 24px 60px rgba(15, 23, 42, 0.18);

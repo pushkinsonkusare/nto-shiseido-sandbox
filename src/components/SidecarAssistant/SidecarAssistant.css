@@ -26,23 +26,33 @@
  * gap) and entry animation so it reads as a flush docked column, exactly
  * like the SideBySide assistant. */
 .sidecar-assistant--docked {
-  position: static;
-  right: auto;
-  bottom: auto;
-  width: 100%;
-  height: 100%;
-  max-height: none;
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
   border: none;
   border-left: 1px solid rgba(230, 232, 234, 1);
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   animation: none;
   z-index: auto;
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant--docked {
-  right: auto;
-  width: 100%;
+  right: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  top: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
 }
 
 .sidecar-assistant,
@@ -56,8 +66,8 @@ html[data-demo-viewport="mobile"] .sidecar-assistant--docked {
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant {
-  right: max((100vw - min(402px, 100vw)) / 2, 0px);
-  width: min(402px, 100vw);
+  right: 0;
+  width: 100%;
 }
 
 .sidecar-assistant__backdrop {
@@ -1039,7 +1049,8 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__input {
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant__fab {
-  right: calc(max((100vw - min(402px, 100vw)) / 2, 0px) + 32px);
+  right: 32px;
+  bottom: 32px;
 }
 
 .sidecar-assistant__fab-icon {
@@ -1116,8 +1127,8 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__fab {
 /* ---------- Responsive: smaller viewports ---------- */
 
 @media (max-width: 720px) {
-  .sidecar-assistant,
-  html[data-demo-viewport="mobile"] .sidecar-assistant {
+  .sidecar-assistant:not(.sidecar-assistant--docked),
+  html[data-demo-viewport="mobile"] .sidecar-assistant:not(.sidecar-assistant--docked) {
     left: 0;
     right: 0;
     width: 100vw;

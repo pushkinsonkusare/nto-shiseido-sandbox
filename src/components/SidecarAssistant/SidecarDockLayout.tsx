@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { SparkleIcon } from "../icons/StorefrontIcons";
 import { useAgentMode } from "../AgentModeBar/AgentModeContext";
 import { SidecarAssistant } from "./SidecarAssistant";
-// Reuse the proven SideBySide docking shell so the Sidecar docks *exactly*
-// like the SideBySide assistant: a CSS grid (1fr | panel) that reflows the
-// storefront and a `position: sticky` full-height column pinned under the
-// storefront header, rather than a floating fixed overlay card.
+// Reuse the SideBySide docking shell CSS for desktop grid + mobile overlay.
 import "../SideBySideAssistant/SideBySideLayout.css";
 
 type Props = {
@@ -60,6 +58,19 @@ export function SidecarDockLayout({ children }: Props) {
     return () => window.clearTimeout(fabTimer);
   }, [panelOpen]);
 
+  // Mark the document when the mobile overlay is open so storefront sticky
+  // chrome can be demoted globally (portaled panel is no longer a descendant
+  // of `.sxs-layout--mobile`, so `:has()` on the layout can't reach it).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isMobileViewport && panelOpen) {
+      root.setAttribute("data-sxs-assistant-open", "true");
+    } else {
+      root.removeAttribute("data-sxs-assistant-open");
+    }
+    return () => root.removeAttribute("data-sxs-assistant-open");
+  }, [isMobileViewport, panelOpen]);
+
   // Open on the same storefront events the sidecar/SxS assistants listen for.
   // The `agentic:ask-assistant` prompt itself is seeded by SidecarAssistant's
   // own listener; here we only need to open the panel so the grid reflows.
@@ -102,6 +113,82 @@ export function SidecarDockLayout({ children }: Props) {
     if (panelOpen) resetSwipeTransform();
   }, [panelOpen]);
 
+  const panel = panelMounted ? (
+    <aside
+      ref={panelRef}
+      className={
+        (panelOpen
+          ? "sxs-layout__panel sxs-layout__panel--open"
+          : "sxs-layout__panel sxs-layout__panel--closing") +
+        (isMobileViewport ? " sxs-layout__panel--mobile" : "") +
+        (isDetached ? " sxs-layout__panel--detached" : "")
+      }
+      aria-label="Personal Assistant"
+      aria-hidden={!panelOpen}
+      onTouchStart={(event) => {
+        if (!isMobileViewport || !panelOpen) return;
+        const touch = event.touches[0];
+        if (!touch) return;
+        swipeStartXRef.current = touch.clientX;
+        swipeStartYRef.current = touch.clientY;
+      }}
+      onTouchMove={(event) => {
+        if (!isMobileViewport || !panelOpen) return;
+        const panelEl = panelRef.current;
+        const startX = swipeStartXRef.current;
+        const startY = swipeStartYRef.current;
+        const touch = event.touches[0];
+        if (!panelEl || startX === null || startY === null || !touch) return;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        // Bottom sheet: only engage a downward, vertically-dominant drag.
+        if (dy <= 0 || Math.abs(dy) < Math.abs(dx)) return;
+        panelEl.style.transition = "none";
+        panelEl.style.transform = `translate3d(0, ${Math.min(dy, 220)}px, 0)`;
+      }}
+      onTouchEnd={(event) => {
+        if (!isMobileViewport || !panelOpen) return;
+        const startX = swipeStartXRef.current;
+        const startY = swipeStartYRef.current;
+        const touch = event.changedTouches[0];
+        swipeStartXRef.current = null;
+        swipeStartYRef.current = null;
+        if (startX === null || startY === null || !touch) {
+          resetSwipeTransform();
+          return;
+        }
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        // Swipe down far enough (and vertically) dismisses the sheet.
+        if (dy > 120 && Math.abs(dy) > Math.abs(dx)) {
+          closePanel();
+          return;
+        }
+        const panelEl = panelRef.current;
+        if (!panelEl) return;
+        panelEl.style.transition = "transform 180ms ease";
+        panelEl.style.transform = "translate3d(0, 0, 0)";
+        window.setTimeout(() => resetSwipeTransform(), 190);
+      }}
+    >
+      <SidecarAssistant
+        docked
+        open={panelOpen}
+        onRequestClose={closePanel}
+        detached={isDetached}
+        onToggleDetach={toggleDetach}
+      />
+    </aside>
+  ) : null;
+
+  // On mobile, portal the panel to `#root` so it stacks above the sticky
+  // storefront header. Nested `position:fixed` inside `.sxs-shell` loses to
+  // sticky compositing; a direct `#root` child with a high z-index does not.
+  const rootEl = typeof document !== "undefined" ? document.getElementById("root") : null;
+  const mobilePanel =
+    isMobileViewport && panel && rootEl ? createPortal(panel, rootEl) : null;
+  const desktopPanel = !isMobileViewport ? panel : null;
+
   return (
     <div className="sxs-shell">
       {isDetached ? (
@@ -120,74 +207,9 @@ export function SidecarDockLayout({ children }: Props) {
         }
       >
         <div className="sxs-layout__main">{children}</div>
-        {panelMounted ? (
-          <aside
-            ref={panelRef}
-            className={
-              (panelOpen
-                ? "sxs-layout__panel sxs-layout__panel--open"
-                : "sxs-layout__panel sxs-layout__panel--closing") +
-              (isMobileViewport ? " sxs-layout__panel--mobile" : "") +
-              (isDetached ? " sxs-layout__panel--detached" : "")
-            }
-            aria-label="Personal Assistant"
-            aria-hidden={!panelOpen}
-            onTouchStart={(event) => {
-              if (!isMobileViewport || !panelOpen) return;
-              const touch = event.touches[0];
-              if (!touch) return;
-              swipeStartXRef.current = touch.clientX;
-              swipeStartYRef.current = touch.clientY;
-            }}
-            onTouchMove={(event) => {
-              if (!isMobileViewport || !panelOpen) return;
-              const panel = panelRef.current;
-              const startX = swipeStartXRef.current;
-              const startY = swipeStartYRef.current;
-              const touch = event.touches[0];
-              if (!panel || startX === null || startY === null || !touch) return;
-              const dx = touch.clientX - startX;
-              const dy = touch.clientY - startY;
-              // Bottom sheet: only engage a downward, vertically-dominant drag.
-              if (dy <= 0 || Math.abs(dy) < Math.abs(dx)) return;
-              panel.style.transition = "none";
-              panel.style.transform = `translate3d(0, ${Math.min(dy, 220)}px, 0)`;
-            }}
-            onTouchEnd={(event) => {
-              if (!isMobileViewport || !panelOpen) return;
-              const startX = swipeStartXRef.current;
-              const startY = swipeStartYRef.current;
-              const touch = event.changedTouches[0];
-              swipeStartXRef.current = null;
-              swipeStartYRef.current = null;
-              if (startX === null || startY === null || !touch) {
-                resetSwipeTransform();
-                return;
-              }
-              const dx = touch.clientX - startX;
-              const dy = touch.clientY - startY;
-              // Swipe down far enough (and vertically) dismisses the sheet.
-              if (dy > 120 && Math.abs(dy) > Math.abs(dx)) {
-                closePanel();
-                return;
-              }
-              const panel = panelRef.current;
-              if (!panel) return;
-              panel.style.transition = "transform 180ms ease";
-              panel.style.transform = "translate3d(0, 0, 0)";
-              window.setTimeout(() => resetSwipeTransform(), 190);
-            }}
-          >
-            <SidecarAssistant
-              docked
-              open={panelOpen}
-              onRequestClose={closePanel}
-              detached={isDetached}
-              onToggleDetach={toggleDetach}
-            />
-          </aside>
-        ) : null}
+        {desktopPanel}
       </div>
+      {mobilePanel}
       {fabVisible ? (
         <button
           type="button"

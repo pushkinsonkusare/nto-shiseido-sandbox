@@ -899,11 +899,12 @@
 
 /* Demo mobile viewport parity: force the compact overlay layout even when
  * the browser window itself is wider than the mobile frame. */
+/* `#root` is the fixed containing block — fill the phone frame, no
+ * viewport frame-gap margin. */
 html[data-demo-viewport="mobile"] .search-overlay__panel {
-  --demo-mobile-frame-left: max((100vw - min(402px, 100vw)) / 2, 0px);
-  width: min(402px, 100vw);
-  margin-left: var(--demo-mobile-frame-left);
-  max-height: calc(100dvh - var(--app-topbar-height, 56px));
+  width: 100%;
+  margin-left: 0;
+  max-height: calc(100% - var(--app-topbar-height, 56px));
 }
 
 html[data-demo-viewport="mobile"] .search-overlay__input-row {

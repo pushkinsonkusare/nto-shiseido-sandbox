@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { SparkleIcon } from "../icons/StorefrontIcons";
 import { useAgentMode } from "../AgentModeBar/AgentModeContext";
 import { SideBySideAssistant } from "./SideBySideAssistant";
@@ -107,6 +108,81 @@ function SideBySideLayoutInner({ children }: Props) {
     if (panelOpen) resetSwipeTransform();
   }, [panelOpen]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isMobileViewport && panelOpen) {
+      root.setAttribute("data-sxs-assistant-open", "true");
+    } else {
+      root.removeAttribute("data-sxs-assistant-open");
+    }
+    return () => root.removeAttribute("data-sxs-assistant-open");
+  }, [isMobileViewport, panelOpen]);
+
+  const panel = panelMounted ? (
+    <aside
+      ref={panelRef}
+      className={
+        (panelOpen
+          ? "sxs-layout__panel sxs-layout__panel--open"
+          : "sxs-layout__panel sxs-layout__panel--closing") +
+        (isMobileViewport ? " sxs-layout__panel--mobile" : "")
+      }
+      aria-label="Personal Assistant"
+      aria-hidden={!panelOpen}
+      onTouchStart={(event) => {
+        if (!isMobileViewport || !panelOpen) return;
+        const touch = event.touches[0];
+        if (!touch) return;
+        swipeStartXRef.current = touch.clientX;
+        swipeStartYRef.current = touch.clientY;
+      }}
+      onTouchMove={(event) => {
+        if (!isMobileViewport || !panelOpen) return;
+        const panelEl = panelRef.current;
+        const startX = swipeStartXRef.current;
+        const startY = swipeStartYRef.current;
+        const touch = event.touches[0];
+        if (!panelEl || startX === null || startY === null || !touch) return;
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        if (dx <= 0 || Math.abs(dx) < Math.abs(dy)) return;
+        panelEl.style.transition = "none";
+        panelEl.style.transform = `translate3d(${Math.min(dx, 140)}px, 0, 0)`;
+      }}
+      onTouchEnd={(event) => {
+        if (!isMobileViewport || !panelOpen) return;
+        const startX = swipeStartXRef.current;
+        const startY = swipeStartYRef.current;
+        const touch = event.changedTouches[0];
+        swipeStartXRef.current = null;
+        swipeStartYRef.current = null;
+        if (startX === null || startY === null || !touch) {
+          resetSwipeTransform();
+          return;
+        }
+        const dx = touch.clientX - startX;
+        const dy = touch.clientY - startY;
+        if (dx > 88 && Math.abs(dx) > Math.abs(dy)) {
+          closePanel();
+          return;
+        }
+        const panelEl = panelRef.current;
+        if (!panelEl) return;
+        panelEl.style.transition = "transform 180ms ease";
+        panelEl.style.transform = "translate3d(0, 0, 0)";
+        window.setTimeout(() => resetSwipeTransform(), 190);
+      }}
+    >
+      <SideBySideAssistant />
+    </aside>
+  ) : null;
+
+  const rootEl =
+    typeof document !== "undefined" ? document.getElementById("root") : null;
+  const mobilePanel =
+    isMobileViewport && panel && rootEl ? createPortal(panel, rootEl) : null;
+  const desktopPanel = !isMobileViewport ? panel : null;
+
   return (
     <div className="sxs-shell">
       {isMobileViewport && panelOpen ? (
@@ -124,65 +200,9 @@ function SideBySideLayoutInner({ children }: Props) {
         }
       >
         <div className="sxs-layout__main">{children}</div>
-        {panelMounted ? (
-          <aside
-            ref={panelRef}
-            className={
-              (panelOpen
-                ? "sxs-layout__panel sxs-layout__panel--open"
-                : "sxs-layout__panel sxs-layout__panel--closing") +
-              (isMobileViewport ? " sxs-layout__panel--mobile" : "")
-            }
-            aria-label="Personal Assistant"
-            aria-hidden={!panelOpen}
-            onTouchStart={(event) => {
-              if (!isMobileViewport || !panelOpen) return;
-              const touch = event.touches[0];
-              if (!touch) return;
-              swipeStartXRef.current = touch.clientX;
-              swipeStartYRef.current = touch.clientY;
-            }}
-            onTouchMove={(event) => {
-              if (!isMobileViewport || !panelOpen) return;
-              const panel = panelRef.current;
-              const startX = swipeStartXRef.current;
-              const startY = swipeStartYRef.current;
-              const touch = event.touches[0];
-              if (!panel || startX === null || startY === null || !touch) return;
-              const dx = touch.clientX - startX;
-              const dy = touch.clientY - startY;
-              if (dx <= 0 || Math.abs(dx) < Math.abs(dy)) return;
-              panel.style.transition = "none";
-              panel.style.transform = `translate3d(${Math.min(dx, 140)}px, 0, 0)`;
-            }}
-            onTouchEnd={(event) => {
-              if (!isMobileViewport || !panelOpen) return;
-              const startX = swipeStartXRef.current;
-              const startY = swipeStartYRef.current;
-              const touch = event.changedTouches[0];
-              swipeStartXRef.current = null;
-              swipeStartYRef.current = null;
-              if (startX === null || startY === null || !touch) {
-                resetSwipeTransform();
-                return;
-              }
-              const dx = touch.clientX - startX;
-              const dy = touch.clientY - startY;
-              if (dx > 88 && Math.abs(dx) > Math.abs(dy)) {
-                closePanel();
-                return;
-              }
-              const panel = panelRef.current;
-              if (!panel) return;
-              panel.style.transition = "transform 180ms ease";
-              panel.style.transform = "translate3d(0, 0, 0)";
-              window.setTimeout(() => resetSwipeTransform(), 190);
-            }}
-          >
-            <SideBySideAssistant />
-          </aside>
-        ) : null}
+        {desktopPanel}
       </div>
+      {mobilePanel}
       {fabVisible ? (
         <button
           type="button"
