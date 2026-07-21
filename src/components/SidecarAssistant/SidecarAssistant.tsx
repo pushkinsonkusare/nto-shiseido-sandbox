@@ -2677,6 +2677,14 @@ export function SidecarAssistant({
               <span className="sidecar-assistant__context-island-title">
                 {contextProduct.title}
               </span>
+              <button
+                type="button"
+                className="sidecar-assistant__context-island-view"
+                aria-label={`View ${contextProduct.title}`}
+                onClick={() => renderPdpCard(contextProduct.slug)}
+              >
+                <ChevronRightIcon width={16} height={16} aria-hidden="true" />
+              </button>
             </div>
           ) : (
             <span />

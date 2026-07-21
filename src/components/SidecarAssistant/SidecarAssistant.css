@@ -174,18 +174,24 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex: 1 1 auto;
+  padding: 4px 6px 4px 4px;
+  background: #f7f7f7;
+  border: 1px solid #e0e0e0;
+  border-radius: 999px;
 }
 
 .sidecar-assistant__context-island-thumb {
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 999px;
   background: #f2f2f2;
 }
 
 .sidecar-assistant__context-island-title {
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 12px;
   line-height: 16px;
@@ -193,6 +199,29 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sidecar-assistant__context-island-view {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin-left: 2px;
+  padding: 0;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidecar-assistant__context-island-view:hover {
+  background: #ececec;
+  color: #17171b;
 }
 
 .sidecar-assistant__context-island-cart {
