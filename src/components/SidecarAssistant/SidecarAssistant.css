@@ -43,16 +43,19 @@
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant--docked {
-  right: auto !important;
-  left: auto !important;
+  position: absolute !important;
+  inset: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
   width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  top: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  min-height: 0 !important;
 }
 
 .sidecar-assistant,
@@ -1182,4 +1185,25 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__fab {
   html[data-demo-viewport="mobile"] .sidecar-assistant__product-card {
     width: 200px;
   }
+}
+
+/* Demo phone frame has no device home-indicator inset — keep the composer
+ * flush to the frame / simulated keyboard instead of reserving safe-area. */
+html[data-demo-viewport="mobile"] .sidecar-assistant--docked .sidecar-assistant__chat-area {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+}
+
+html[data-demo-viewport="mobile"] .sidecar-assistant--docked .sidecar-assistant__input-bar {
+  margin-top: auto;
+  padding: 12px;
+  flex: 0 0 auto;
+}
+
+html[data-demo-viewport="mobile"]
+  .sidecar-assistant--docked.sidecar-assistant--keyboard-open
+  .sidecar-assistant__input-bar {
+  margin-top: 0;
+  padding: 10px 12px;
+  box-shadow: none;
 }

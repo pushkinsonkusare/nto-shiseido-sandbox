@@ -1,0 +1,157 @@
+/* Demo iOS keyboard — only used inside the 402×874 mobile frame. */
+
+.sim-ios-keyboard {
+  flex: 0 0 auto;
+  width: 100%;
+  background: #d1d3d9;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  user-select: none;
+  -webkit-user-select: none;
+  animation: sim-ios-keyboard-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sim-ios-keyboard-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sim-ios-keyboard {
+    animation: none;
+  }
+}
+
+.sim-ios-keyboard__accessory {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 36px;
+  padding: 0 10px;
+  background: #d8dade;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sim-ios-keyboard__accessory-spacer {
+  flex: 1 1 auto;
+}
+
+.sim-ios-keyboard__dismiss {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #007aff;
+  width: 36px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.sim-ios-keyboard__dismiss:hover,
+.sim-ios-keyboard__dismiss:focus-visible {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.sim-ios-keyboard__suggestions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  height: 36px;
+  background: #d8dade;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sim-ios-keyboard__suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    sans-serif;
+  font-size: 16px;
+  color: #1c1c1e;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sim-ios-keyboard__suggestion:last-child {
+  border-right: none;
+}
+
+.sim-ios-keyboard__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 3px 10px;
+}
+
+.sim-ios-keyboard__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 3px;
+}
+
+.sim-ios-keyboard__row--inset {
+  padding: 0 18px;
+}
+
+.sim-ios-keyboard__key {
+  appearance: none;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #000000;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+    sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: lowercase;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 60ms ease;
+}
+
+.sim-ios-keyboard__key:active {
+  background: #e5e5ea;
+}
+
+.sim-ios-keyboard__key--wide {
+  flex: 1.35 1 0;
+}
+
+.sim-ios-keyboard__key--modifier {
+  background: #abb0ba;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.sim-ios-keyboard__key--modifier:active {
+  background: #ffffff;
+}
+
+.sim-ios-keyboard__key--space {
+  flex: 4.5 1 0;
+  font-size: 15px;
+  text-transform: none;
+}
+
+.sim-ios-keyboard__key--return {
+  flex: 1.6 1 0;
+  font-size: 13px;
+}

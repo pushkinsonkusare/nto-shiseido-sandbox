@@ -552,7 +552,8 @@ html[data-demo-viewport="mobile"] {
 
 /* Keep the overlay flush to `#root` (the phone frame). Absolute + inset
  * pins it to the non-scrolling frame; storefront scroll lives on
- * `.sxs-shell` instead. */
+ * `.sxs-shell` instead. Force an explicit 100% height so the docked
+ * assistant can fill the chrome with no white gap under the composer. */
 html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
   position: absolute !important;
   inset: 0 !important;
@@ -563,9 +564,13 @@ html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
   width: 100% !important;
   height: 100% !important;
   max-height: 100% !important;
+  min-height: 100% !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+  background: #ffffff !important;
+  /* Kill the desktop sticky-panel height calc (100vh - header). */
+  align-self: stretch !important;
 }
 
 .sxs-layout__panel--mobile::before {

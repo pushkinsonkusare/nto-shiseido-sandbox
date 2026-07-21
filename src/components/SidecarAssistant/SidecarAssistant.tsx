@@ -30,6 +30,7 @@ import {
   type AgentCompareRow,
   type AgentPLPProduct,
 } from "./components";
+import { SimulatedIOSKeyboard } from "./components/SimulatedIOSKeyboard";
 import {
   LANDING_NBA_SUCCESS_THRESHOLDS,
   ORDER_FOLLOWUP_NBAS,
@@ -591,8 +592,13 @@ export function SidecarAssistant({
 }: SidecarAssistantProps = {}) {
   const { products, heroProduct, getProductBySlug, getRelatedProducts, orderHistory } =
     useCatalog();
-  const { accordionRecommendations, contextIsland } = useAgentMode();
+  const { accordionRecommendations, contextIsland, viewportMode } = useAgentMode();
   const [isOpen, setIsOpen] = useState(false);
+  const [simKeyboardOpen, setSimKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    if (viewportMode !== "mobile") setSimKeyboardOpen(false);
+  }, [viewportMode]);
 
   // When docked, the surrounding layout owns open/close; mirror it into the
   // internal `isOpen` so all the open-driven effects (welcome seeding, etc.)
@@ -600,6 +606,7 @@ export function SidecarAssistant({
   useEffect(() => {
     if (!docked) return;
     setIsOpen(open);
+    if (!open) setSimKeyboardOpen(false);
   }, [docked, open]);
   const [hasUserOpenedFab, setHasUserOpenedFab] = useState(false);
   const [isNudging, setIsNudging] = useState(false);
@@ -2362,6 +2369,28 @@ export function SidecarAssistant({
     dispatchShopperMessage(value);
   };
 
+  const simulateMobileKeyboard = docked && viewportMode === "mobile";
+
+  const insertSimulatedKey = (text: string) => {
+    setInputValue((current) => `${current}${text}`);
+  };
+
+  const backspaceSimulatedKey = () => {
+    setInputValue((current) => current.slice(0, -1));
+  };
+
+  const submitFromSimulatedKeyboard = () => {
+    const value = inputValue.trim();
+    if (!value) return;
+    setInputValue("");
+    dispatchShopperMessage(value);
+  };
+
+  const dismissSimulatedKeyboard = () => {
+    setSimKeyboardOpen(false);
+    inputRef.current?.blur();
+  };
+
   /* ---------- render ---------- */
 
   const renderedMessages = useMemo(
@@ -2808,6 +2837,18 @@ export function SidecarAssistant({
             placeholder={inputPlaceholder}
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
+            onFocus={() => {
+              if (simulateMobileKeyboard) setSimKeyboardOpen(true);
+            }}
+            onBlur={() => {
+              if (!simulateMobileKeyboard) return;
+              /* Defer so keyboard mousedown preventDefault can win first. */
+              window.setTimeout(() => {
+                if (document.activeElement === inputRef.current) return;
+                setSimKeyboardOpen(false);
+              }, 0);
+            }}
+            inputMode={simulateMobileKeyboard ? "none" : undefined}
             aria-label="Ask the personal assistant"
           />
           <button
@@ -2820,6 +2861,14 @@ export function SidecarAssistant({
           </button>
         </div>
       </form>
+      {simulateMobileKeyboard && simKeyboardOpen ? (
+        <SimulatedIOSKeyboard
+          onInsert={insertSimulatedKey}
+          onBackspace={backspaceSimulatedKey}
+          onReturn={submitFromSimulatedKeyboard}
+          onDismiss={dismissSimulatedKeyboard}
+        />
+      ) : null}
     </>
   );
 
@@ -2830,7 +2879,10 @@ export function SidecarAssistant({
     return (
       <aside
         ref={panelRef}
-        className="sidecar-assistant sidecar-assistant--docked"
+        className={
+          "sidecar-assistant sidecar-assistant--docked" +
+          (simKeyboardOpen ? " sidecar-assistant--keyboard-open" : "")
+        }
         role="complementary"
         aria-label="Personal Assistant"
       >
