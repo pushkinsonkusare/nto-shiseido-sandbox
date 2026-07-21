@@ -144,56 +144,122 @@ function sanitizeAgentMessage(message: ChatMessage): ChatMessage {
 }
 
 /**
- * Follow-up pills shown after a contextual FAQ answer: the product's other
- * FAQs (dropping the one just asked so we never repeat it) plus a commit
- * ("Add to cart") and a lateral ("Show similar") action, so there's always a
- * next step.
+ * Ordered pool of product-FAQ pills for a single selected product. The
+ * phrasings are chosen so `resolveProductFaq` routes each to a
+ * product-grounded answer (e.g. "layer" -> layering copy, "texture" ->
+ * texture copy). Category-specific questions lead, followed by a
+ * universal tail; the list is de-duplicated so a category lead that also
+ * appears in the tail is only listed once. The follow-up builder reveals
+ * these progressively, dropping any the shopper has already asked, so
+ * the suggestion row keeps offering genuinely new questions instead of
+ * recycling answered ones.
  */
-function buildContextualFollowupLabels(
-  product: CatalogProduct,
-  askedLabel: string,
-): string[] {
-  const allFaqs = [...buildContextualFaqs(product), INGREDIENTS_FAQ_LABEL];
-  const remaining = allFaqs.filter((label) => label !== askedLabel);
-  return [...remaining, "Add to cart", "Show similar"];
-}
-
-/**
- * Pick the two most relevant FAQ pills for a single selected product. The
- * phrasings are chosen so `resolveProductFaq` routes each to a product-grounded
- * answer (e.g. "layer" -> layering copy, "texture" -> texture copy). The
- * always-on "What are the ingredients?" pill is appended separately by the
- * caller, so this returns only the two product-tuned questions.
- */
-function buildContextualFaqs(product: CatalogProduct): [string, string] {
+function buildContextualFaqPool(product: CatalogProduct): string[] {
   const category = product.category.toLowerCase();
   const tags = product.useCaseTags.map((tag) => tag.toLowerCase());
   const isSunCare =
     /sunscreen|sun\s*care/.test(category) ||
     tags.some((tag) => tag === "spf" || tag.includes("sun"));
 
+  let lead: string[];
   if (product.isBundle) {
-    return ["What's included?", "What skin types is this for?"];
+    lead = [
+      "What's included?",
+      "What skin types is this for?",
+      "How do I use this?",
+      "What does this target?",
+    ];
+  } else if (isSunCare) {
+    lead = [
+      "What SPF is it?",
+      "Is this waterproof?",
+      "Can I layer this under makeup?",
+      "What skin types is this for?",
+    ];
+  } else if (/serum|treatment|essence|booster/.test(category)) {
+    lead = [
+      "What does this target?",
+      "Is this good for sensitive skin?",
+      "How do I layer this with other products?",
+      "How long until I see results?",
+    ];
+  } else if (/moisturizer|cream|emulsion|lotion/.test(category)) {
+    lead = [
+      "What's the texture like?",
+      "What skin types is this for?",
+      "Can I layer this under makeup?",
+    ];
+  } else if (/cleanser|softener|toner|foam/.test(category)) {
+    lead = [
+      "How do I use this?",
+      "What skin types is this for?",
+      "Is this good for sensitive skin?",
+    ];
+  } else if (/eye|lip/.test(category)) {
+    lead = [
+      "What does this target?",
+      "How do I layer this with other products?",
+      "How do I use this?",
+    ];
+  } else if (/mask/.test(category)) {
+    lead = [
+      "What's the texture like?",
+      "What does this target?",
+      "How do I use this?",
+    ];
+  } else {
+    lead = ["Is this good for sensitive skin?", "What does this target?"];
   }
-  if (isSunCare) {
-    return ["Is this waterproof?", "Can I layer this under makeup?"];
+
+  // Universal questions every skincare product can answer. Appended after
+  // the category lead so the pool is deep enough that a shopper can work
+  // through several turns before it's exhausted.
+  const universalTail = [
+    "What does this target?",
+    "What skin types is this for?",
+    "Is this good for sensitive skin?",
+    "How do I use this?",
+    "What's the texture like?",
+    "How do I layer this with other products?",
+    "How long until I see results?",
+    INGREDIENTS_FAQ_LABEL,
+  ];
+
+  const seen = new Set<string>();
+  const pool: string[] = [];
+  for (const label of [...lead, ...universalTail]) {
+    if (seen.has(label)) continue;
+    seen.add(label);
+    pool.push(label);
   }
-  if (/serum|treatment|essence|booster/.test(category)) {
-    return ["Is this good for sensitive skin?", "How do I layer this with other products?"];
-  }
-  if (/moisturizer|cream|emulsion|lotion/.test(category)) {
-    return ["What's the texture like?", "What skin types is this for?"];
-  }
-  if (/cleanser|softener|toner|foam/.test(category)) {
-    return ["How do I use this?", "What skin types is this for?"];
-  }
-  if (/eye|lip/.test(category)) {
-    return ["What does this target?", "How do I layer this with other products?"];
-  }
-  if (/mask/.test(category)) {
-    return ["What's the texture like?", "What does this target?"];
-  }
-  return ["Is this good for sensitive skin?", "What does this target?"];
+  return pool;
+}
+
+/**
+ * Follow-up pills shown after a contextual FAQ answer: the product's
+ * still-unanswered FAQs (so we never repeat one the shopper already
+ * asked), capped to a few, plus a commit ("Add to cart") and a lateral
+ * ("Show similar") action. Once every FAQ has been answered the row shows
+ * only the two actions rather than recycling stale questions.
+ */
+function buildContextualFollowupLabels(
+  product: CatalogProduct,
+  answered: ReadonlySet<string>,
+): string[] {
+  const remaining = buildContextualFaqPool(product).filter(
+    (label) => !answered.has(label),
+  );
+  return [...remaining.slice(0, 3), "Add to cart", "Show similar"];
+}
+
+/**
+ * The two most relevant FAQ pills for the selection tray: the first two
+ * entries of the product's FAQ pool. The always-on "What are the
+ * ingredients?" pill is appended separately by the caller.
+ */
+function buildContextualFaqs(product: CatalogProduct): [string, string] {
+  const pool = buildContextualFaqPool(product);
+  return [pool[0], pool[1] ?? INGREDIENTS_FAQ_LABEL];
 }
 const TALL_CARD_VIEWPORT_RATIO = 0.92;
 const TALL_CARD_ANCHOR_RATIO = 0.6;
@@ -618,6 +684,10 @@ export function SidecarAssistant({
   // Slug of the product the most recent context separator announced, so we
   // only drop a fresh divider when the FAQ context switches products.
   const lastSeparatorSlugRef = useRef<string | null>(null);
+  // Which contextual FAQ labels the shopper has already asked, keyed by
+  // product slug, so the follow-up suggestion row keeps offering genuinely
+  // new questions instead of recycling answered ones.
+  const answeredFaqsBySlugRef = useRef<Map<string, Set<string>>>(new Map());
   const welcomeNbasMessageIdRef = useRef<string | null>(null);
   const firstShopperTurnHandledRef = useRef(false);
   const previousSelectedCountRef = useRef(0);
@@ -1792,6 +1862,12 @@ export function SidecarAssistant({
           });
           lastSeparatorSlugRef.current = firstProduct.slug;
         }
+        // Record the asked FAQ so the follow-up row never re-offers it.
+        const answered =
+          answeredFaqsBySlugRef.current.get(firstProduct.slug) ??
+          new Set<string>();
+        answered.add(label);
+        answeredFaqsBySlugRef.current.set(firstProduct.slug, answered);
         appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
         const loaderId = nextId("loader");
         appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
@@ -1803,7 +1879,9 @@ export function SidecarAssistant({
             body: resolveProductFaq(firstProduct, label),
           });
           // Offer an in-chat follow-up row so the shopper can keep exploring
-          // this product (remaining FAQs) or move forward (add / show similar).
+          // this product (still-unanswered FAQs) or move forward (add / show
+          // similar). Answered questions are dropped so the row keeps
+          // surfacing new ones until the pool is exhausted.
           appendMessage({
             id: nextId("nbas"),
             kind: "agent_nbas",
@@ -1811,7 +1889,7 @@ export function SidecarAssistant({
             productSlug: firstProduct.slug,
             regenerateButton: false,
             nbas: buildNbaItems(
-              buildContextualFollowupLabels(firstProduct, label),
+              buildContextualFollowupLabels(firstProduct, answered),
               "nba-followup",
             ),
           });
@@ -2496,6 +2574,7 @@ export function SidecarAssistant({
     welcomeNbasMessageIdRef.current = null;
     firstShopperTurnHandledRef.current = false;
     lastSeparatorSlugRef.current = null;
+    answeredFaqsBySlugRef.current.clear();
     setWelcomeRefreshCount(0);
     setSelectedSlugs([]);
     // Emptying the list lets the welcome-seed effect re-run and restore the
