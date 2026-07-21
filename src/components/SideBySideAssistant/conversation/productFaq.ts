@@ -32,18 +32,69 @@ function joinSentences(parts: string[]): string {
 }
 
 /**
+ * Detect a marketing-hype sentence that leads with an imperative "brand
+ * voice" opener or a superlative flourish rather than describing what the
+ * product actually does. These read as slogans ("See and feel ultimate
+ * resilience like you've never experienced before.") and make weak FAQ
+ * answers, so `overviewLead` skips them in favour of the next substantive
+ * sentence.
+ */
+function isMarketingHype(sentence: string): boolean {
+  return (
+    /^(see|feel|discover|experience|imagine|reveal|unlock|meet|introducing|welcome|say\s+hello|get\s+ready)\b/i.test(
+      sentence,
+    ) ||
+    /\b(like you'?ve never|ever before|the future of|redefines?|reimagines?)\b/i.test(
+      sentence,
+    ) ||
+    /!$/.test(sentence)
+  );
+}
+
+/**
  * Pull the first substantive sentence from the product `overview`, used as a
- * grounded fallback in place of a bare `shortDescription`. Returns null when
- * the lead is a terse label (e.g. "Revitalizing eye cream") rather than a real
- * sentence, so callers can deflect gracefully instead.
+ * grounded fallback in place of a bare `shortDescription`. Skips a leading
+ * marketing-hype slogan when a real descriptive sentence follows. Returns
+ * null when the lead is a terse label (e.g. "Revitalizing eye cream")
+ * rather than a real sentence, so callers can deflect gracefully instead.
  */
 function overviewLead(product: CatalogProduct): string | null {
   const raw = product.overview?.trim();
   if (!raw) return null;
   const firstLine = raw.split(/\n+/).map((s) => s.trim()).find(Boolean);
   if (!firstLine) return null;
-  const sentence = firstLine.split(/(?<=[.!?])\s+/)[0]?.trim();
-  return sentence && sentence.split(/\s+/).length >= 6 ? sentence : null;
+  const sentences = firstLine
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Prefer the first substantive, non-hype sentence.
+  const substantive = sentences.find(
+    (s) => s.split(/\s+/).length >= 6 && !isMarketingHype(s),
+  );
+  if (substantive) return substantive;
+  // Otherwise fall back to the first long-enough sentence (even if hype),
+  // so a product whose whole overview is a single slogan still answers.
+  const first = sentences[0];
+  return first && first.split(/\s+/).length >= 6 ? first : null;
+}
+
+/**
+ * Feature blocks (sourced from `keyBenefits`) that describe what the
+ * product does, excluding pure formulation claims (paraben-free,
+ * dermatologist-tested, etc.) and bare suitability lines that don't
+ * answer "what does it do / target". Used to ground benefit / target
+ * answers in real copy before any marketing overview.
+ */
+function benefitBlocks(product: CatalogProduct): string[] {
+  return product.featureBlocks
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .filter(
+      (block) =>
+        !/^(paraben|mineral[-\s]?oil|fragrance[-\s]?free|alcohol[-\s]?free|allergy[-\s]?tested|irritation[-\s]?tested|dermatolog|ophthalmolog|non[-\s]?comedogenic|clinically|tested by|suitable for|good for|free of|refill|\d)/i.test(
+          block,
+        ),
+    );
 }
 
 function findFeatureBlockMatching(
@@ -204,15 +255,32 @@ function resolutionAnswer(product: CatalogProduct): string {
   if (targets) {
     return `The ${product.title} targets ${joinNatural(splitValues(specValue(targets)))}.`;
   }
+  // Ground the answer in the product's real benefit bullets (keyBenefits)
+  // before any marketing overview copy. Lead with a benefit-worded block
+  // when one exists, otherwise summarise the top two benefit bullets.
   const block = findFeatureBlockMatching(product, [
     /\bbenefit\b/i,
     /\bhelps?\b/i,
     /\btargets?\b/i,
     /\bimproves?\b/i,
     /\breduces?\b/i,
+    /\bvisibly\b/i,
+    /\bboosts?\b/i,
+    /\bdefends?\b/i,
+    /\bstrengthens?\b/i,
+    /\bhydrat\w*/i,
+    /\bbrighten\w*/i,
+    /\bfirm\w*/i,
+    /\bsmooth\w*/i,
   ]);
   if (block) {
     return block;
+  }
+  const benefits = benefitBlocks(product);
+  if (benefits.length > 0) {
+    return joinSentences(
+      benefits.slice(0, 2).map((b) => (/[.!?]$/.test(b) ? b : `${b}.`)),
+    );
   }
   return (
     overviewLead(product) ??
