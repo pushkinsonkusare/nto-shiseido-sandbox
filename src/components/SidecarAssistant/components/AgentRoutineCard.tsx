@@ -1,7 +1,9 @@
+import { useState } from "react";
 import {
   AgentProductCarousel,
   type AgentCarouselProduct,
 } from "./AgentProductCarousel";
+import { ChevronDownIcon, ChevronUpIcon } from "../../icons/StorefrontIcons";
 import "./AgentMessageCards.css";
 
 export type AgentRoutineSection = {
@@ -32,6 +34,11 @@ export type AgentRoutineCardProps = {
   onAddToCart?: (id: string) => void;
   /** When true, unselected cards' checkboxes are disabled (selection cap hit). */
   selectionLimitReached?: boolean;
+  /**
+   * When true (default), sections behave as a single-open accordion. When
+   * false, every section is expanded and headers are static (no toggle).
+   */
+  accordion?: boolean;
   /** Optional class name appended to the root element. */
   className?: string;
 };
@@ -52,8 +59,11 @@ export function AgentRoutineCard({
   onToggleSelect,
   onAddToCart,
   selectionLimitReached,
+  accordion = true,
   className,
 }: AgentRoutineCardProps) {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+
   if (sections.length === 0) return null;
 
   const rootClass = "agent-routine__card" + (className ? " " + className : "");
@@ -62,23 +72,55 @@ export function AgentRoutineCard({
     <article className={rootClass} data-component="agent-routine-card">
       <p className="agent-routine__acknowledgement">{acknowledgement}</p>
 
-      {sections.map((section, index) => (
-        <section key={section.categoryTitle} className="agent-routine__section">
-          <header className="agent-routine__section-header">
-            <h3 className="agent-routine__step">{section.stepLabel}</h3>
-          </header>
-          <p className="agent-routine__description">{section.description}</p>
-          <AgentProductCarousel
-            products={section.products}
-            showMoreCard={Boolean(section.showMoreCard)}
-            onShowMore={() => onShowMore?.(index)}
-            selectedIds={selectedIds}
-            onToggleSelect={onToggleSelect}
-            onAddToCart={onAddToCart}
-            selectionLimitReached={selectionLimitReached}
-          />
-        </section>
-      ))}
+      {sections.map((section, index) => {
+        const isOpen = accordion ? openIndex === index : true;
+        return (
+          <section
+            key={section.categoryTitle}
+            className="agent-routine__section"
+          >
+            <header className="agent-routine__section-header">
+              {accordion ? (
+                <button
+                  type="button"
+                  className="agent-routine__section-toggle"
+                  aria-expanded={isOpen}
+                  onClick={() =>
+                    setOpenIndex((cur) => (cur === index ? null : index))
+                  }
+                >
+                  <h3 className="agent-routine__step">{section.stepLabel}</h3>
+                  <span className="agent-routine__chevron">
+                    {isOpen ? (
+                      <ChevronUpIcon width={18} height={18} />
+                    ) : (
+                      <ChevronDownIcon width={18} height={18} />
+                    )}
+                  </span>
+                </button>
+              ) : (
+                <h3 className="agent-routine__step">{section.stepLabel}</h3>
+              )}
+            </header>
+            {isOpen ? (
+              <>
+                <p className="agent-routine__description">
+                  {section.description}
+                </p>
+                <AgentProductCarousel
+                  products={section.products}
+                  showMoreCard={Boolean(section.showMoreCard)}
+                  onShowMore={() => onShowMore?.(index)}
+                  selectedIds={selectedIds}
+                  onToggleSelect={onToggleSelect}
+                  onAddToCart={onAddToCart}
+                  selectionLimitReached={selectionLimitReached}
+                />
+              </>
+            ) : null}
+          </section>
+        );
+      })}
     </article>
   );
 }

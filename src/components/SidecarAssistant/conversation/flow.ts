@@ -2071,7 +2071,8 @@ export function buildPlpIntro(query: string, intent: Intent, count: number): str
     return `These are our best-selling ${noun}, the ones shoppers keep coming back to:`;
   }
   if (category) {
-    return `For ${noun}, these are the ones I'd reach for first. Here's what stands out:`;
+    const lead = noun.charAt(0).toUpperCase() + noun.slice(1);
+    return `${lead} are worth getting right, so these are the ones I'd reach for first. Here's what stands out:`;
   }
 
   return `Good question — here's what I'd start with for "${query.trim()}":`;

@@ -19,6 +19,12 @@ type AgentModeContextValue = {
   setMode: (mode: AgentMode) => void;
   viewportMode: DemoViewportMode;
   setViewportMode: (mode: DemoViewportMode) => void;
+  /** When true, routine category recommendations render as a single-open accordion. */
+  accordionRecommendations: boolean;
+  setAccordionRecommendations: (enabled: boolean) => void;
+  /** Context island feature toggle (behavior TBD). */
+  contextIsland: boolean;
+  setContextIsland: (enabled: boolean) => void;
 };
 
 const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefined);
@@ -29,6 +35,8 @@ const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefi
  * session. */
 const DEFAULT_AGENT_MODE: AgentMode = "assistant-only";
 const DEFAULT_VIEWPORT_MODE: DemoViewportMode = "desktop";
+const DEFAULT_ACCORDION_RECOMMENDATIONS = true;
+const DEFAULT_CONTEXT_ISLAND = false;
 
 export function AgentModeProvider({ children }: { children: ReactNode }) {
   /* No localStorage init for either piece of state: every refresh
@@ -36,10 +44,23 @@ export function AgentModeProvider({ children }: { children: ReactNode }) {
    * still work normally; they just don't survive a reload. */
   const [mode, setMode] = useState<AgentMode>(DEFAULT_AGENT_MODE);
   const [viewportMode, setViewportMode] = useState<DemoViewportMode>(DEFAULT_VIEWPORT_MODE);
+  const [accordionRecommendations, setAccordionRecommendations] = useState<boolean>(
+    DEFAULT_ACCORDION_RECOMMENDATIONS,
+  );
+  const [contextIsland, setContextIsland] = useState<boolean>(DEFAULT_CONTEXT_ISLAND);
 
   const value = useMemo(
-    () => ({ mode, setMode, viewportMode, setViewportMode }),
-    [mode, viewportMode],
+    () => ({
+      mode,
+      setMode,
+      viewportMode,
+      setViewportMode,
+      accordionRecommendations,
+      setAccordionRecommendations,
+      contextIsland,
+      setContextIsland,
+    }),
+    [mode, viewportMode, accordionRecommendations, contextIsland],
   );
 
   return <AgentModeContext.Provider value={value}>{children}</AgentModeContext.Provider>;

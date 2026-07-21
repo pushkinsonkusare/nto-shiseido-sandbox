@@ -27,7 +27,17 @@ export type ChatMessage =
   | AgentCompareMessage
   | AgentCartMessage
   | AgentOrderMessage
-  | AgentNbasMessage;
+  | AgentNbasMessage
+  | ContextSeparatorMessage;
+
+/** In-chat divider that announces the product a contextual FAQ thread is
+ * about. Rendered as a replacement for the context island when that feature
+ * is off; its product updates as the FAQ context changes. */
+export type ContextSeparatorMessage = {
+  id: string;
+  kind: "context_separator";
+  productSlug: string;
+};
 
 export type AgentSimpleMessage = {
   id: string;

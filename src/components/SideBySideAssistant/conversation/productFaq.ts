@@ -31,6 +31,21 @@ function joinSentences(parts: string[]): string {
     .join(" ");
 }
 
+/**
+ * Pull the first substantive sentence from the product `overview`, used as a
+ * grounded fallback in place of a bare `shortDescription`. Returns null when
+ * the lead is a terse label (e.g. "Revitalizing eye cream") rather than a real
+ * sentence, so callers can deflect gracefully instead.
+ */
+function overviewLead(product: CatalogProduct): string | null {
+  const raw = product.overview?.trim();
+  if (!raw) return null;
+  const firstLine = raw.split(/\n+/).map((s) => s.trim()).find(Boolean);
+  if (!firstLine) return null;
+  const sentence = firstLine.split(/(?<=[.!?])\s+/)[0]?.trim();
+  return sentence && sentence.split(/\s+/).length >= 6 ? sentence : null;
+}
+
 function findFeatureBlockMatching(
   product: CatalogProduct,
   patterns: RegExp[],
@@ -95,6 +110,27 @@ function specValue(row: string): string {
   return index >= 0 ? row.slice(index + 1).trim() : row.trim();
 }
 
+/** Lower-case the first character so a claim fragment can be dropped mid-sentence
+ *  after a lead-in (e.g. "is " + "Dermatologist-tested." -> "is dermatologist-tested."). */
+function lowerFirst(text: string): string {
+  return text ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+}
+
+/**
+ * Soften skincare jargon in a raw catalog claim so a shopper answer reads in
+ * plain language. Currently expands "non-comedogenic" with a parenthetical the
+ * first time it appears (unless the copy already explains it).
+ */
+function decodeSkinJargon(block: string): string {
+  if (/non[-\s]?comedogenic\s*\(/i.test(block)) return block;
+  let expanded = false;
+  return block.replace(/non[-\s]?comedogenic/i, (match) => {
+    if (expanded) return match;
+    expanded = true;
+    return `${match} (won't clog pores)`;
+  });
+}
+
 function inTheBoxAnswer(product: CatalogProduct): string {
   // `inTheBox` is empty at runtime for the skincare catalog, so we go
   // straight to a featureBlocks scan for "what's included" copy,
@@ -143,10 +179,10 @@ function specsAnswer(product: CatalogProduct): string {
   if (summary) {
     return `The ${product.title} at a glance — ${summary}.`;
   }
-  if (product.shortDescription) {
-    return product.shortDescription;
-  }
-  return `The ${product.title} is a ${product.category.toLowerCase()} product from ${product.brand}.`;
+  return (
+    overviewLead(product) ??
+    `The ${product.title} is a ${product.category.toLowerCase()} product from ${product.brand}.`
+  );
 }
 
 function travelAnswer(product: CatalogProduct): string {
@@ -178,9 +214,10 @@ function resolutionAnswer(product: CatalogProduct): string {
   if (block) {
     return block;
   }
-  return product.shortDescription
-    ? product.shortDescription
-    : `The ${product.title} is designed to deliver visible skincare results.`;
+  return (
+    overviewLead(product) ??
+    `The ${product.title} is designed to deliver visible skincare results — want the full product page?`
+  );
 }
 
 /* ============================================================
@@ -216,7 +253,12 @@ function waterproofAnswer(product: CatalogProduct): string {
     return `Yes — the ${product.title} suits all skin types, which makes it a safe pick for sensitive skin. If your skin reacts easily, patch-test first.`;
   }
   if (gentleBlock) {
-    return gentleBlock;
+    return joinSentences([
+      `It can be a good fit for sensitive skin — the ${product.title} is ${lowerFirst(
+        decodeSkinJargon(gentleBlock),
+      )}`,
+      "If your skin reacts easily, patch-test first.",
+    ]);
   }
   const skinTypeSpec = specByLabel(product, [/skin\s*type/i]);
   if (skinTypeSpec) {
@@ -391,9 +433,10 @@ function lowLightAnswer(product: CatalogProduct): string {
       splitValues(specValue(targets)),
     )}.`;
   }
-  return product.shortDescription
-    ? product.shortDescription
-    : `The ${product.title} is formulated to deliver visible results over time.`;
+  return (
+    overviewLead(product) ??
+    `The ${product.title} is formulated to deliver visible results over time.`
+  );
 }
 
 /**

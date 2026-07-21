@@ -449,9 +449,12 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
   const primaryImage = resolveImage(record.primaryImage) || gallery[0] || "";
   const tags = buildTags(record);
   const compareAtPrice = pseudoComparePrice(record.id, record.price);
+  const realBenefits = record.keyBenefits
+    .map((b) => b.trim())
+    .filter((b) => b && !/^n\/?a$/i.test(b));
   const featureBlocks =
-    record.keyBenefits.length > 0
-      ? record.keyBenefits
+    realBenefits.length > 0
+      ? realBenefits
       : record.overview
         ? record.overview.split(/\n+/).map((s) => s.trim()).filter(Boolean)
         : [];

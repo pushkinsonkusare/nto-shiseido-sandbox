@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCatalog } from "../../catalog/CatalogContext";
+import { useAgentMode } from "../AgentModeBar/AgentModeContext";
 import {
+  ChevronRightIcon,
   CloseIcon,
   EllipsisVerticalIcon,
   ExpandIcon,
   SaveIcon,
   SendHorizontalIcon,
+  ShoppingCartIcon,
   ShrinkIcon,
   SparkleIcon,
   Trash2Icon,
@@ -522,6 +525,7 @@ export function SidecarAssistant({
 }: SidecarAssistantProps = {}) {
   const { products, heroProduct, getProductBySlug, getRelatedProducts, orderHistory } =
     useCatalog();
+  const { accordionRecommendations, contextIsland } = useAgentMode();
   const [isOpen, setIsOpen] = useState(false);
 
   // When docked, the surrounding layout owns open/close; mirror it into the
@@ -539,6 +543,39 @@ export function SidecarAssistant({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
   const selectedSet = useMemo(() => new Set(selectedSlugs), [selectedSlugs]);
+
+  // Context island: item count from the latest cart card, and the product the
+  // conversation is currently scoped to (the primary selection).
+  const cartItemCount = useMemo(() => {
+    const cart = [...messages]
+      .reverse()
+      .find(
+        (m): m is Extract<ChatMessage, { kind: "agent_cart" }> =>
+          m.kind === "agent_cart",
+      );
+    return cart ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
+  }, [messages]);
+  const contextProduct = useMemo(() => {
+    // A live selection is the strongest signal for the product in context.
+    if (selectedSlugs.length > 0) {
+      return getProductBySlug(selectedSlugs[0]);
+    }
+    // Otherwise, during a product FAQ thread the selection is often cleared,
+    // but the current (single, pruned) NBA row is flagged contextual and
+    // carries the product it's about - use that so the island persists.
+    const latestNba = [...messages]
+      .reverse()
+      .find(
+        (m): m is Extract<ChatMessage, { kind: "agent_nbas" }> =>
+          m.kind === "agent_nbas",
+      );
+    if (latestNba?.contextual && latestNba.productSlug) {
+      return getProductBySlug(latestNba.productSlug);
+    }
+    return undefined;
+  }, [selectedSlugs, messages, getProductBySlug]);
+  const showContextIsland =
+    contextIsland && (cartItemCount > 0 || Boolean(contextProduct));
   // True once the shopper has asked a contextual FAQ for the current selection:
   // the follow-up pills then live in-chat, so the tray hides its own pill row.
   const [contextualThreadActive, setContextualThreadActive] = useState(false);
@@ -578,6 +615,9 @@ export function SidecarAssistant({
   const panelRef = useRef<HTMLElement>(null);
   const pendingTimeouts = useRef<number[]>([]);
   const messagesRef = useRef<ChatMessage[]>([]);
+  // Slug of the product the most recent context separator announced, so we
+  // only drop a fresh divider when the FAQ context switches products.
+  const lastSeparatorSlugRef = useRef<string | null>(null);
   const welcomeNbasMessageIdRef = useRef<string | null>(null);
   const firstShopperTurnHandledRef = useRef(false);
   const previousSelectedCountRef = useRef(0);
@@ -754,6 +794,26 @@ export function SidecarAssistant({
     },
     [appendMessage, getProductBySlug, removeMessage],
   );
+
+  // Surface the shopper's current cart as a fresh cart card at the bottom of
+  // the conversation. Used by the context-island cart button so a tap always
+  // brings the up-to-date cart back into view.
+  const showCartCard = useCallback(() => {
+    const list = messagesRef.current;
+    const previousCart = [...list]
+      .reverse()
+      .find((message): message is Extract<ChatMessage, { kind: "agent_cart" }> =>
+        message.kind === "agent_cart",
+      );
+    if (!previousCart) return;
+
+    removeMessage(previousCart.id);
+    appendMessage({
+      ...previousCart,
+      id: nextId("cart"),
+      acknowledgement: "Here's your cart.",
+    });
+  }, [appendMessage, removeMessage]);
 
   const renderRecentOrderSummary = useCallback(() => {
     const latestOrder = orderHistory[0];
@@ -1720,6 +1780,18 @@ export function SidecarAssistant({
       // single, product-grounded reply. The selection tray stays open for
       // follow-up questions.
       if (firstProduct && !CONTEXTUAL_ACTION_LABELS.has(label)) {
+        // When the context island is off, drop an in-chat context separator so
+        // the shopper always sees which product the FAQ thread is about. Only
+        // insert one when the product changes, so consecutive FAQs about the
+        // same product stay grouped under a single divider.
+        if (!contextIsland && lastSeparatorSlugRef.current !== firstProduct.slug) {
+          appendMessage({
+            id: nextId("sep"),
+            kind: "context_separator",
+            productSlug: firstProduct.slug,
+          });
+          lastSeparatorSlugRef.current = firstProduct.slug;
+        }
         appendMessage({ id: nextId("shopper"), kind: "shopper_text", text: label });
         const loaderId = nextId("loader");
         appendMessage({ id: loaderId, kind: "agent_loader", variant: "answering" });
@@ -1863,6 +1935,7 @@ export function SidecarAssistant({
       removeMessage,
       dispatchShopperMessage,
       handleAddToCart,
+      contextIsland,
     ],
   );
 
@@ -2250,6 +2323,7 @@ export function SidecarAssistant({
                 onToggleSelect={handleToggleSelect}
                 onAddToCart={(slug) => handleAddToCart(slug, 1)}
                 selectionLimitReached={selectedSet.size >= MAX_SELECTED_PRODUCTS}
+                accordion={accordionRecommendations}
               />
             );
           case "agent_pdp":
@@ -2332,6 +2406,37 @@ export function SidecarAssistant({
                 onRegenerate={() => handleNbaRegenerate(message.id)}
               />
             );
+          case "context_separator": {
+            const product = getProductBySlug(message.productSlug);
+            if (!product) return null;
+            return (
+              <div
+                key={message.id}
+                className="sidecar-assistant__context-separator"
+              >
+                <span className="sidecar-assistant__context-separator-line" />
+                <div className="sidecar-assistant__context-separator-chip">
+                  <img
+                    className="sidecar-assistant__context-separator-thumb"
+                    src={product.imageUrl}
+                    alt={product.imageAlt}
+                  />
+                  <span className="sidecar-assistant__context-separator-title">
+                    {product.title}
+                  </span>
+                  <button
+                    type="button"
+                    className="sidecar-assistant__context-separator-action"
+                    aria-label={`More about ${product.title}`}
+                    onClick={() => handleProductSelect(message.productSlug)}
+                  >
+                    <ChevronRightIcon width={16} height={16} />
+                  </button>
+                </div>
+                <span className="sidecar-assistant__context-separator-line" />
+              </div>
+            );
+          }
           default:
             return null;
         }
@@ -2349,8 +2454,11 @@ export function SidecarAssistant({
       handleRoutineShowMore,
       handleShowMore,
       handleToggleSelect,
+      handleProductSelect,
+      getProductBySlug,
       selectedSet,
       messages,
+      accordionRecommendations,
     ],
   );
 
@@ -2387,6 +2495,7 @@ export function SidecarAssistant({
     pendingTimeouts.current = [];
     welcomeNbasMessageIdRef.current = null;
     firstShopperTurnHandledRef.current = false;
+    lastSeparatorSlugRef.current = null;
     setWelcomeRefreshCount(0);
     setSelectedSlugs([]);
     // Emptying the list lets the welcome-seed effect re-run and restore the
@@ -2477,8 +2586,55 @@ export function SidecarAssistant({
         </div>
       </header>
 
-      <div className="sidecar-assistant__chat" ref={chatRef}>
-        {renderedMessages}
+      {showContextIsland ? (
+        <div className="sidecar-assistant__context-island">
+          {contextProduct ? (
+            <div className="sidecar-assistant__context-island-product">
+              <img
+                className="sidecar-assistant__context-island-thumb"
+                src={contextProduct.imageUrl}
+                alt={contextProduct.imageAlt}
+              />
+              <span className="sidecar-assistant__context-island-title">
+                {contextProduct.title}
+              </span>
+            </div>
+          ) : (
+            <span />
+          )}
+          {cartItemCount > 0 ? (
+            <button
+              type="button"
+              className="sidecar-assistant__context-island-cart"
+              aria-label={`Cart: ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}`}
+              onClick={showCartCard}
+            >
+              <ShoppingCartIcon width={20} height={20} />
+              <span className="sidecar-assistant__context-island-badge">
+                {cartItemCount}
+              </span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div className="sidecar-assistant__chat-area">
+        <div className="sidecar-assistant__chat" ref={chatRef}>
+          {renderedMessages}
+        </div>
+        {!contextIsland && cartItemCount > 0 ? (
+          <button
+            type="button"
+            className="sidecar-assistant__cart-fab sidecar-assistant__context-island-cart"
+            aria-label={`Cart: ${cartItemCount} item${cartItemCount === 1 ? "" : "s"}`}
+            onClick={showCartCard}
+          >
+            <ShoppingCartIcon width={20} height={20} />
+            <span className="sidecar-assistant__context-island-badge">
+              {cartItemCount}
+            </span>
+          </button>
+        ) : null}
       </div>
 
       <form className="sidecar-assistant__input-bar" onSubmit={handleSubmit}>
@@ -2536,7 +2692,10 @@ export function SidecarAssistant({
               <AgentNBAs
                 nbas={contextualNbas}
                 regenerateButton={false}
-                onSelect={(nba) => handleContextualPill(nba.label)}
+                onSelect={(nba) => {
+                  handleContextualPill(nba.label);
+                  setSelectedSlugs([]);
+                }}
               />
             )}
           </div>

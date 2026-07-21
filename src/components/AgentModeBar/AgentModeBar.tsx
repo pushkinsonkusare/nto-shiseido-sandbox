@@ -12,7 +12,16 @@ const DEMO_THEMES: { id: DemoTheme; label: string }[] = [
 ];
 
 export function AgentModeBar() {
-  const { mode, setMode, viewportMode, setViewportMode } = useAgentMode();
+  const {
+    mode,
+    setMode,
+    viewportMode,
+    setViewportMode,
+    accordionRecommendations,
+    setAccordionRecommendations,
+    contextIsland,
+    setContextIsland,
+  } = useAgentMode();
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [theme, setTheme] = useState<DemoTheme>(() => {
     if (typeof window === "undefined") return "sf-next";
@@ -164,6 +173,36 @@ export function AgentModeBar() {
                     {label}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="agent-mode-bar__section">
+              <h3 className="agent-mode-bar__section-title">Features</h3>
+              <div className="agent-mode-bar__feature-list" role="group" aria-label="Features">
+                <label className="agent-mode-bar__feature">
+                  <input
+                    type="checkbox"
+                    className="agent-mode-bar__feature-checkbox"
+                    checked={accordionRecommendations}
+                    onChange={(event) =>
+                      setAccordionRecommendations(event.target.checked)
+                    }
+                  />
+                  <span className="agent-mode-bar__feature-label">
+                    Accordion category recommendations
+                  </span>
+                </label>
+                <label className="agent-mode-bar__feature">
+                  <input
+                    type="checkbox"
+                    className="agent-mode-bar__feature-checkbox"
+                    checked={contextIsland}
+                    onChange={(event) => setContextIsland(event.target.checked)}
+                  />
+                  <span className="agent-mode-bar__feature-label">
+                    Context island
+                  </span>
+                </label>
               </div>
             </div>
           </div>
