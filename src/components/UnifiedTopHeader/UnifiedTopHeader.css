@@ -260,9 +260,9 @@ html[data-demo-viewport="mobile"] .unified-top-header__mobile-menu-trigger {
 }
 
 html[data-demo-viewport="mobile"] .unified-top-header__mobile-drawer {
-  --demo-mobile-frame-left: max((100vw - min(430px, 100vw)) / 2, 0px);
+  --demo-mobile-frame-left: max((100vw - min(402px, 100vw)) / 2, 0px);
   left: var(--demo-mobile-frame-left);
-  width: min(calc(min(430px, 100vw) * 0.84), 340px);
+  width: min(calc(min(402px, 100vw) * 0.84), 340px);
 }
 
 html[data-demo-viewport="mobile"]

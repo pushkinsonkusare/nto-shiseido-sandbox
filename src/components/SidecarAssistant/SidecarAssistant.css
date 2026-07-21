@@ -56,8 +56,8 @@ html[data-demo-viewport="mobile"] .sidecar-assistant--docked {
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant {
-  right: max((100vw - min(430px, 100vw)) / 2, 0px);
-  width: min(430px, 100vw);
+  right: max((100vw - min(402px, 100vw)) / 2, 0px);
+  width: min(402px, 100vw);
 }
 
 .sidecar-assistant__backdrop {
@@ -1039,7 +1039,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__input {
 }
 
 html[data-demo-viewport="mobile"] .sidecar-assistant__fab {
-  right: calc(max((100vw - min(430px, 100vw)) / 2, 0px) + 32px);
+  right: calc(max((100vw - min(402px, 100vw)) / 2, 0px) + 32px);
 }
 
 .sidecar-assistant__fab-icon {

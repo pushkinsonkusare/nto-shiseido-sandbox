@@ -188,7 +188,7 @@ body,
  * Every responsive rule in the immersive Wingman flow that needs to
  * fire BOTH on real narrow devices AND inside the simulated phone
  * frame (`html[data-demo-viewport="mobile"]` clamps `#root` to
- * 430px while the browser viewport stays at desktop width) keys off
+ * 402px while the browser viewport stays at desktop width) keys off
  * `@container viewport (max-width: ...)` instead of `@media`. The
  * container's inline-size matches `#root`'s rendered width, which
  * tracks the visible frame in both modes, so a single set of
@@ -256,12 +256,26 @@ body {
 
 html[data-demo-viewport="mobile"] body {
   background: #eceff3;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 0;
+  box-sizing: border-box;
 }
 
+/* Simulated iPhone 17 Pro frame: 402 x 874 CSS px (6.3" display, @3x
+ * logical resolution). A fixed height keeps the preview reading as a
+ * device instead of stretching to the full browser height; the app's
+ * content scrolls inside the frame. On shorter windows the frame caps to
+ * the available height so it never overflows the screen. */
 html[data-demo-viewport="mobile"] #root {
-  width: min(430px, 100%);
+  width: min(402px, 100%);
+  height: 874px;
+  max-height: calc(100vh - 48px);
   margin: 0 auto;
-  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #ffffff;
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.08),

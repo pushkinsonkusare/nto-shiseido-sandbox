@@ -504,7 +504,7 @@
 }
 
 html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
-  right: max((100vw - min(430px, 100vw)) / 2, 0px);
+  right: max((100vw - min(402px, 100vw)) / 2, 0px);
 }
 
 .sxs-layout__panel--mobile::before {
@@ -561,7 +561,7 @@ html[data-demo-viewport="mobile"] .sxs-layout__panel--mobile {
 }
 
 html[data-demo-viewport="mobile"] .sxs-layout--mobile .sxs-layout__fab {
-  right: calc(max((100vw - min(430px, 100vw)) / 2, 0px) + 32px);
+  right: calc(max((100vw - min(402px, 100vw)) / 2, 0px) + 32px);
 }
 
 .sxs-layout--mobile .sxs-layout__fab:hover,
