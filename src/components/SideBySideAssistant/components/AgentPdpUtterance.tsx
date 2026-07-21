@@ -7,7 +7,7 @@ import { ExternalLinkIcon } from "../../icons/StorefrontIcons";
  * Render the agent's free-text body as inline JSX, converting the small
  * subset of Markdown the LLM tends to emit into actual HTML. The
  * underlying `<p>` is a plain text node otherwise, so things like
- * `**DJI Neo Drone**` or numbered lists with embedded newlines would
+ * `**Ultimune Serum**` or numbered lists with embedded newlines would
  * read as raw asterisks and get collapsed onto a single line, which
  * looks like code, not prose.
  *

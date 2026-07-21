@@ -1,13 +1,13 @@
 /**
- * In-memory search engine for the DJI catalog (~250 products).
+ * In-memory search engine for the skincare catalog.
  *
  * Goals:
  *   1. Keyword search across name / category / brand / tags / description /
  *      compatible_with.
  *   2. Field weighting per the spec: name matches outrank tag matches
  *      outrank description matches.
- *   3. Synonym expansion ("vlog" -> "vlogging", "drone" -> "quadcopter",
- *      etc.) so casual queries surface the right gear.
+ *   3. Synonym expansion ("cream" -> "moisturizer", "spf" -> "sunscreen",
+ *      etc.) so casual queries surface the right products.
  *   4. Fuzzy matching via Levenshtein distance (<= 2) to tolerate typos.
  *   5. Search suggestions: top-5 product names + top-3 categories.
  *   6. Performance: < 50ms for 250 products on a warm index.
@@ -31,46 +31,52 @@ import type { CatalogProduct } from "./catalog";
  * "audio" should NOT pull in every "mic" synonym chain).
  */
 const SYNONYMS: Record<string, string[]> = {
-  // Content / use-cases
-  vlog: ["vlogging", "youtube", "vlogger"],
-  vlogging: ["vlog", "youtube"],
-  youtube: ["vlog", "vlogging"],
-  // Audio
-  mic: ["microphone", "audio"],
-  microphone: ["mic", "audio"],
-  audio: ["mic", "microphone", "sound"],
-  podcast: ["podcasting", "interview"],
-  // Drones
-  drone: ["quadcopter", "uav", "aerial"],
-  quadcopter: ["drone", "uav"],
-  uav: ["drone", "quadcopter"],
-  aerial: ["drone"],
-  // Stabilization
-  gimbal: ["stabilizer", "steadycam"],
-  stabilizer: ["gimbal"],
-  // Cameras
-  cam: ["camera"],
-  camera: ["cam"],
-  action: ["sports", "sport"],
-  sports: ["sport", "action"],
-  // Water
-  underwater: ["waterproof", "diving", "scuba"],
-  waterproof: ["underwater", "water-resistant"],
-  diving: ["underwater", "scuba"],
-  scuba: ["underwater", "diving"],
+  // Product types
+  moisturizer: ["moisturiser", "cream", "lotion", "emulsion", "hydrator"],
+  moisturiser: ["moisturizer", "cream", "lotion"],
+  cream: ["moisturizer", "moisturiser"],
+  lotion: ["moisturizer", "emulsion"],
+  emulsion: ["moisturizer", "lotion"],
+  serum: ["treatment", "concentrate", "ampoule", "essence"],
+  treatment: ["serum", "concentrate"],
+  essence: ["serum", "softener"],
+  cleanser: ["cleansing", "wash", "cleanse", "foam"],
+  cleansing: ["cleanser", "wash"],
+  wash: ["cleanser", "cleansing"],
+  softener: ["toner", "lotion", "essence"],
+  toner: ["softener"],
+  sunscreen: ["spf", "sunblock", "suncare", "uv"],
+  spf: ["sunscreen", "sunblock", "uv"],
+  sunblock: ["sunscreen", "spf"],
+  suncare: ["sunscreen", "spf"],
+  mask: ["masque", "sheet-mask"],
+  // Concerns / benefits
+  brightening: ["brighten", "radiance", "glow", "dark-spots", "even-tone"],
+  radiance: ["brightening", "glow"],
+  hydrating: ["hydration", "moisture", "moisturizing"],
+  hydration: ["hydrating", "moisture"],
+  "anti-aging": ["anti-ageing", "wrinkle", "firming", "lifting", "age-defying"],
+  "anti-ageing": ["anti-aging", "wrinkle", "firming"],
+  wrinkle: ["anti-aging", "fine-lines", "smoothing"],
+  firming: ["lifting", "anti-aging"],
+  acne: ["blemish", "breakout", "spot", "clarifying"],
+  sensitive: ["gentle", "soothing", "calming"],
+  soothing: ["calming", "sensitive"],
+  exfoliate: ["exfoliating", "peel", "scrub"],
+  // Ingredients
+  retinol: ["retinoid"],
+  "vitamin c": ["vitamin-c", "ascorbic"],
+  hyaluronic: ["hyaluronic-acid", "ha"],
   // Tier / price intent
   cheap: ["budget", "affordable"],
   budget: ["cheap", "affordable"],
-  pro: ["professional", "expert"],
-  professional: ["pro"],
-  beginner: ["entry", "starter", "novice"],
-  // FPV
-  fpv: ["first-person-view", "racing"],
-  racing: ["fpv", "race"],
-  // Travel / size
-  compact: ["portable", "lightweight", "mini"],
-  portable: ["compact", "lightweight"],
-  travel: ["compact", "portable"],
+  pro: ["professional", "prestige", "luxury"],
+  professional: ["pro", "prestige"],
+  prestige: ["pro", "luxury"],
+  beginner: ["entry", "starter", "everyday"],
+  // Size intent
+  travel: ["mini", "compact", "portable"],
+  mini: ["travel", "compact"],
 };
 
 /* -------------------------------------------------------------------------- */
@@ -322,7 +328,7 @@ function collectTagText(p: CatalogProduct): string {
 }
 
 function collectCompatibleText(p: CatalogProduct): string {
-  // Models are real multi-word names ("DJI Mini 5 Pro") and benefit
+  // Compatibility models are multi-word names and benefit
   // from word-level tokenization, since searching "mini 5" should hit any
   // accessory whose `compatible_with_models` lists that model.
   const modelText = p.compatibleWithModels.join(" ").replace(/_/g, " ");
@@ -519,7 +525,7 @@ type FieldHit = {
  * surfacing it lets queries like "action 5 accessories" leak Action 3 /
  * Mic 3 / Neo 2 products whose copy happens to mention a "5" anywhere.
  *
- * Brand is also excluded because no DJI brand token contains a digit;
+ * Brand is also excluded because no brand token contains a digit;
  * keeping the rule conservative here just means digit tokens must hit
  * the title, the category, a curated tag, or a compatibility token.
  */
@@ -561,7 +567,7 @@ function scoreTokenAgainstDoc(
 /**
  * Matches purely-numeric or alphanumeric-leading-with-digits tokens
  * (e.g. "3", "5", "4k", "2s"), the right-hand side of model-line
- * bigrams DJI uses ("Action 3", "Mavic 4", "Mini 5", "Air 2S").
+ * bigrams a model line might use (e.g. "Action 3", "Air 2S").
  */
 function looksLikeModelDigit(token: string): boolean {
   return /^\d+[a-z]*$/.test(token);
@@ -649,7 +655,7 @@ function hasOrderedPair(
  * (leftExpansion, rightExpansion) pair occurs in proximity in either
  * the title or the compatibility-models list. We check both because
  * accessories often only repeat the host model in their compatibility
- * column ("compatibleWithModels: ['DJI Mini 5 Pro']") rather than in
+ * column ("compatibleWithModels: [...]") rather than in
  * their own title.
  */
 function docSatisfiesPhrase(
@@ -697,15 +703,14 @@ export type SearchResult = {
 
 /**
  * Ranking tier used as a tied-score tie-breaker. Lower = surfaces
- * earlier. Cores are the bare flagship SKU ("DJI Mavic 4 Pro"),
- * bundles are combo/kit packages built around a core ("...Fly More
- * Combo"), and accessories are peripherals (cases, batteries, mounts,
- * filters). Without this layer, queries like "mavic", where every
- * Mavic SKU ties at name+phrase=16, fell back to rating, which let
- * an Air 2S accessory case outrank the Mavic 4 Pro itself.
+ * earlier. Cores are standalone products, bundles are set/kit
+ * packages built around a core, and accessories are add-ons (e.g.
+ * refills). Without this layer, a broad query where several SKUs tie
+ * on name+phrase score would fall back to rating, which could let a
+ * refill or add-on outrank the hero product itself.
  *
- * `isAccessory` is checked first so accessory-flagged kits (e.g.
- * "DJI Mic Kit") don't accidentally promote into the bundle tier.
+ * `isAccessory` is checked first so accessory-flagged items don't
+ * accidentally promote into the bundle tier.
  */
 function rankingTier(product: CatalogProduct): 0 | 1 | 2 {
   if (product.isAccessory) return 2;

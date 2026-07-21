@@ -324,7 +324,7 @@ export type Intent = {
 };
 
 const BUNDLE_QUERY_PATTERN =
-  /\b(bundle|bundles|combo|combos|kit|kits|fly\s*more|creator\s*combo|save\s*more)\b/i;
+  /\b(bundle|bundles|combo|combos|kit|kits|set|sets|save\s*more)\b/i;
 
 /**
  * Specific model-name patterns. When a query mentions a particular
@@ -943,9 +943,8 @@ export function filterProducts(
   // (e.g. "ND filter for Mavic 4 Pro"), narrow accessory results to
   // SKUs that match. We check BOTH `compatibleWithModels` (curated v5
   // tags) AND the SKU title (catches accessories that simply name the
-  // host product in their title, like "Freewell ND Filter for DJI
-  // Mavic 4 Pro"). Soft filter: if no SKU matches we keep the
-  // unfiltered pool rather than render an empty card.
+  // host product in their title). Soft filter: if no SKU matches we
+  // keep the unfiltered pool rather than render an empty card.
   if (intent.compatibleWith) {
     const target = intent.compatibleWith.toLowerCase();
     const compatible = pool.filter((product) => {
@@ -1729,12 +1728,11 @@ export function isAccessoryCompatibleWithCoreStrict(
 
   const hasExplicitModels = accessory.compatibleWithModels.length > 0;
   if (hasExplicitModels) {
-    /* Phone-gimbal escape hatch. DJI's v6 tagging for the universal
-     * phone-creator accessories (DJI Mic family, OM Magnetic Phone
-     * Clamp, Magnetic Ball Joint Mount, Mini Tripod, Extension Rod,
-     * OM Multifunctional Module) leaves `compatible_with_models`
-     * pointing at the accessory's own SKU family rather than at the
-     * host gimbal. Combined with the catalog-load enrichment that
+    /* Phone-gimbal escape hatch (legacy, inert for the skincare
+     * catalog). The v6 tagging for universal accessories left
+     * `compatible_with_models` pointing at the accessory's own SKU
+     * family rather than at the host device. Combined with the
+     * catalog-load enrichment that
      * adds `mobile_gimbal` to their compatible_with_type, this hook
      * trusts the type-tag for mobile_gimbal cores so the strict
      * model-string check below doesn't reject every plausible
@@ -1829,15 +1827,14 @@ export function findAccessoriesFor(
     if (role && candidate.accessoryRole !== role) return false;
     if (!accessoryMatchesType(candidate, hostGroup)) return false;
     const modelMatch = accessoryMatchesModel(candidate, core.title);
-    /* Phone-gimbal escape hatch that mirrors the rule in
-     * isAccessoryCompatibleWithCoreStrict. The v6 catalog under-tags
-     * the universal phone-creator SKUs (DJI Mic family, OM Magnetic
-     * Phone Clamp, Magnetic Ball Joint Mount, Mini Tripod, Mini
-     * Extension Rod, OM Multifunctional Module): `compatible_with_models`
-     * lists the accessory's own SKU family (e.g. ['DJI Mic 2']) rather
-     * than the host gimbal, so the model-string check below would
-     * reject every plausible accessory and leave the phone kit
-     * core-only. When the core is a mobile_gimbal AND the accessory
+    /* Phone-gimbal escape hatch (legacy, inert for the skincare
+     * catalog) that mirrors the rule in
+     * isAccessoryCompatibleWithCoreStrict. The v6 catalog under-tagged
+     * universal accessory SKUs: `compatible_with_models` listed the
+     * accessory's own SKU family rather than the host device, so the
+     * model-string check below would reject every plausible accessory
+     * and leave the kit core-only. When the core is a mobile_gimbal AND
+     * the accessory
      * carries `mobile_gimbal` in its compatible_with_type (added at
      * catalog load via PHONE_FRIENDLY_ACCESSORY_PATTERN), we trust
      * the type tag and accept the candidate. */
@@ -1975,9 +1972,9 @@ function capitalize(value: string): string {
 }
 
 function shortenTitle(title: string): string {
-  // Strip vendor prefixes and trailing SKU numbers so chips fit.
+  // Strip the brand prefix and trailing SKU numbers so chips fit.
   return title
-    .replace(/^(PGYTech|SmallRig|Freewell|DJI Osmo|DJI)\s+/i, "")
+    .replace(/^(Shiseido)\s+/i, "")
     .replace(/\s+\d{3,}\s*$/, "")
     .replace(/\s+\(.*?\)\s*$/, "")
     .trim();

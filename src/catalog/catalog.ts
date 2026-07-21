@@ -485,9 +485,9 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     inTheBox: [],
     productUrl: record.pdpUrl,
     badgeLabel: badgeFor(record, rating),
-    // Skincare products aren't sold by color, so the old DJI "color
-    // options" swatch row is intentionally left empty so ProductCard
-    // doesn't render it.
+    // Skincare products aren't sold by color, so the "color options"
+    // swatch row is intentionally left empty so ProductCard doesn't
+    // render it.
     swatches: [],
     tier: tierFromPrice(record.price),
     isBundle: record.category === "Sets & Bundles",

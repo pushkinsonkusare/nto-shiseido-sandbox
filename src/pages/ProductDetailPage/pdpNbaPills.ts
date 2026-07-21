@@ -1,10 +1,10 @@
 import type { CatalogProduct } from "../../catalog/catalog";
 
 export type PdpNbaPillKind =
-  | "faq" // Product FAQ (e.g. "Is this 4K?", "What's in the box?")
+  | "faq" // Product FAQ (e.g. "Is this good for dry skin?", "How do I use it?")
   | "upsell" // Step-up to a higher-tier sibling, or a feature-search step-up
   | "downsell" // Step-down to a cheaper sibling
-  | "bundle" // Combo / kit / accessory bundling
+  | "bundle" // Routine / set building
   | "hygiene" // Returns, warranty, shipping
   | "open"; // "Ask me anything" catch-all, has no arrow icon
 
@@ -37,17 +37,11 @@ function pickByIndex<T>(pool: readonly T[], index: number): T | null {
   return pool[((index % len) + len) % len];
 }
 
-function hasTag(tags: readonly string[] | undefined, token: string): boolean {
-  if (!tags) return false;
-  return tags.includes(token);
-}
-
 /* ---------- catalog-relative fallbacks ----------
  *
- * Retained from the previous implementation so the lane-driven pills can
- * fall back to a real sibling SKU when a lane has no hook-feature match
- * (e.g. an "Accessories" SKU mistagged into a flagship category). The
- * primary upsell/bundle paths now go through `LANE_PACKS`. */
+ * Lets the lane-driven pills fall back to a real sibling SKU when a lane
+ * has no hook-feature match. The primary upsell/bundle paths go through
+ * `LANE_PACKS`. */
 
 function findStepUpSibling(
   product: CatalogProduct,
@@ -86,47 +80,100 @@ function findCombo(
   );
 }
 
+/**
+ * Shared "routine-building" bundle pills for a single (non-set) product:
+ * an optional linked set, plus a build-a-routine and a pairs-with prompt.
+ * Every non-set lane leans on this so its bundle slot never goes dark.
+ */
+function routineBundlePills(
+  product: CatalogProduct,
+  catalog: CatalogProduct[],
+  pairLabel: string,
+): PdpNbaPill[] {
+  const pills: PdpNbaPill[] = [];
+  const combo = findCombo(product, catalog);
+  if (combo) {
+    pills.push({
+      id: "bundle-linked-set",
+      label: `Show the ${shortenTitle(combo.title, 28)}`,
+      prompt: `Tell me about the ${combo.title} and what it includes.`,
+      kind: "bundle",
+    });
+  }
+  pills.push({
+    id: "bundle-build-routine",
+    label: "Build a complete routine",
+    prompt: `Help me build a complete skincare routine around the ${product.title}.`,
+    kind: "bundle",
+  });
+  pills.push({
+    id: "bundle-pairs-with",
+    label: pairLabel,
+    prompt: `What products pair well with the ${product.title}?`,
+    kind: "bundle",
+  });
+  return pills;
+}
+
 /* ---------- lane resolver ---------- */
 
-type Lane = "drone" | "action_cam" | "gimbal" | "mic" | "accessory";
+type Lane =
+  | "cleanser"
+  | "serum"
+  | "moisturizer"
+  | "sunscreen"
+  | "eye"
+  | "softener"
+  | "mask"
+  | "set"
+  | "default";
 
 /**
- * Pick the NBA content lane for a product. We prefer `productTypeGroup`
- * because it's already canonicalised at catalog-load time, falling back
- * to a category regex (mics aren't a group, and freshly-tagged SKUs may
- * land with an empty group).
+ * Pick the NBA content lane for a skincare product from its storefront
+ * category (bundles are detected first via `isBundle`, then a category
+ * regex, then a title rescue for rows that landed in a generic
+ * "Skincare" bucket). Anything unrecognised falls back to the generic
+ * `default` lane, which asks skin-type / routine / ingredient FAQs that
+ * apply to any product.
  */
 function resolveLane(product: CatalogProduct): Lane {
-  const group = product.productTypeGroup;
-  if (group === "drone") return "drone";
-  if (group === "action_camera") return "action_cam";
-  if (group === "gimbal") return "gimbal";
+  if (product.isBundle) return "set";
 
   const category = (product.category ?? "").toLowerCase();
-  if (/microphone|\bmic\b/.test(category)) return "mic";
-  if (/drone/.test(category)) return "drone";
-  if (/action/.test(category)) return "action_cam";
-  if (/gimbal/.test(category)) return "gimbal";
+  if (/sets?\b|bundle/.test(category)) return "set";
+  if (/cleanser|cleans/.test(category)) return "cleanser";
+  if (/serum|treatment|essence|concentrate/.test(category)) return "serum";
+  if (/sunscreen|sun\s*care|spf/.test(category)) return "sunscreen";
+  if (/eye|lip/.test(category)) return "eye";
+  if (/softener|toner|lotion/.test(category)) return "softener";
+  if (/mask/.test(category)) return "mask";
+  if (/moisturi[sz]er|cream|emulsion/.test(category)) return "moisturizer";
 
-  // Title-level rescue for misclassified rows (mics commonly land as
-  // "Accessories" in the CSV but should still get the mic-lane prompts).
+  // Title rescue for the catch-all "Skincare" category.
   const title = product.title.toLowerCase();
-  if (/microphone|\bmic\b/.test(title)) return "mic";
+  if (/cleanser|cleansing|foam|wash/.test(title)) return "cleanser";
+  if (/serum|treatment|concentrate|essence/.test(title)) return "serum";
+  if (/sunscreen|\bspf\b|sun\b/.test(title)) return "sunscreen";
+  if (/eye|lip/.test(title)) return "eye";
+  if (/mask/.test(title)) return "mask";
+  if (/cream|moisturi[sz]er|emulsion/.test(title)) return "moisturizer";
 
-  return "accessory";
+  return "default";
 }
 
 /* ---------- universal pill pools ----------
  *
- * Every set surfaces one in-box pill, one hygiene pill, and the open
+ * Every set surfaces one lead pill, one hygiene pill, and the open
  * fallback. The hygiene pool rotates by `setIndex` so a shopper who
  * spins the regenerator sees a different policy framing each time. */
 
 function whatsInBoxPill(product: CatalogProduct): PdpNbaPill {
   return {
     id: "faq-whats-in-box",
-    label: "What's in the box?",
-    prompt: `What's in the box with the ${product.title}?`,
+    label: product.isBundle ? "What's included?" : "What size do I get?",
+    prompt: product.isBundle
+      ? `What's included in the ${product.title}?`
+      : `What sizes does the ${product.title} come in, and how long does one last?`,
     kind: "faq",
   };
 }
@@ -164,18 +211,19 @@ function openPill(product: CatalogProduct, suffix: string): PdpNbaPill {
 /* ---------- lane packs ----------
  *
  * Each lane exposes three pools:
- *   - `confidenceFaqs`: durability / fit-for-use / regulatory FAQs that
- *     defuse the most common pre-purchase hesitations for the category.
- *   - `hookFeatures`: feature-search upsells. Order matters: the first
- *     entry whose `match` returns true is preferred for set A; subsequent
- *     sets cycle through the rest.
- *   - `bundles`: lane-flavored bundle/accessory pills. Always returns at
- *     least one entry so the bundle slot in the rotation never goes dark.
+ *   - `confidenceFaqs`: skin-type suitability / how-to-use / ingredient /
+ *     results FAQs that defuse the most common pre-purchase hesitations
+ *     for the category.
+ *   - `hookFeatures`: discovery / step-up prompts. Order matters: the
+ *     first entry whose `match` returns true is preferred for set A;
+ *     subsequent sets cycle through the rest.
+ *   - `bundles`: routine-building pills. Always returns at least one
+ *     entry so the bundle slot in the rotation never goes dark.
  */
 
 type HookFeature = {
   pill: PdpNbaPill;
-  /** Optional tier/series/subtype gate. Returns true when the pill fits this product. */
+  /** Optional gate. Returns true when the pill fits this product. */
   match?: (product: CatalogProduct) => boolean;
 };
 
@@ -188,498 +236,428 @@ type LanePack = {
   ) => PdpNbaPill[];
 };
 
-const DRONE_LANE: LanePack = {
+const CLEANSER_LANE: LanePack = {
   confidenceFaqs: (product) => [
     {
-      id: "faq-drone-registration",
-      label: "Do I need to register it?",
-      prompt: `Do I need to register the ${product.title} with the FAA / CASA before I fly?`,
+      id: "faq-cleanser-skintype",
+      label: "Will it dry out my skin?",
+      prompt: `Is the ${product.title} gentle enough for my skin type, or will it leave my skin feeling tight or dry?`,
       kind: "faq",
     },
     {
-      id: "faq-drone-battery",
-      label: "How long does the battery last?",
-      prompt: `How long does the ${product.title} fly on a single charge, and how long does it take to recharge?`,
+      id: "faq-cleanser-frequency",
+      label: "How often should I use it?",
+      prompt: `How often should I use the ${product.title} — morning, night, or both?`,
       kind: "faq",
     },
     {
-      id: "faq-drone-wind",
-      label: "Can it handle wind?",
-      prompt: `Can the ${product.title} fly safely in coastal or mountain wind, and what's its wind resistance rating?`,
+      id: "faq-cleanser-makeup",
+      label: "Does it remove makeup & SPF?",
+      prompt: `Does the ${product.title} fully remove makeup and sunscreen, or do I need a separate first cleanse?`,
       kind: "faq",
     },
     {
-      id: "faq-drone-crash",
-      label: "What if I crash it?",
-      prompt: `If I crash the ${product.title}, is there accidental damage coverage available?`,
-      kind: "faq",
-    },
-    {
-      id: "faq-drone-noise",
-      label: "Is it noisy?",
-      prompt: `How loud is the ${product.title} in flight, and will it disturb people or wildlife nearby?`,
+      id: "faq-cleanser-sensitive",
+      label: "Good for sensitive skin?",
+      prompt: `Is the ${product.title} gentle enough for sensitive or reactive skin?`,
       kind: "faq",
     },
   ],
   hookFeatures: (product) => [
     {
       pill: {
-        id: "upsell-drone-omnidirectional",
-        label: "See drones with 360° obstacle sensing",
-        prompt:
-          "Show me drones with omnidirectional obstacle sensing for safer flying.",
+        id: "upsell-cleanser-next-step",
+        label: "See the next routine step",
+        prompt: `What should I use right after cleansing with the ${product.title}?`,
         kind: "upsell",
       },
     },
     {
       pill: {
-        id: "upsell-drone-skip-registration",
-        label: "See ultra-light drones (no registration)",
-        prompt:
-          "Show me ultra-light drones under the FAA / CASA registration weight that I can fly without registering.",
-        kind: "upsell",
-      },
-      match: (p) =>
-        p.tier === "beginner" ||
-        p.series === "mini" ||
-        p.series === "neo",
-    },
-    {
-      pill: {
-        id: "upsell-drone-fpv",
-        label: "See cinematic FPV drones",
-        prompt:
-          "Show me cinematic FPV drones with motion-controller flying for first-person video.",
-        kind: "upsell",
-      },
-      match: (p) =>
-        p.series === "avata" || hasTag(p.subtypes, "drone_fpv"),
-    },
-    {
-      pill: {
-        id: "upsell-drone-cinema",
-        label: "See drones with a Hasselblad sensor",
-        prompt:
-          "Show me drones with a Hasselblad camera or 4/3 CMOS sensor for cinema-grade footage.",
-        kind: "upsell",
-      },
-      match: (p) =>
-        p.tier === "pro" ||
-        hasTag(p.subtypes, "drone_cinema") ||
-        hasTag(p.useCaseTags, "cinematic"),
-    },
-    {
-      pill: {
-        id: "upsell-drone-range",
-        label: "See drones with longer flight time",
-        prompt:
-          "Show me drones with the longest flight time and transmission range in this price range.",
+        id: "upsell-cleanser-softener",
+        label: "See a softener to pair",
+        prompt: `Show me a softener or toner to use after the ${product.title}.`,
         kind: "upsell",
       },
     },
   ],
-  bundles: (product, catalog) => {
-    const combo = findCombo(product, catalog);
-    const pills: PdpNbaPill[] = [];
-    if (combo) {
-      pills.push({
-        id: "bundle-drone-combo",
-        label: `Show the ${shortenTitle(combo.title, 28)}`,
-        prompt: `Tell me about the ${combo.title} and what extras it includes.`,
-        kind: "bundle",
-      });
-    }
-    pills.push({
-      id: "bundle-drone-batteries",
-      label: "Pair it with extra batteries",
-      prompt: `Suggest extra batteries and a charging hub for the ${product.title}.`,
-      kind: "bundle",
-    });
-    pills.push({
-      id: "bundle-drone-kit",
-      label: "Suggest a complete fly-more kit",
-      prompt: `Suggest a complete fly-more kit (batteries, ND filters, case) to pair with the ${product.title}.`,
-      kind: "bundle",
-    });
-    return pills;
-  },
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What pairs with this cleanser?"),
 };
 
-const ACTION_CAM_LANE: LanePack = {
+const SERUM_LANE: LanePack = {
   confidenceFaqs: (product) => [
     {
-      id: "faq-cam-waterproof",
-      label: "How deep can it go underwater?",
-      prompt: `How deep can the ${product.title} go underwater without a separate housing?`,
+      id: "faq-serum-target",
+      label: "What does it target?",
+      prompt: `What skin concerns does the ${product.title} target?`,
       kind: "faq",
     },
     {
-      id: "faq-cam-mounts",
-      label: "Will my GoPro mounts fit?",
-      prompt: `Is the ${product.title} compatible with standard GoPro-style mounts and what mounts come in the box?`,
+      id: "faq-serum-results",
+      label: "How long until I see results?",
+      prompt: `How long until I see results from the ${product.title}, and how should I use it?`,
       kind: "faq",
     },
     {
-      id: "faq-cam-stabilization",
-      label: "How is stabilisation on a bike or ski?",
-      prompt: `How well does the ${product.title} stabilise footage on a bike, motorcycle or ski helmet?`,
+      id: "faq-serum-ingredients",
+      label: "What are the key ingredients?",
+      prompt: `What are the key ingredients in the ${product.title} and what do they do?`,
       kind: "faq",
     },
     {
-      id: "faq-cam-battery",
-      label: "How long does it record per battery?",
-      prompt: `How long does the ${product.title} record on one battery at 4K, and does it overheat?`,
-      kind: "faq",
-    },
-    {
-      id: "faq-cam-lowlight",
-      label: "How is it in low light?",
-      prompt: `How well does the ${product.title} handle low-light and night-time scenes?`,
+      id: "faq-serum-skintype",
+      label: "Which skin types is it for?",
+      prompt: `Which skin types is the ${product.title} best suited to?`,
       kind: "faq",
     },
   ],
   hookFeatures: (product) => [
     {
       pill: {
-        id: "upsell-cam-dive-rated",
-        label: "See action cams rated for diving",
-        prompt:
-          "Show me action cameras rated for diving 20m or deeper without a separate underwater housing.",
+        id: "upsell-serum-stronger",
+        label: "See a more targeted treatment",
+        prompt: `Show me a more targeted or higher-strength treatment than the ${product.title}.`,
         kind: "upsell",
       },
     },
     {
       pill: {
-        id: "upsell-cam-360",
-        label: "See 360° action cameras",
-        prompt:
-          "Show me 360° action cameras for invisible-selfie-stick and reframe-anywhere shots.",
-        kind: "upsell",
-      },
-      match: (p) =>
-        hasTag(p.subtypes, "cam_360") || p.series === "osmo_360",
-    },
-    {
-      pill: {
-        id: "upsell-cam-pocket",
-        label: "See pocket vlogging cams",
-        prompt:
-          "Show me pocket-sized vlogging cameras with a flip screen and built-in gimbal stabilisation.",
-        kind: "upsell",
-      },
-      match: (p) =>
-        hasTag(p.subtypes, "cam_pocket") || p.series === "osmo_pocket",
-    },
-    {
-      pill: {
-        id: "upsell-cam-pro",
-        label: "See action cams with 10-bit log",
-        prompt:
-          "Show me action cameras that shoot 10-bit HDR or D-Log for color grading.",
-        kind: "upsell",
-      },
-      match: (p) => p.tier === "pro",
-    },
-    {
-      pill: {
-        id: "upsell-cam-magnetic",
-        label: "See action cams with magnetic mounts",
-        prompt:
-          "Show me action cameras with magnetic quick-release mounting for fast scene changes.",
+        id: "upsell-serum-moisturizer",
+        label: "See a moisturizer to layer",
+        prompt: `What moisturizer should I layer over the ${product.title}?`,
         kind: "upsell",
       },
     },
   ],
-  bundles: (product, catalog) => {
-    const combo = findCombo(product, catalog);
-    const pills: PdpNbaPill[] = [];
-    if (combo) {
-      pills.push({
-        id: "bundle-cam-combo",
-        label: `Show the ${shortenTitle(combo.title, 28)}`,
-        prompt: `Tell me about the ${combo.title} and what extras it includes.`,
-        kind: "bundle",
-      });
-    }
-    pills.push({
-      id: "bundle-cam-mic",
-      label: "Pair it with a wireless mic",
-      prompt: `Suggest a wireless microphone that pairs with the ${product.title}.`,
-      kind: "bundle",
-    });
-    pills.push({
-      id: "bundle-cam-mounts",
-      label: "Suggest a mount + battery kit",
-      prompt: `Suggest a mount and extra-battery kit to pair with the ${product.title}.`,
-      kind: "bundle",
-    });
-    return pills;
-  },
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What pairs with this serum?"),
 };
 
-const GIMBAL_LANE: LanePack = {
+const MOISTURIZER_LANE: LanePack = {
   confidenceFaqs: (product) => [
     {
-      id: "faq-gimbal-fit",
-      label: "Will my phone or camera fit?",
-      prompt: `Will my phone, mirrorless camera or lens combo fit and balance on the ${product.title}?`,
+      id: "faq-moist-skintype",
+      label: "Is it right for my skin type?",
+      prompt: `Is the ${product.title} suitable for my skin type — is it lightweight or rich?`,
       kind: "faq",
     },
     {
-      id: "faq-gimbal-battery",
-      label: "How long does the battery last?",
-      prompt: `How long does the ${product.title} run on a full charge?`,
+      id: "faq-moist-daynight",
+      label: "Day or night?",
+      prompt: `Should I use the ${product.title} in the morning, at night, or both?`,
       kind: "faq",
     },
     {
-      id: "faq-gimbal-tracking",
-      label: "Does ActiveTrack actually work?",
-      prompt: `How well does ActiveTrack on the ${product.title} keep moving subjects in frame?`,
+      id: "faq-moist-makeup",
+      label: "Does it work under makeup?",
+      prompt: `Can I wear the ${product.title} under sunscreen and makeup?`,
       kind: "faq",
     },
     {
-      id: "faq-gimbal-travel",
-      label: "Is it travel-friendly?",
-      prompt: `Is the ${product.title} travel-friendly, and does it fold down and fit in a daypack?`,
-      kind: "faq",
-    },
-    {
-      id: "faq-gimbal-app",
-      label: "What can I do with the app?",
-      prompt: `What does the companion app for the ${product.title} let me do (gestures, timelapse, tracking)?`,
+      id: "faq-moist-ingredients",
+      label: "What are the key ingredients?",
+      prompt: `What are the key ingredients in the ${product.title}?`,
       kind: "faq",
     },
   ],
   hookFeatures: (product) => [
     {
       pill: {
-        id: "upsell-gimbal-mobile-tracking",
-        label: "See gimbals with built-in tracking",
-        prompt:
-          "Show me phone gimbals with built-in subject tracking and gesture control.",
+        id: "upsell-moist-serum",
+        label: "See a serum to layer under",
+        prompt: `What serum should I layer under the ${product.title}?`,
         kind: "upsell",
       },
-      match: (p) =>
-        p.productType === "mobile_gimbal" ||
-        hasTag(p.subtypes, "gimbal_mobile"),
     },
     {
       pill: {
-        id: "upsell-gimbal-camera-payload",
-        label: "See gimbals for full-frame cameras",
-        prompt:
-          "Show me gimbals that handle full-frame mirrorless setups with cinema lenses.",
-        kind: "upsell",
-      },
-      match: (p) =>
-        p.productType === "camera_gimbal" || p.tier === "pro",
-    },
-    {
-      pill: {
-        id: "upsell-gimbal-ronin",
-        label: "See pro Ronin RS-series gimbals",
-        prompt:
-          "Show me pro Ronin RS-series gimbals with focus motors and image transmission.",
+        id: "upsell-moist-counterpart",
+        label: "See the day/night counterpart",
+        prompt: `Is there a day or night counterpart to the ${product.title}?`,
         kind: "upsell",
       },
     },
   ],
-  bundles: (product, catalog) => {
-    const combo = findCombo(product, catalog);
-    const pills: PdpNbaPill[] = [];
-    if (combo) {
-      pills.push({
-        id: "bundle-gimbal-combo",
-        label: `Show the ${shortenTitle(combo.title, 28)}`,
-        prompt: `Tell me about the ${combo.title} and what extras it includes.`,
-        kind: "bundle",
-      });
-    }
-    pills.push({
-      id: "bundle-gimbal-grip",
-      label: "Pair it with a tripod grip",
-      prompt: `Suggest a tripod grip extension and case for the ${product.title}.`,
-      kind: "bundle",
-    });
-    pills.push({
-      id: "bundle-gimbal-kit",
-      label: "Suggest a creator kit",
-      prompt: `Suggest a creator kit (mic, light, case) to pair with the ${product.title}.`,
-      kind: "bundle",
-    });
-    return pills;
-  },
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What pairs with this moisturizer?"),
 };
 
-const MIC_LANE: LanePack = {
+const SUNSCREEN_LANE: LanePack = {
   confidenceFaqs: (product) => [
     {
-      id: "faq-mic-compat",
-      label: "Does it work with iPhone, Android & cameras?",
-      prompt: `Does the ${product.title} plug into iPhone, Android phones and standard cameras out of the box?`,
+      id: "faq-sun-spf",
+      label: "What SPF is it?",
+      prompt: `What SPF does the ${product.title} provide, and is it broad-spectrum?`,
       kind: "faq",
     },
     {
-      id: "faq-mic-range",
-      label: "How far is the wireless range?",
-      prompt: `What's the real-world wireless range of the ${product.title} before audio drops out?`,
+      id: "faq-sun-cast",
+      label: "Does it leave a white cast?",
+      prompt: `Does the ${product.title} leave a white cast or feel greasy?`,
       kind: "faq",
     },
     {
-      id: "faq-mic-backup",
-      label: "Does it record locally as backup?",
-      prompt: `Does the ${product.title} record audio on the transmitter as a backup if the wireless signal drops?`,
+      id: "faq-sun-water",
+      label: "Is it water-resistant?",
+      prompt: `Is the ${product.title} water-resistant, and how often should I reapply?`,
       kind: "faq",
     },
     {
-      id: "faq-mic-battery",
-      label: "How long does a charge last?",
-      prompt: `How long does a single charge last on the ${product.title} for a full shoot day?`,
-      kind: "faq",
-    },
-    {
-      id: "faq-mic-noise",
-      label: "How does it handle wind & noise?",
-      prompt: `How well does the ${product.title} handle wind and background noise, and what windshields are included?`,
+      id: "faq-sun-makeup",
+      label: "Can I wear it under makeup?",
+      prompt: `Can I wear the ${product.title} under makeup, and where does it go in my routine?`,
       kind: "faq",
     },
   ],
   hookFeatures: (product) => [
     {
       pill: {
-        id: "upsell-mic-32bit",
-        label: "See mics with 32-bit float recording",
-        prompt:
-          "Show me wireless mics with 32-bit float recording so I never clip my audio.",
+        id: "upsell-sun-higher",
+        label: "See a higher-SPF option",
+        prompt: `Show me a higher-SPF option than the ${product.title}.`,
         kind: "upsell",
       },
     },
     {
       pill: {
-        id: "upsell-mic-two-tx",
-        label: "See two-transmitter interview kits",
-        prompt:
-          "Show me wireless mic kits with two transmitters for interviews and dual-host recording.",
-        kind: "upsell",
-      },
-    },
-    {
-      pill: {
-        id: "upsell-mic-range",
-        label: "See long-range wireless mics",
-        prompt:
-          "Show me wireless mics with the longest reliable range for outdoor and event shoots.",
+        id: "upsell-sun-tinted",
+        label: "See a tinted option",
+        prompt: `Is there a tinted version of the ${product.title}?`,
         kind: "upsell",
       },
     },
   ],
-  bundles: (product, catalog) => {
-    const combo = findCombo(product, catalog);
-    const pills: PdpNbaPill[] = [];
-    if (combo) {
-      pills.push({
-        id: "bundle-mic-combo",
-        label: `Show the ${shortenTitle(combo.title, 28)}`,
-        prompt: `Tell me about the ${combo.title} and what extras it includes.`,
-        kind: "bundle",
-      });
-    }
-    pills.push({
-      id: "bundle-mic-cam",
-      label: "Pair it with an action cam",
-      prompt: `Suggest an action camera that pairs well with the ${product.title}.`,
-      kind: "bundle",
-    });
-    pills.push({
-      id: "bundle-mic-charging",
-      label: "Suggest a charging case kit",
-      prompt: `Suggest a charging case and accessory kit for the ${product.title}.`,
-      kind: "bundle",
-    });
-    return pills;
-  },
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What to layer under it?"),
 };
 
-const ACCESSORY_LANE: LanePack = {
-  confidenceFaqs: (product) => {
-    const compatHint =
-      product.compatibleWithModels.length > 0
-        ? product.compatibleWithModels[0]
-        : product.compatibleWithType.length > 0
-          ? product.compatibleWithType[0].replace(/_/g, " ")
-          : "my gear";
-    return [
-      {
-        id: "faq-acc-compat",
-        label: `Will it work with ${shortenTitle(compatHint, 24)}?`,
-        prompt: `Will the ${product.title} work with my ${compatHint}? What models is it compatible with?`,
-        kind: "faq",
+const EYE_LANE: LanePack = {
+  confidenceFaqs: (product) => [
+    {
+      id: "faq-eye-target",
+      label: "What does it target?",
+      prompt: `Does the ${product.title} target dark circles, puffiness, or fine lines?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-eye-apply",
+      label: "How do I apply it?",
+      prompt: `How much of the ${product.title} should I use, and how do I apply it around the eyes?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-eye-sensitive",
+      label: "Is it gentle around the eyes?",
+      prompt: `Is the ${product.title} gentle and fragrance-free enough for the delicate eye area?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-eye-when",
+      label: "When in my routine?",
+      prompt: `When in my routine should I use the ${product.title}?`,
+      kind: "faq",
+    },
+  ],
+  hookFeatures: (product) => [
+    {
+      pill: {
+        id: "upsell-eye-serum",
+        label: "See a matching serum",
+        prompt: `What serum pairs well with the ${product.title}?`,
+        kind: "upsell",
       },
-      {
-        id: "faq-acc-difference",
-        label: "What's different vs the standard version?",
-        prompt: `How is the ${product.title} different from the standard or previous version, and is it worth the upgrade?`,
-        kind: "faq",
+    },
+  ],
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What pairs with this eye cream?"),
+};
+
+const SOFTENER_LANE: LanePack = {
+  confidenceFaqs: (product) => [
+    {
+      id: "faq-soft-what",
+      label: "What does a softener do?",
+      prompt: `What does the ${product.title} do, and where does it fit in my routine?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-soft-how",
+      label: "How do I use it?",
+      prompt: `How do I apply the ${product.title} — with my hands or a cotton pad?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-soft-skintype",
+      label: "Is it right for my skin type?",
+      prompt: `Is the ${product.title} suitable for my skin type?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-soft-when",
+      label: "When in my routine?",
+      prompt: `When in my routine should I use the ${product.title}?`,
+      kind: "faq",
+    },
+  ],
+  hookFeatures: (product) => [
+    {
+      pill: {
+        id: "upsell-soft-serum",
+        label: "See a serum to follow with",
+        prompt: `What serum should I use after the ${product.title}?`,
+        kind: "upsell",
       },
-      {
-        id: "faq-acc-genuine",
-        label: "Is this authentic?",
-        prompt: `Is the ${product.title} a genuine Shiseido product, and is it covered by warranty?`,
-        kind: "faq",
+    },
+  ],
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What pairs with this softener?"),
+};
+
+const MASK_LANE: LanePack = {
+  confidenceFaqs: (product) => [
+    {
+      id: "faq-mask-frequency",
+      label: "How often should I use it?",
+      prompt: `How often should I use the ${product.title}?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-mask-when",
+      label: "When in my routine?",
+      prompt: `When in my routine should I use the ${product.title}, and do I rinse it off?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-mask-target",
+      label: "What does it do?",
+      prompt: `What does the ${product.title} do for my skin?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-mask-skintype",
+      label: "Which skin types is it for?",
+      prompt: `Which skin types is the ${product.title} best suited to?`,
+      kind: "faq",
+    },
+  ],
+  hookFeatures: (product) => [
+    {
+      pill: {
+        id: "upsell-mask-daily",
+        label: "See a daily treatment",
+        prompt: `Show me a daily treatment I can use alongside the ${product.title}.`,
+        kind: "upsell",
       },
-      {
-        id: "faq-acc-install",
-        label: "How do I install it?",
-        prompt: `How do I install or set up the ${product.title}, and does it need firmware updates?`,
-        kind: "faq",
-      },
-    ];
-  },
-  // Accessories don't get a hook-feature upsell. There's no meaningful
-  // step-up to a "better" battery / case. The set builders detect an
-  // empty pool and substitute a second confidence FAQ instead.
+    },
+  ],
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What to use after masking?"),
+};
+
+const SET_LANE: LanePack = {
+  confidenceFaqs: (product) => [
+    {
+      id: "faq-set-forwho",
+      label: "Who is this set for?",
+      prompt: `Who is the ${product.title} best suited for?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-set-value",
+      label: "Is it good value?",
+      prompt: `Is the ${product.title} better value than buying the products separately?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-set-order",
+      label: "What order do I use them?",
+      prompt: `In what order should I use the products in the ${product.title}?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-set-skintype",
+      label: "Is it right for my skin type?",
+      prompt: `Is the ${product.title} suitable for my skin type?`,
+      kind: "faq",
+    },
+  ],
+  // A set is already a bundle, so there's no meaningful step-up hook.
   hookFeatures: () => [],
-  bundles: (product, catalog) => {
-    const combo = findCombo(product, catalog);
-    const pills: PdpNbaPill[] = [];
-    if (combo) {
-      pills.push({
-        id: "bundle-acc-combo",
-        label: `Show the ${shortenTitle(combo.title, 28)}`,
-        prompt: `Tell me about the ${combo.title} and what extras it includes.`,
-        kind: "bundle",
-      });
-    }
-    pills.push({
-      id: "bundle-acc-host-kit",
-      label: "Show a complete kit around my host",
-      prompt: `Show me a complete kit built around the host product the ${product.title} is designed for.`,
+  bundles: (product) => [
+    {
+      id: "bundle-set-individual",
+      label: "Show individual products",
+      prompt: `Can I buy the products in the ${product.title} individually?`,
       kind: "bundle",
-    });
-    pills.push({
-      id: "bundle-acc-related",
-      label: "What other accessories pair with this?",
-      prompt: `What other accessories pair well with the ${product.title}?`,
+    },
+    {
+      id: "bundle-set-more",
+      label: "What else pairs with it?",
+      prompt: `What else pairs well with the ${product.title}?`,
       kind: "bundle",
-    });
-    return pills;
-  },
+    },
+  ],
+};
+
+const DEFAULT_LANE: LanePack = {
+  confidenceFaqs: (product) => [
+    {
+      id: "faq-default-skintype",
+      label: "Is it right for my skin type?",
+      prompt: `Is the ${product.title} suitable for my skin type?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-default-how",
+      label: "How do I use it?",
+      prompt: `How and when do I use the ${product.title} in my routine?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-default-ingredients",
+      label: "What are the key ingredients?",
+      prompt: `What are the key ingredients in the ${product.title}?`,
+      kind: "faq",
+    },
+    {
+      id: "faq-default-results",
+      label: "What results can I expect?",
+      prompt: `What results can I expect from the ${product.title}, and how soon?`,
+      kind: "faq",
+    },
+  ],
+  hookFeatures: (product) => [
+    {
+      pill: {
+        id: "upsell-default-routine",
+        label: "See how it fits a routine",
+        prompt: `How does the ${product.title} fit into a complete skincare routine?`,
+        kind: "upsell",
+      },
+    },
+  ],
+  bundles: (product, catalog) =>
+    routineBundlePills(product, catalog, "What pairs with this?"),
 };
 
 const LANE_PACKS: Record<Lane, LanePack> = {
-  drone: DRONE_LANE,
-  action_cam: ACTION_CAM_LANE,
-  gimbal: GIMBAL_LANE,
-  mic: MIC_LANE,
-  accessory: ACCESSORY_LANE,
+  cleanser: CLEANSER_LANE,
+  serum: SERUM_LANE,
+  moisturizer: MOISTURIZER_LANE,
+  sunscreen: SUNSCREEN_LANE,
+  eye: EYE_LANE,
+  softener: SOFTENER_LANE,
+  mask: MASK_LANE,
+  set: SET_LANE,
+  default: DEFAULT_LANE,
 };
 
 /* ---------- hook-feature picker ----------
  *
  * Returns the lane's hook-feature pool ordered by relevance: every
  * `match`ing pill first (in the order they're declared in the lane
- * pack), then the unconditional defaults. This lets the most specific
- * upsell (e.g. "FPV drones" for an Avata PDP) land in set A. */
+ * pack), then the unconditional defaults. */
 
 function rankHookFeatures(
   features: HookFeature[],
@@ -701,11 +679,11 @@ function rankHookFeatures(
 
 /* ---------- set builders ----------
  *
- * The three sets share a common skeleton (in-box + hygiene + open) and
+ * The three sets share a common skeleton (lead + hygiene + open) and
  * differ in how they fill the remaining two contextual slots:
- *   - Set A: hook-feature[0] + bundle[0]   (default lead: discovery + kit)
- *   - Set B: confidence-FAQ[1] + hook-feature[1] (durability deep-dive)
- *   - Set C: confidence-FAQ[2] + bundle[1]  (objection-handling + kit)
+ *   - Set A: hook-feature[0] + bundle[0]   (default lead: discovery + routine)
+ *   - Set B: confidence-FAQ[1] + hook-feature[1] (fit-for-use deep-dive)
+ *   - Set C: confidence-FAQ[2] + bundle[1]  (objection-handling + routine)
  * Inside the rotation, every contextual pill has a unique id so a single
  * regenerator click never re-shows the same pill. */
 
@@ -724,7 +702,7 @@ function buildSetA(
   if (hook) {
     pills.push(hook);
   } else {
-    // Accessory lane fallback: promote a confidence FAQ into the slot.
+    // Lanes with no hook (e.g. sets): promote a confidence FAQ instead.
     const faq = pickByIndex(faqPool, 0);
     if (faq) pills.push(faq);
   }
@@ -758,7 +736,7 @@ function buildSetB(
   if (hook) {
     pills.push(hook);
   } else {
-    // Accessory lane: substitute a third confidence FAQ.
+    // Lanes with no hook: substitute a third confidence FAQ.
     const faq3 = pickByIndex(faqPool, 2);
     if (faq3) pills.push(faq3);
   }
@@ -818,14 +796,14 @@ function buildSetC(
 /**
  * Build the contextual NBA pill set for the PDP Ask Assistant module.
  *
- * The pill content is now lane-aware: drones get FAA / wind / DJI Care
- * confidence FAQs and obstacle-sensing-style hook-feature upsells; action
- * cameras get waterproof / mount / stabilisation FAQs and dive-rated /
- * 360 / pocket upsells; gimbals get fit / tracking FAQs; mics get
- * iPhone / range / backup FAQs; accessories skip the upsell pill in
- * favour of compatibility-focused FAQs. `setIndex` cycles through the
- * three curated rotations; the "What's in the box?" + open pills stay
- * stable so shoppers can always find them.
+ * The pill content is lane-aware: cleansers get gentleness / frequency /
+ * makeup-removal FAQs; serums get target / results / ingredient FAQs;
+ * moisturizers get skin-type / day-night FAQs; sunscreens get SPF /
+ * white-cast / water-resistance FAQs; eye care gets application FAQs;
+ * masks get frequency / routine FAQs; sets get value / order FAQs; and a
+ * generic default lane covers anything uncategorised. `setIndex` cycles
+ * through the three curated rotations; the lead + open pills stay stable
+ * so shoppers can always find them.
  */
 export function buildPdpNbaPills(
   product: CatalogProduct,

@@ -1,7 +1,7 @@
 /**
  * Static demo "Recent Searches" list shown in the search-suggestions
- * overlay. Hand-curated for the DJI prototype so the dropdown reads as
- * if the shopper has been browsing for camera / drone gear.
+ * overlay. Hand-curated so the dropdown reads as if the shopper has
+ * been browsing skincare.
  *
  * Each entry maps to one of two destinations:
  *

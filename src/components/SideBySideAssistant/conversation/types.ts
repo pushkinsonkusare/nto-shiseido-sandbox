@@ -84,8 +84,8 @@ export type SxsMessage =
        * uses an "Ask Assistant" NBA pill. Renders a product-context
        * header (image + title + category) above the body, with an
        * optional external-link CTA, used today for hygiene
-       * (return/warranty/shipping policies pointing at the DJI Help
-       * Center), generic FAQs, and the "Ask me anything" intro.
+       * (return/warranty/shipping policies pointing at the help /
+       * customer-care center), generic FAQs, and the "Ask me anything" intro.
        */
       kind: "agent_pdp_utterance";
       id: string;

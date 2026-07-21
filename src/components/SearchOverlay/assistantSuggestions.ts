@@ -7,11 +7,11 @@ import {
 /* =============================================================
  * Search-with-assistant suggestion generator (rule-based).
  *
- * Mines metadata of the matched products (series, subtypes,
- * primaryActivities, capabilities, accessoryRole, title) and
+ * Mines metadata of the matched products (series/collection,
+ * subtypes, primaryActivities/concerns, capabilities, title) and
  * templates 3-4 conversational prompts a shopper might want to
- * ask the assistant: `Accessories for Mavic 4 Pro`, `Wedding
- * videographer kit`, `Cinematic gimbals`, etc.
+ * ask the assistant: `Essentials for brightening`, `Setup for a
+ * hydration routine`, `Brightening serums`, etc.
  *
  * Sync, free, deterministic, offline-friendly. Used as the
  * instant-render path in the search overlay; an LLM upgrade
@@ -35,14 +35,14 @@ const MAX_SUGGESTIONS = 4;
  * the same way the side-by-side intent classifier will. Kept in
  * lockstep with the source-of-truth regexes:
  *
- *   - BUNDLE_QUERY_PATTERN at flow.ts:336
- *   - BROAD_PATTERNS at flow.ts:135 (specifically the
+ *   - BUNDLE_QUERY_PATTERN in flow.ts
+ *   - BROAD_PATTERNS in flow.ts (specifically the
  *     `gear|equipment|kit|setup|essentials|accessor(y|ies)` rule)
  *
  * If you change either of those, mirror the change here.
  */
 const BUNDLE_QUERY_PATTERN =
-  /\b(bundle|bundles|combo|combos|kit|kits|fly\s*more|creator\s*combo|save\s*more)\b/i;
+  /\b(bundle|bundles|combo|combos|kit|kits|set|sets|save\s*more)\b/i;
 const BROAD_VERB_FOR_PATTERN =
   /\b(gear|equipment|kit|setup|essentials|accessor(?:y|ies))\s+for\b/i;
 
@@ -65,75 +65,44 @@ export function isBundleTrippingPhrase(phrase: string): boolean {
 }
 
 /**
- * Activities we treat as "generic": fine signals on their own but
+ * Concerns we treat as "generic": fine signals on their own but
  * outranked by more specific ones when both are present. e.g. a query
- * that matches both `vlog` and `wedding` should produce wedding-flavoured
- * phrases, not vlogging ones.
+ * that matches both `hydration` and `brightening` should produce
+ * brightening-flavoured phrases, not hydration ones.
  */
-const GENERIC_ACTIVITIES: ReadonlySet<string> = new Set(["vlog", "travel"]);
+const GENERIC_ACTIVITIES: ReadonlySet<string> = new Set(["hydration"]);
 
-/** Capabilities that read naturally as adjectives in front of a category. */
+/** Concern/benefit tokens that read naturally as adjectives in front of
+ *  a category ("Brightening serums", "Hydrating moisturizers"). Matched
+ *  against a product's `useCaseTags`-derived `capabilities`. */
 const ADJECTIVAL_CAPABILITIES: ReadonlyArray<string> = [
-  "cinematic",
-  "waterproof",
-  "rugged",
-  "compact",
-  "wind_resistant",
-  "lowlight",
-  "stabilized",
+  "brightening",
+  "hydrating",
+  "firming",
+  "smoothing",
+  "mattifying",
+  "soothing",
+  "exfoliating",
+  "anti-aging",
 ];
 
 const CAPABILITY_LABEL_OVERRIDES: Record<string, string> = {
-  wind_resistant: "Wind-resistant",
-  lowlight: "Low-light",
+  "anti-aging": "Anti-aging",
 };
 
-/** Convert a v6 capability token to a friendly adjective ("Cinematic"). */
+/** Convert a concern/benefit token to a friendly adjective ("Brightening"). */
 function formatCapabilityLabel(value: string): string {
   if (CAPABILITY_LABEL_OVERRIDES[value]) return CAPABILITY_LABEL_OVERRIDES[value];
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 /**
- * Pluralise a single-product-category string for use as a noun in a
- * suggestion ("Camera microphones" -> "camera microphones"; "Gimbals"
- * stays "gimbals"). Lowercase output so it composes with a leading
- * adjective ("Cinematic camera microphones").
+ * Lowercase a category string for use as a noun in a suggestion
+ * ("Moisturizers" -> "moisturizers") so it composes with a leading
+ * adjective ("Brightening serums & treatments").
  */
 function categoryNoun(category: string): string {
   return category.trim().toLowerCase();
-}
-
-/**
- * Try to extract a product-line model token from a title. Returns the
- * matched substring with original casing so phrase output reads
- * naturally ("Mavic 4 Pro", "Osmo Action 5 Pro", "RS 4").
- *
- * Patterns are ordered most-specific-first so the longer match wins
- * when both apply (`Osmo Action 5 Pro` over `Osmo`).
- */
-const MODEL_PATTERNS: ReadonlyArray<RegExp> = [
-  /\b(?:DJI\s+)?(Mavic\s+\d+(?:\s+Pro)?)\b/i,
-  /\b(?:DJI\s+)?(Air\s+\d+(?:S)?)\b/i,
-  /\b(?:DJI\s+)?(Mini\s+\d+(?:\s+Pro)?)\b/i,
-  /\b(?:DJI\s+)?(Inspire\s+\d+)\b/i,
-  /\b(?:DJI\s+)?(Avata\s+\d+)\b/i,
-  /\b(?:DJI\s+)?(Osmo\s+(?:Action|Pocket|Mobile|Nano|360)\s*\d*(?:\s+Pro)?)\b/i,
-  /\b(?:DJI\s+)?(RS\s*\d+(?:\s+Pro)?)\b/i,
-  /\b(?:DJI\s+)?(Ronin\s+\w+(?:\s+\w+)?)\b/i,
-  /\b(?:DJI\s+)?(Neo|Flip|Lito)\b/i,
-];
-
-function extractModel(title: string): string | null {
-  for (const pattern of MODEL_PATTERNS) {
-    const match = title.match(pattern);
-    if (match && match[1]) {
-      return match[1]
-        .replace(/\s+/g, " ")
-        .replace(/^./, (c) => c.toUpperCase());
-    }
-  }
-  return null;
 }
 
 /** Most-frequent token in an array of token arrays (preserving first-seen order on ties). */
@@ -197,18 +166,10 @@ export function buildAssistantSuggestionsRuleBased(
     phrases.push(norm);
   };
 
-  // 1. Accessories-for-model: the strongest, most-clickable phrase
-  //    when the user has typed something that resolves to a specific
-  //    SKU (Mavic 4 Pro, RS 4, Osmo Action 5 Pro). Skips silently when
-  //    the title doesn't carry a recognisable model token.
-  const model = extractModel(topProduct.title);
-  if (model) {
-    push(`Accessories for ${model}`);
-  }
-
-  // 2. Activity-driven: pick the most-common specific activity across
-  //    the top results. `professional_filmmaker`/`wedding`/`motorcycle`
-  //    win over generic `vlog`/`travel` when both are present.
+  // 1. Concern-driven: pick the most-common specific concern across the
+  //    top results (brightening / anti-aging / firming win over generic
+  //    hydration when both are present). Phrased with the `{verb} for
+  //    {target}` form so the broad classifier catches it.
   const activitySpecific = topToken(
     top.map((p) => p.primaryActivities),
     GENERIC_ACTIVITIES,
@@ -217,20 +178,19 @@ export function buildAssistantSuggestionsRuleBased(
   const activity = activitySpecific ?? activityFallback;
   if (activity) {
     const activityLower = formatActivityLabel(activity).toLowerCase();
-    push(`Gear for ${activityLower}`);
+    push(`Essentials for ${activityLower}`);
     if (phrases.length < MAX_SUGGESTIONS) {
       // `Setup for X` (rather than `X kit`) so the broad classifier
       // catches it. Bare `X kit` would trip the bundle pattern in
       // flow.ts and route to a "Here are some bundle deals..." card.
-      push(`Setup for ${activityLower}`);
+      push(`Setup for a ${activityLower} routine`);
     }
   }
 
-  // 3. Series ecosystem: when 2+ top products share a series, the
-  //    family is a meaningful axis of exploration. Phrased as
-  //    `Gear for {Series} owners` (rather than `{Series} ecosystem`)
-  //    so it matches the broad classifier and routes to a series-
-  //    scoped recipe.
+  // 2. Collection ecosystem: when 2+ top products share a collection,
+  //    the range is a meaningful axis of exploration. Phrased as
+  //    `Essentials for the {Collection} collection` so it matches the
+  //    broad classifier and routes to a collection-scoped recipe.
   const seriesCounts = new Map<string, number>();
   for (const p of top) {
     if (!p.series) continue;
@@ -245,11 +205,11 @@ export function buildAssistantSuggestionsRuleBased(
     }
   }
   if (dominantSeries) {
-    push(`Gear for ${formatSeriesLabel(dominantSeries)} owners`);
+    push(`Essentials for the ${formatSeriesLabel(dominantSeries)} collection`);
   }
 
-  // 4. Capability-flavoured category: "Cinematic gimbals", "Waterproof
-  //    action cameras". Picks the first capability from the top
+  // 3. Concern-flavoured category: "Brightening serums & treatments",
+  //    "Hydrating moisturizers". Picks the first concern from the top
   //    product's `capabilities` array that's in our adjectival list.
   const cap = ADJECTIVAL_CAPABILITIES.find((c) =>
     topProduct.capabilities.includes(c),
@@ -258,8 +218,8 @@ export function buildAssistantSuggestionsRuleBased(
     push(`${formatCapabilityLabel(cap)} ${categoryNoun(topProduct.category)}`);
   }
 
-  // 5. Comparison fallback: when the top 2 results belong to different
-  //    series, a "X vs Y" comparison is a natural assistant prompt.
+  // 4. Comparison fallback: when the top 2 results belong to different
+  //    collections, a "X vs Y" comparison is a natural assistant prompt.
   if (top.length >= 2 && phrases.length < MAX_SUGGESTIONS) {
     const a = top[0].series;
     const b = top.find((p) => p.series && p.series !== a)?.series;

@@ -595,9 +595,9 @@ export function useSideBySideAgent() {
       // replacement) short-circuit BEFORE intent classification. They
       // aren't shopping queries, so the broad/direct flow would otherwise
       // surface a curated category card that ignores what the shopper
-      // actually asked. Answers are sourced from the shared DJI Help
-      // Center knowledge base in `flow.ts` so the rule-based and OpenAI
-      // paths stay aligned.
+      // actually asked. Answers are sourced from the shared help /
+      // customer-care knowledge base in `flow.ts` so the rule-based and
+      // OpenAI paths stay aligned.
       const hygieneTopic = classifyHygieneTopic(query);
       if (hygieneTopic) {
         appendMessage({
