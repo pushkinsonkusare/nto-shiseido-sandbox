@@ -2052,38 +2052,12 @@
   html[data-demo-viewport="mobile"] .agent-summary__promo {
     padding: 8px 16px 0;
   }
-
-  /* One-row horizontal swipe for NBA chips — stacking eats composer space
-   * on the phone frame / narrow viewport. */
-  .agent-nba__set {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    max-width: 100%;
-  }
-
-  .agent-nba__set::-webkit-scrollbar {
-    display: none;
-  }
-
-  .agent-nba__pill {
-    flex: 0 0 auto;
-    max-width: none;
-  }
-
-  .agent-nba__pill-label {
-    max-width: 220px;
-  }
 }
 
-/* Mobile assistant panel (class is set whenever viewportMode === "mobile",
- * including the 402px demo frame on a wide desktop — media queries alone
- * miss that case because the browser viewport stays >720px). */
-.sxs-layout__panel--mobile .agent-nba__set,
-html[data-demo-viewport="mobile"] .agent-nba__set {
+/* Selection-tray NBA chips only (mobile): one horizontal swipe row.
+ * In-chat `.agent-nba__set` keeps the default stacked wrap. */
+.sxs-layout__panel--mobile .sidecar-assistant__selection-tray .agent-nba__set--scroll,
+html[data-demo-viewport="mobile"] .sidecar-assistant__selection-tray .agent-nba__set--scroll {
   display: flex;
   flex-wrap: nowrap !important;
   align-items: center;
@@ -2098,18 +2072,66 @@ html[data-demo-viewport="mobile"] .agent-nba__set {
   touch-action: pan-x;
 }
 
-.sxs-layout__panel--mobile .agent-nba__set::-webkit-scrollbar,
-html[data-demo-viewport="mobile"] .agent-nba__set::-webkit-scrollbar {
+.sxs-layout__panel--mobile
+  .sidecar-assistant__selection-tray
+  .agent-nba__set--scroll::-webkit-scrollbar,
+html[data-demo-viewport="mobile"]
+  .sidecar-assistant__selection-tray
+  .agent-nba__set--scroll::-webkit-scrollbar {
   display: none;
 }
 
-.sxs-layout__panel--mobile .agent-nba__pill,
-html[data-demo-viewport="mobile"] .agent-nba__pill {
+.sxs-layout__panel--mobile
+  .sidecar-assistant__selection-tray
+  .agent-nba__set--scroll
+  .agent-nba__pill,
+html[data-demo-viewport="mobile"]
+  .sidecar-assistant__selection-tray
+  .agent-nba__set--scroll
+  .agent-nba__pill {
   flex: 0 0 auto !important;
   max-width: none !important;
 }
 
-.sxs-layout__panel--mobile .agent-nba__pill-label,
-html[data-demo-viewport="mobile"] .agent-nba__pill-label {
+.sxs-layout__panel--mobile
+  .sidecar-assistant__selection-tray
+  .agent-nba__set--scroll
+  .agent-nba__pill-label,
+html[data-demo-viewport="mobile"]
+  .sidecar-assistant__selection-tray
+  .agent-nba__set--scroll
+  .agent-nba__pill-label {
   max-width: 220px;
+}
+
+@media (max-width: 720px) {
+  .sidecar-assistant__selection-tray .agent-nba__set--scroll {
+    display: flex;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+
+  .sidecar-assistant__selection-tray .agent-nba__set--scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidecar-assistant__selection-tray .agent-nba__set--scroll .agent-nba__pill {
+    flex: 0 0 auto !important;
+    max-width: none !important;
+  }
+
+  .sidecar-assistant__selection-tray
+    .agent-nba__set--scroll
+    .agent-nba__pill-label {
+    max-width: 220px;
+  }
 }
