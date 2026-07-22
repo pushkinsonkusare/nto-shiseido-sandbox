@@ -2412,15 +2412,31 @@ export function SidecarAssistant({
     setIsOpen(true);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const value = inputValue.trim();
-    if (!value) return;
-    setInputValue("");
-    dispatchShopperMessage(value);
+  const simulateMobileKeyboard = docked && viewportMode === "mobile";
+
+  const dismissSimulatedKeyboard = () => {
+    setSimKeyboardOpen(false);
+    inputRef.current?.blur();
   };
 
-  const simulateMobileKeyboard = docked && viewportMode === "mobile";
+  const submitComposer = () => {
+    const value = inputValue.trim();
+    if (!value) return false;
+    setInputValue("");
+    dispatchShopperMessage(value);
+    /* Composer submit collapses chrome: selection tray + demo keyboard.
+     * Tray pills keep selection for follow-ups; free-text send clears space. */
+    setSelectedSlugs([]);
+    if (simulateMobileKeyboard) {
+      dismissSimulatedKeyboard();
+    }
+    return true;
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submitComposer();
+  };
 
   const insertSimulatedKey = (text: string) => {
     setInputValue((current) => `${current}${text}`);
@@ -2431,15 +2447,7 @@ export function SidecarAssistant({
   };
 
   const submitFromSimulatedKeyboard = () => {
-    const value = inputValue.trim();
-    if (!value) return;
-    setInputValue("");
-    dispatchShopperMessage(value);
-  };
-
-  const dismissSimulatedKeyboard = () => {
-    setSimKeyboardOpen(false);
-    inputRef.current?.blur();
+    submitComposer();
   };
 
   /* When the simulated keyboard is open, a tap on an NBA/button first blurs
@@ -2925,15 +2933,31 @@ export function SidecarAssistant({
             placeholder={inputPlaceholder}
             value={inputValue}
             onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+              /* Explicit submit so Enter always sends, even when the demo
+               * keyboard / inputMode=none interferes with native form Enter. */
+              event.preventDefault();
+              submitComposer();
+            }}
             onFocus={() => {
               if (simulateMobileKeyboard) setSimKeyboardOpen(true);
             }}
             onBlur={() => {
               if (!simulateMobileKeyboard) return;
-              /* Defer so keyboard key mousedown / NBA mousedown preventDefault
+              /* Defer so keyboard key pointerdown / NBA mousedown preventDefault
                * can keep focus when the tap should both act and dismiss. */
               window.setTimeout(() => {
                 if (document.activeElement === inputRef.current) return;
+                /* If focus landed on a sim-keyboard key, keep the keyboard
+                 * mounted and reclaim focus so the pending click can submit. */
+                if (
+                  document.activeElement instanceof Element &&
+                  document.activeElement.closest(".sim-ios-keyboard")
+                ) {
+                  inputRef.current?.focus({ preventScroll: true });
+                  return;
+                }
                 setSimKeyboardOpen(false);
               }, 0);
             }}
@@ -2945,6 +2969,11 @@ export function SidecarAssistant({
             className="sidecar-assistant__send"
             aria-label="Send message"
             disabled={!inputValue.trim()}
+            onPointerDown={(event) => {
+              /* Keep focus on the input through the click so blur does not
+               * unmount the demo keyboard before submit lands. */
+              if (simulateMobileKeyboard) event.preventDefault();
+            }}
           >
             <SendHorizontalIcon width={20} height={20} />
           </button>

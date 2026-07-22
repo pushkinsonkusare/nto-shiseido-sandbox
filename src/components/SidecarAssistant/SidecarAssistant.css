@@ -420,7 +420,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 20px;
   background: rgba(250, 250, 250, 1);
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
@@ -848,7 +848,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
 .sidecar-assistant__selection-tray {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding-bottom: 12px;
 }
 
@@ -896,7 +896,8 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
   gap: 8px;
   width: 176px;
   max-width: 100%;
-  padding: 4px 10px 4px 4px;
+  height: 44px;
+  padding: 0 8px 0 0;
   background: rgba(255, 255, 255, 1);
   border: 1px solid rgba(23, 23, 27, 0.15);
   border-radius: 4px;
@@ -1173,7 +1174,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__fab {
 
   .sidecar-assistant__input-bar,
   html[data-demo-viewport="mobile"] .sidecar-assistant__input-bar {
-    padding: 12px 12px calc(12px + var(--safe-area-bottom, 0px));
+    padding: 16px 16px calc(16px + var(--safe-area-bottom, 0px));
   }
 
   .sidecar-assistant__input-shell,
@@ -1196,7 +1197,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant--docked .sidecar-assistant_
 
 html[data-demo-viewport="mobile"] .sidecar-assistant--docked .sidecar-assistant__input-bar {
   margin-top: auto;
-  padding: 12px;
+  padding: 16px;
   flex: 0 0 auto;
 }
 

@@ -35,8 +35,8 @@ function KeyButton({
       }
       aria-label={ariaLabel}
       tabIndex={-1}
-      onMouseDown={(event) => {
-        /* Keep the chat input focused while tapping keys. */
+      onPointerDown={(event) => {
+        /* Keep the chat input focused while tapping keys (mouse/touch/pen). */
         event.preventDefault();
       }}
       onClick={onPress}
@@ -61,7 +61,7 @@ export function SimulatedIOSKeyboard({
       className="sim-ios-keyboard"
       role="group"
       aria-label="Simulated keyboard"
-      onMouseDown={(event) => {
+      onPointerDown={(event) => {
         event.preventDefault();
       }}
     >
@@ -72,7 +72,7 @@ export function SimulatedIOSKeyboard({
           className="sim-ios-keyboard__dismiss"
           aria-label="Dismiss keyboard"
           tabIndex={-1}
-          onMouseDown={(event) => event.preventDefault()}
+          onPointerDown={(event) => event.preventDefault()}
           onClick={onDismiss}
         >
           <svg
