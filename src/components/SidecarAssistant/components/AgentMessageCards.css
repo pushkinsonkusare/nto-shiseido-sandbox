@@ -2052,4 +2052,54 @@
   html[data-demo-viewport="mobile"] .agent-summary__promo {
     padding: 8px 16px 0;
   }
+
+  /* One-row horizontal swipe for NBA chips — stacking eats composer space
+   * on the phone frame / narrow viewport. */
+  .agent-nba__set {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    max-width: 100%;
+  }
+
+  .agent-nba__set::-webkit-scrollbar {
+    display: none;
+  }
+
+  .agent-nba__pill {
+    flex: 0 0 auto;
+    max-width: none;
+  }
+
+  .agent-nba__pill-label {
+    max-width: 220px;
+  }
+}
+
+/* Demo phone frame is 402px wide inside a desktop browser, so the
+ * max-width media query above does not fire — mirror the swipe row here. */
+html[data-demo-viewport="mobile"] .agent-nba__set {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+html[data-demo-viewport="mobile"] .agent-nba__set::-webkit-scrollbar {
+  display: none;
+}
+
+html[data-demo-viewport="mobile"] .agent-nba__pill {
+  flex: 0 0 auto;
+  max-width: none;
+}
+
+html[data-demo-viewport="mobile"] .agent-nba__pill-label {
+  max-width: 220px;
 }
