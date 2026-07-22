@@ -2906,6 +2906,7 @@ export function SidecarAssistant({
             </div>
             {contextualThreadActive ? null : (
               <AgentNBAs
+                className="agent-nba__set--scroll"
                 nbas={contextualNbas}
                 regenerateButton={false}
                 onSelect={(nba) => {

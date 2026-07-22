@@ -2079,27 +2079,37 @@
   }
 }
 
-/* Demo phone frame is 402px wide inside a desktop browser, so the
- * max-width media query above does not fire — mirror the swipe row here. */
+/* Mobile assistant panel (class is set whenever viewportMode === "mobile",
+ * including the 402px demo frame on a wide desktop — media queries alone
+ * miss that case because the browser viewport stays >720px). */
+.sxs-layout__panel--mobile .agent-nba__set,
 html[data-demo-viewport="mobile"] .agent-nba__set {
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  display: flex;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  max-width: 100%;
+  touch-action: pan-x;
 }
 
+.sxs-layout__panel--mobile .agent-nba__set::-webkit-scrollbar,
 html[data-demo-viewport="mobile"] .agent-nba__set::-webkit-scrollbar {
   display: none;
 }
 
+.sxs-layout__panel--mobile .agent-nba__pill,
 html[data-demo-viewport="mobile"] .agent-nba__pill {
-  flex: 0 0 auto;
-  max-width: none;
+  flex: 0 0 auto !important;
+  max-width: none !important;
 }
 
+.sxs-layout__panel--mobile .agent-nba__pill-label,
 html[data-demo-viewport="mobile"] .agent-nba__pill-label {
   max-width: 220px;
 }
