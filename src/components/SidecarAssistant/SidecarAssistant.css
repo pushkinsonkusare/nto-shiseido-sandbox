@@ -283,7 +283,7 @@ html[data-demo-viewport="mobile"] .sidecar-assistant__backdrop {
 .sidecar-assistant__context-separator {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0px;
 }
 
 .sidecar-assistant__context-separator-line {
@@ -1205,6 +1205,6 @@ html[data-demo-viewport="mobile"]
   .sidecar-assistant--docked.sidecar-assistant--keyboard-open
   .sidecar-assistant__input-bar {
   margin-top: 0;
-  padding: 10px 12px;
+  padding: 16px;
   box-shadow: none;
 }

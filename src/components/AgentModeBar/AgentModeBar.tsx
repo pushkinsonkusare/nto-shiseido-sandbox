@@ -11,6 +11,11 @@ const DEMO_THEMES: { id: DemoTheme; label: string }[] = [
   { id: "consumer-electronics", label: "NTO" },
 ];
 
+/** Hidden for now — app stays on Sidecar (`assistant-only`). Flip to true
+ *  only when explicitly asked to "show" the concept switcher. Do not delete
+ *  Native / Side-by-side experiences unless explicitly asked to "delete". */
+const SHOW_CONCEPT_SWITCHER = false;
+
 export function AgentModeBar() {
   const {
     mode,
@@ -112,24 +117,26 @@ export function AgentModeBar() {
               </button>
             </div>
 
-            <div className="agent-mode-bar__section">
-              <h3 className="agent-mode-bar__section-title">Concept switcher</h3>
-              <div className="agent-mode-bar__option-grid" role="group" aria-label="Concept switcher">
-                {AGENT_MODES.map(({ id, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={
-                      "agent-mode-bar__option-button" +
-                      (mode === id ? " agent-mode-bar__option-button--active" : "")
-                    }
-                    onClick={() => handleModeClick(id)}
-                  >
-                    {label}
-                  </button>
-                ))}
+            {SHOW_CONCEPT_SWITCHER && (
+              <div className="agent-mode-bar__section">
+                <h3 className="agent-mode-bar__section-title">Concept switcher</h3>
+                <div className="agent-mode-bar__option-grid" role="group" aria-label="Concept switcher">
+                  {AGENT_MODES.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      className={
+                        "agent-mode-bar__option-button" +
+                        (mode === id ? " agent-mode-bar__option-button--active" : "")
+                      }
+                      onClick={() => handleModeClick(id)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="agent-mode-bar__section">
               <h3 className="agent-mode-bar__section-title">Platform switcher</h3>

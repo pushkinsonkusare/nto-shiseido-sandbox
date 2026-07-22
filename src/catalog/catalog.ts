@@ -63,6 +63,11 @@ export type CatalogProduct = {
   /** Raw ingredient copy from the source dataset (key highlights + INCI list).
    * Empty string when the dataset has no meaningful ingredient data ("N/A"). */
   ingredients: string;
+  /**
+   * Step-by-step application tips from the PDP. Empty when the crawl left
+   * placeholder/"N/A" usage copy.
+   */
+  howToUse: string[];
   specs: CatalogSpec[];
   inTheBox: string[];
   productUrl: string;
@@ -628,6 +633,9 @@ function normalizeProduct(record: ShiseidoRecord): CatalogProduct {
     overview: isPlaceholderCopy(record.overview) ? "" : record.overview,
     featureBlocks,
     ingredients: isPlaceholderCopy(record.ingredients) ? "" : record.ingredients,
+    howToUse: record.howToUse
+      .map((step) => step.trim())
+      .filter((step) => step && !isPlaceholderCopy(step)),
     specs: buildSpecs(record),
     inTheBox: [],
     productUrl: record.pdpUrl,

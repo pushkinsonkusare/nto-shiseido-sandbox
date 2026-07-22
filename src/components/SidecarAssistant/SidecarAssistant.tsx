@@ -88,6 +88,55 @@ const CONTEXTUAL_ACTION_LABELS = new Set(["Show similar", "Compare", "Add to car
 /** Always-present FAQ pill for a single selected product. */
 const INGREDIENTS_FAQ_LABEL = "What are the ingredients?";
 
+/** Normalize free-text so "Compare!", "compare these", etc. can match pills. */
+function normalizeComposerQuery(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[.!?]+$/g, "")
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * When the selection tray is open, map typed composer text onto the same
+ * contextual actions/FAQs the tray pills trigger. Returns the canonical pill
+ * label, or null if the text should take the normal free-text path.
+ */
+function resolveContextualComposerLabel(
+  text: string,
+  selectedSlugs: string[],
+  getProductBySlug: (slug: string) => CatalogProduct | undefined,
+): string | null {
+  if (selectedSlugs.length === 0) return null;
+  const normalized = normalizeComposerQuery(text);
+  if (!normalized) return null;
+
+  // Action aliases — typed equivalents of tray / contextual action pills.
+  if (/^compare(\s+(them|these|products?|items?))?$/.test(normalized)) {
+    return "Compare";
+  }
+  if (
+    /^(show\s+similar|similar(\s+products?)?|find\s+similar)$/.test(normalized)
+  ) {
+    return "Show similar";
+  }
+
+  // Exact match against the tray pills currently offered for this selection.
+  const labels: string[] = [];
+  if (selectedSlugs.length >= 2) {
+    labels.push("Compare");
+  } else {
+    const product = getProductBySlug(selectedSlugs[0]);
+    if (product) {
+      const [faq1, faq2] = buildContextualFaqs(product);
+      labels.push("Show similar", faq1, faq2, INGREDIENTS_FAQ_LABEL);
+    }
+  }
+  return (
+    labels.find((label) => normalizeComposerQuery(label) === normalized) ?? null
+  );
+}
+
 /**
  * Sitewide em-dash scrub for agent utterances. Applied to every message before
  * it is appended so both deterministic copy and free-form LLM output stay in a
@@ -499,6 +548,7 @@ function buildNbasMessage(
     stage?: NbaStage | "welcome";
     laneByLabel?: Record<string, NbaLane>;
     idPrefix?: string;
+    productSlug?: string;
   } = {},
 ): ChatMessage {
   return {
@@ -507,6 +557,7 @@ function buildNbasMessage(
     regenerateButton,
     stage: options.stage,
     laneByLabel: options.laneByLabel,
+    productSlug: options.productSlug,
     nbas: buildNbaItems(labels, options.idPrefix ?? "nba"),
   };
 }
@@ -515,6 +566,7 @@ function buildStageNbasMessage(
   stage: NbaStage,
   items: StageNbaItem[],
   regenerateButton = true,
+  options: { productSlug?: string } = {},
 ): ChatMessage {
   const labels = items.map((item) => item.label);
   const laneByLabel = items.reduce<Record<string, NbaLane>>((acc, item) => {
@@ -525,6 +577,7 @@ function buildStageNbasMessage(
     stage,
     laneByLabel,
     idPrefix: `nba-${stage}`,
+    productSlug: options.productSlug,
   });
 }
 
@@ -1127,7 +1180,9 @@ export function SidecarAssistant({
           matchingBundle: findMatchingBundle(product, products),
           catalog: products,
         });
-        const nbasMessage = buildStageNbasMessage("pdp", items);
+        const nbasMessage = buildStageNbasMessage("pdp", items, true, {
+          productSlug: product.slug,
+        });
         appendMessage(nbasMessage);
         emitAssistantTelemetry("nba_impression", {
           stage: "pdp",
@@ -1604,7 +1659,11 @@ export function SidecarAssistant({
           matchingBundle: findMatchingBundle(lastPdpProduct, products),
           catalog: products,
         });
-        appendMessage(buildStageNbasMessage("pdp", items));
+        appendMessage(
+          buildStageNbasMessage("pdp", items, true, {
+            productSlug: lastPdpProduct.slug,
+          }),
+        );
         emitAssistantTelemetry("nba_impression", {
           stage: "pdp",
           labels: items.map((item) => item.label),
@@ -1918,8 +1977,8 @@ export function SidecarAssistant({
 
       // Any pill that isn't a dedicated action (Show similar / Compare) is a
       // product FAQ, answered locally from catalog data so it always returns a
-      // single, product-grounded reply. The selection tray stays open for
-      // follow-up questions.
+      // single, product-grounded reply. Follow-ups move in-chat; the tray
+      // collapses on pill tap / composer submit.
       if (firstProduct && !CONTEXTUAL_ACTION_LABELS.has(label)) {
         // When the context island is off, drop an in-chat context separator so
         // the shopper always sees which product the FAQ thread is about. Only
@@ -2125,6 +2184,36 @@ export function SidecarAssistant({
 
       removeMessage(messageId);
 
+      // PDP follow-ups are about the product on the card above — route
+      // reviews / similar / compare chips through product-scoped handlers
+      // instead of the generic free-text probe.
+      if (
+        clicked?.kind === "agent_nbas" &&
+        clicked.stage === "pdp" &&
+        clicked.productSlug
+      ) {
+        const slug = clicked.productSlug;
+        const normalized = label.trim().toLowerCase();
+        if (
+          /what do reviews say/.test(normalized) ||
+          /\breviews?\b/.test(normalized)
+        ) {
+          handleContextualPill(label, slug);
+          return;
+        }
+        if (
+          /^show similar/.test(normalized) ||
+          /^show more like this/.test(normalized)
+        ) {
+          handleContextualPill("Show similar", slug);
+          return;
+        }
+        if (/^compare with similar/.test(normalized)) {
+          handleContextualPill("Compare", slug);
+          return;
+        }
+      }
+
       if (isPlpRefinement && activePlpIntentRef.current?.categories?.length) {
         dispatchPlpRefinement(label);
         return;
@@ -2134,6 +2223,7 @@ export function SidecarAssistant({
     [
       dispatchPlpRefinement,
       dispatchShopperMessage,
+      handleContextualPill,
       removeMessage,
       welcomeRefreshCount,
     ],
@@ -2423,9 +2513,43 @@ export function SidecarAssistant({
     const value = inputValue.trim();
     if (!value) return false;
     setInputValue("");
+
+    /* With a selection open, typed "compare" / "show similar" / FAQ copy
+     * should take the same path as the tray pills — not the generic probe. */
+    const contextualLabel = resolveContextualComposerLabel(
+      value,
+      selectedSlugs,
+      getProductBySlug,
+    );
+    if (contextualLabel) {
+      handleContextualPill(contextualLabel);
+      setSelectedSlugs([]);
+      if (simulateMobileKeyboard) {
+        dismissSimulatedKeyboard();
+      }
+      return true;
+    }
+
+    /* Product-scoped free text (single selection, or an active FAQ thread
+     * with context island product) goes through resolveProductFaq — so
+     * "what sizes does it come in?" answers like the tray pills, instead
+     * of falling through to the generic probing fallback. */
+    const focusSlug =
+      selectedSlugs.length === 1
+        ? selectedSlugs[0]
+        : contextualThreadActive && contextProduct
+          ? contextProduct.slug
+          : null;
+    if (focusSlug) {
+      handleContextualPill(value, focusSlug);
+      setSelectedSlugs([]);
+      if (simulateMobileKeyboard) {
+        dismissSimulatedKeyboard();
+      }
+      return true;
+    }
+
     dispatchShopperMessage(value);
-    /* Composer submit collapses chrome: selection tray + demo keyboard.
-     * Tray pills keep selection for follow-ups; free-text send clears space. */
     setSelectedSlugs([]);
     if (simulateMobileKeyboard) {
       dismissSimulatedKeyboard();
@@ -2920,6 +3044,9 @@ export function SidecarAssistant({
                 onSelect={(nba) => {
                   handleContextualPill(nba.label);
                   setSelectedSlugs([]);
+                  if (simulateMobileKeyboard) {
+                    dismissSimulatedKeyboard();
+                  }
                 }}
               />
             )}

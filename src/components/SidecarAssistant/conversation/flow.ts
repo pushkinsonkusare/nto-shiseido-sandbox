@@ -1431,8 +1431,9 @@ function buildPdpNbas(
   catalog: CatalogProduct[] | undefined,
 ): StageNbaItem[] {
   const category = humanCategory(product.category);
+  // Skip "Add … to cart" — the PDP card already has a primary Add to Cart CTA.
   const items: StageNbaItem[] = [
-    { label: `Add ${product.title} to cart`, lane: "conversion" },
+    { label: "Show similar products", lane: "refinement" },
   ];
 
   // Bundle upsell takes priority because it's the highest-AOV next move.

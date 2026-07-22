@@ -492,11 +492,17 @@ function waterproofAnswer(product: CatalogProduct): string {
 }
 
 function batteryAnswer(product: CatalogProduct): string {
-  // Answers "how long does it last / how do I use it?", sourced from
-  // the Sizes and Routine specs plus any usage feature copy.
+  // Answers "how do I use it / when / how often?", preferring curated
+  // howToUse steps, then usage feature copy, then routine specs.
   if (needsComponentComposition(product)) {
     const composed = composeComponentHowToUseAnswer(product);
     if (composed) return composed;
+  }
+  if (product.howToUse.length > 0) {
+    const steps = product.howToUse
+      .slice(0, 3)
+      .map((step) => (/[.!?]$/.test(step) ? step : `${step}.`));
+    return joinSentences([`For the ${product.title}:`, ...steps]);
   }
   const block = findFeatureBlockMatching(product, [
     /\bapply\b/i,
@@ -504,6 +510,8 @@ function batteryAnswer(product: CatalogProduct): string {
     /\bevening\b/i,
     /\bdaily\b/i,
     /\broutine\b/i,
+    /\bmassage\b/i,
+    /\bpump\b/i,
   ]);
   if (block && !/^n\/?a\b/i.test(block)) {
     return block;
@@ -517,6 +525,71 @@ function batteryAnswer(product: CatalogProduct): string {
   const composed = composeComponentHowToUseAnswer(product);
   if (composed) return composed;
   return `Apply the ${product.title} as directed, morning and evening — a little goes a long way.`;
+}
+
+function priceAnswer(product: CatalogProduct): string {
+  if (product.comparePriceFormatted) {
+    return `The ${product.title} is ${product.priceFormatted} (was ${product.comparePriceFormatted}).`;
+  }
+  return `The ${product.title} is ${product.priceFormatted}.`;
+}
+
+function availabilityAnswer(product: CatalogProduct): string {
+  if (/out\s+of\s+stock/i.test(product.badgeLabel)) {
+    return `The ${product.title} is currently out of stock. Want me to suggest something similar?`;
+  }
+  return `Yes — the ${product.title} is available. You can add it to your cart whenever you're ready.`;
+}
+
+function scentAnswer(product: CatalogProduct): string {
+  const fragranceFreeBlock = findFeatureBlockMatching(product, [
+    /\bfragrance[-\s]?free\b/i,
+    /\bunscented\b/i,
+    /\bno\s+fragrance\b/i,
+  ]);
+  if (fragranceFreeBlock) {
+    return `Yes — the ${product.title} is fragrance-free.`;
+  }
+  const raw = product.ingredients || "";
+  if (/\bfragrance[-\s]?free\b/i.test(raw)) {
+    return `The ${product.title} is fragrance-free.`;
+  }
+  if (/\bfragrance\b|\bparfum\b/i.test(raw)) {
+    return `The ${product.title} includes a light fragrance. If you're scent-sensitive, patch-test first.`;
+  }
+  return `The ${product.title} doesn't call out a strong scent — most of what you'll notice is the texture and finish.`;
+}
+
+function aboutProductAnswer(product: CatalogProduct): string {
+  const lead = overviewLead(product);
+  if (lead) return lead;
+  const benefits = benefitBlocks(product).filter((b) => !/^n\/?a\b/i.test(b));
+  if (benefits.length > 0) {
+    return joinSentences(
+      benefits.slice(0, 2).map((b) => (/[.!?]$/.test(b) ? b : `${b}.`)),
+    );
+  }
+  return specsAnswer(product);
+}
+
+function reviewsAnswer(product: CatalogProduct): string {
+  const rating = product.rating;
+  const count = product.reviewCount;
+  if (typeof rating === "number" && typeof count === "number") {
+    const score = rating.toFixed(1);
+    const reviews = count.toLocaleString();
+    if (rating >= 4.6) {
+      return `Shoppers love the ${product.title} — it's rated ${score} out of 5 from ${reviews} reviews, one of the stronger scores in this lineup.`;
+    }
+    if (rating >= 4.0) {
+      return `The ${product.title} is rated ${score} out of 5 from ${reviews} reviews. Overall feedback is solid.`;
+    }
+    return `The ${product.title} is rated ${score} out of 5 from ${reviews} reviews. Want me to compare it with a higher-rated alternative?`;
+  }
+  if (typeof rating === "number") {
+    return `The ${product.title} is rated ${rating.toFixed(1)} out of 5.`;
+  }
+  return `I don't have detailed review quotes on hand for the ${product.title}, but I can compare it with similar options or open the full product page.`;
 }
 
 function dimensionsAnswer(product: CatalogProduct): string {
@@ -790,81 +863,204 @@ function fuzzyMatchSpec(
  * Resolve a programmatic FAQ answer for a `(product, prompt)` pair.
  *
  * The classifier inspects the prompt against canonical NBA-pill copy
- * patterns ("what's included?", "is this good for beginners?", "walk
- * me through the benefits", "which skin type is this for?", "what does
- * it target?") and picks the matching builder. Unknown prompts fall
- * back to a concise spec snippet so the answer is at least
- * product-relevant.
+ * and common free-text cosmetics phrasings ("what's in it?", "how do I
+ * apply this?", "is it good for dark spots?") and picks the matching
+ * builder. Unknown prompts fall back to a concise product-grounded
+ * snippet before a soft deflection.
  */
 export function resolveProductFaq(
   product: CatalogProduct,
   prompt: string,
 ): string {
-  const q = prompt.toLowerCase();
+  const q = prompt
+    .toLowerCase()
+    .replace(/[“”"']/g, "")
+    .replace(/[.!?]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
-  if (/\bwhat'?s?\s+included\b|\bincludes?\b|\bin\s+the\s+set\b|\bset\s+contents?\b|\bcomes?\s+with\b/.test(q)) {
-    return inTheBoxAnswer(product);
-  }
-  if (/\bbeginner|first[-\s]?time|easy\s+to\s+use|starter|entry[-\s]?level|new\s+to\s+skincare\b/.test(q)) {
-    return beginnerAnswer(product);
-  }
-  if (/\b(spec|specs|specification|key\s+specs?|details)\b/.test(q)) {
-    return specsAnswer(product);
-  }
-  if (/\beveryday|daily\s+use|prestige|advanced\s+care|luxur\w*|splurge\b/.test(q)) {
-    return travelAnswer(product);
-  }
-  // Skin-type / sensitivity questions are checked BEFORE the generic "good
-  // for" benefit pattern, so "is this good for sensitive skin?" / "good for
-  // dry skin" get a real answer instead of a benefit blurb.
-  if (/\b(sensitive|gentle|fragrance[-\s]?free|non[-\s]?comedogenic|irritat\w*|reactive|allerg\w*|hypoallergenic)\b/.test(q)) {
-    return waterproofAnswer(product);
-  }
-  if (/\b(skin\s*type|dry\s+skin|oily\s+skin|combination\s+skin|normal\s+skin|all\s+skin|who\s+is\s+it\s+for|suitable\s+for)\b/.test(q)) {
-    return connectivityAnswer(product);
-  }
-  if (/\btarget\w*|concern\w*|benefit\w*|what\s+does\s+it\s+do|good\s+for\b/.test(q)) {
-    return resolutionAnswer(product);
-  }
-  if (/\b(how\s+to\s+use|how\s+do\s+i\s+use|apply|application|routine|morning|evening|night|am\b|pm\b|how\s+often|how\s+long\s+(does\s+it\s+last|will\s+it\s+last)|last)\b/.test(q)) {
-    return batteryAnswer(product);
-  }
-  if (/\b(size|sizes|volume|ml\b|how\s+much\s+product|how\s+big|capacity|how\s+many\s+ml)\b/.test(q)) {
-    return dimensionsAnswer(product);
-  }
-  if (/\b(collection|line\b|lineup|which\s+range|part\s+of)\b/.test(q)) {
-    return rangeAnswer(product);
-  }
-  if (/\b(layer|pair\s+with|what\s+to\s+use\s+with|combine|goes\s+with|next\s+step|order\s+of|before\s+or\s+after)\b/.test(q)) {
-    return audioAnswer(product);
-  }
-  if (/\b(texture|finish|absorb\w*|greasy|sticky|feel\b|lightweight|rich\b|cream\b|gel\b|lotion\b|emulsion\b|consistency)\b/.test(q)) {
-    return stabilizationAnswer(product);
-  }
-  // Ingredient-specific questions get the curated ingredient list; broader
-  // "does it work / results" questions fall through to the benefits answer.
-  if (/\b(ingredients?|what'?s?\s+in\s+it|inci|actives?|retinol|vitamin|hyaluronic)\b/.test(q)) {
+  // --- Ingredients / formula / composition ---
+  if (
+    /\b(ingredients?|composition|formula|formulation|inci|actives?|key\s+ingredients?|what'?s?\s+(in\s+it|inside)|what\s+(is\s+it|its)\s+made\s+(of|with)|made\s+(of|with|from)|contains?\s+what|what\s+does\s+it\s+contain|retinol|vitamin\s*c|hyaluronic|niacinamide|peptides?|ceramides?)\b/.test(
+      q,
+    )
+  ) {
     return ingredientsAnswer(product);
   }
-  if (/\b(result\w*|does\s+it\s+work|effective\w*|proven|how\s+long\s+to\s+see)\b/.test(q)) {
-    return lowLightAnswer(product);
+
+  // --- Sensitive / gentle / allergy / pregnancy caution ---
+  if (
+    /\b(sensitive|gentle|fragrance[-\s]?free|unscented|non[-\s]?comedogenic|won'?t\s+clog|clog\s+(my\s+)?pores?|irritat\w*|reactive|allerg\w*|hypoallergenic|patch[-\s]?test|pregnant|pregnancy|nursing|breastfeed\w*)\b/.test(
+      q,
+    )
+  ) {
+    if (/\b(pregnant|pregnancy|nursing|breastfeed\w*)\b/.test(q)) {
+      return `For pregnancy or nursing, check with your dermatologist before using the ${product.title}. I can share the ingredient list if that helps your conversation.`;
+    }
+    return waterproofAnswer(product);
   }
-  if (/\bwaterproof\b|water[-\s]?resist\w*|\bsweat\b|\bswim\w*/.test(q)) {
-    return waterResistanceAnswer(product);
+
+  // --- Skin type ---
+  if (
+    /\b(skin\s*types?|dry\s+skin|oily\s+skin|combination\s+skin|normal\s+skin|all\s+skin|who\s+(is\s+it|can\s+use)|suitable\s+for|good\s+for\s+my\s+skin|which\s+skin|what\s+skin)\b/.test(
+      q,
+    )
+  ) {
+    return connectivityAnswer(product);
   }
-  if (/\b(spf|sunscreen|sun\s+protect\w*|uv\b|sunblock)\b/.test(q)) {
-    // Sunscreens are best answered with their benefit/target copy.
+
+  // --- How to use / when / how often / amount ---
+  if (
+    /\b(how\s+to\s+use|how\s+do\s+i\s+use|how\s+should\s+i\s+use|how\s+do\s+you\s+use|apply|application|directions?|instructions?|when\s+(do\s+i|to)\s+(use|apply)|how\s+often|how\s+much\s+(do\s+i|to)\s+(use|apply)|pea[-\s]?size|morning|evening|night\s+time|at\s+night|am\b|pm\b|day\s+or\s+night|daytime|nighttime|how\s+long\s+(does\s+it\s+last|will\s+it\s+last)|shelf\s+life|expire|expiry|best\s+before)\b/.test(
+      q,
+    ) ||
+    /\b(use|using|apply|wear)\s+(it|this)\b/.test(q)
+  ) {
+    return batteryAnswer(product);
+  }
+
+  // --- Reviews / ratings ---
+  if (
+    /\b(reviews?|ratings?|what\s+do\s+(reviews?|people|shoppers|customers)\s+say|how\s+is\s+it\s+rated|stars?\b|what\s+do\s+people\s+think)\b/.test(
+      q,
+    )
+  ) {
+    return reviewsAnswer(product);
+  }
+
+  // --- Size / volume / travel ---
+  if (
+    /\b(sizes?|volume|capacity|how\s+big|how\s+much\s+product|how\s+many\s+(ml|oz)|ml\b|fl\.?\s*oz|ounces?|travel\s+size|refill|pump)\b/.test(
+      q,
+    )
+  ) {
+    return dimensionsAnswer(product);
+  }
+
+  // --- Price ---
+  if (
+    /\b(price|cost|how\s+much(\s+is\s+it)?|expensive|affordable|on\s+sale|discount|what\s+does\s+it\s+cost)\b/.test(
+      q,
+    )
+  ) {
+    return priceAnswer(product);
+  }
+
+  // --- Stock / availability ---
+  if (
+    /\b(in\s+stock|out\s+of\s+stock|available|availability|can\s+i\s+buy|do\s+you\s+have|sold\s+out)\b/.test(
+      q,
+    )
+  ) {
+    return availabilityAnswer(product);
+  }
+
+  // --- Bundle contents ---
+  if (
+    /\b(what'?s?\s+included|includes?|in\s+the\s+(set|box|kit)|set\s+contents?|comes?\s+with|what'?s?\s+in\s+the\s+(set|box|kit)|what\s+do\s+i\s+get)\b/.test(
+      q,
+    )
+  ) {
+    return inTheBoxAnswer(product);
+  }
+
+  // --- Beginner / first time ---
+  if (
+    /\b(beginner|first[-\s]?time|easy\s+to\s+use|starter|entry[-\s]?level|new\s+to\s+skincare|just\s+starting|newbie)\b/.test(
+      q,
+    )
+  ) {
+    return beginnerAnswer(product);
+  }
+
+  // --- Collection / line ---
+  if (
+    /\b(collection|line\b|lineup|which\s+range|part\s+of|which\s+(line|collection)|from\s+the)\b/.test(
+      q,
+    )
+  ) {
+    return rangeAnswer(product);
+  }
+
+  // --- Layering / pairing ---
+  if (
+    /\b(layer|layering|pair\s+with|what\s+to\s+use\s+with|combine|goes\s+with|next\s+step|order\s+of|before\s+or\s+after|after\s+(cleanser|serum|moisturizer)|before\s+(moisturizer|cream|sunscreen)|what\s+comes?\s+(before|after)|routine\s+order|where\s+in\s+(my\s+)?routine|in\s+my\s+routine|stack\s+with)\b/.test(
+      q,
+    )
+  ) {
+    return audioAnswer(product);
+  }
+
+  // --- Texture / feel ---
+  if (
+    /\b(texture|finish|absorb\w*|greasy|sticky|feel\b|feels?\s+like|lightweight|rich\b|cream\b|gel\b|lotion\b|emulsion\b|serum[-\s]?like|consistency|silky|matte|dewy|oily\s+finish)\b/.test(
+      q,
+    )
+  ) {
+    return stabilizationAnswer(product);
+  }
+
+  // --- Scent ---
+  if (/\b(scent|smell|fragrance|perfume|odour|odor|aromatic)\b/.test(q)) {
+    return scentAnswer(product);
+  }
+
+  // --- SPF / sun ---
+  if (/\b(spf|sunscreen|sun\s+protect\w*|uv\b|sunblock|sun\s+care)\b/.test(q)) {
     return resolutionAnswer(product);
   }
 
-  // Unknown question: try a single concise spec snippet that mentions
-  // a content word from the prompt before deflecting to a one-liner.
-  // Critically, we no longer return `product.shortDescription` here:
-  // that's a multi-paragraph feature-block dump that read like
-  // "everything thrown at me randomly".
+  // --- Water / sweat resistance ---
+  if (/\bwaterproof\b|water[-\s]?resist\w*|\bsweat\b|\bswim\w*|\bperspir\w*/.test(q)) {
+    return waterResistanceAnswer(product);
+  }
+
+  // --- Results / efficacy ---
+  if (
+    /\b(result\w*|does\s+it\s+work|will\s+it\s+work|effective\w*|proven|clinical|how\s+long\s+(to|until|before)\s+(see|notice)|when\s+will\s+i\s+see|how\s+soon)\b/.test(
+      q,
+    )
+  ) {
+    return lowLightAnswer(product);
+  }
+
+  // --- Targets / benefits / concerns (broad cosmetics intents) ---
+  if (
+    /\b(target\w*|concern\w*|benefit\w*|what\s+does\s+(it|this)\s+do|what\s+is\s+it\s+for|good\s+for|helps?\s+with|treats?|reduces?|improves?|wrinkle\w*|fine\s+lines?|anti[-\s]?ag\w*|aging|ageing|dark\s+spots?|pigment\w*|brighten\w*|dull(ness)?|firm\w*|sag\w*|lift\w*|hydrat\w*|moisturi[sz]\w*|acne|blemish\w*|pore\w*|oil\s+control|redness|even\s+tone|radiance|glow|collagen|elasticity|eye\s+bags?|puffiness|crow'?s?\s+feet)\b/.test(
+      q,
+    )
+  ) {
+    return resolutionAnswer(product);
+  }
+
+  // --- Everyday vs prestige positioning ---
+  if (
+    /\b(everyday|daily\s+use|prestige|advanced\s+care|luxur\w*|splurge|worth\s+it|high[-\s]?end|entry[-\s]?level\s+or)\b/.test(
+      q,
+    )
+  ) {
+    return travelAnswer(product);
+  }
+
+  // --- Specs / details / "tell me about" ---
+  if (
+    /\b(spec|specs|specification|key\s+specs?|details|tell\s+me\s+about|what\s+is\s+(this|it)|about\s+(this|it|the\s+product)|overview|describe)\b/.test(
+      q,
+    )
+  ) {
+    return aboutProductAnswer(product);
+  }
+
+  // Unknown: fuzzy spec hit, then overview/benefits, then soft deflection.
   const fuzzy = fuzzyMatchSpec(product, q);
   if (fuzzy) {
     return `The ${product.title}'s ${fuzzy.label.toLowerCase()} is ${fuzzy.value}.`;
+  }
+  const about = aboutProductAnswer(product);
+  if (about && !/^The .+ at a glance/i.test(about)) {
+    // Prefer a real overview/benefit answer over a bare specs dump for
+    // unmatched free text — still product-grounded, less like a deflection.
+    return about;
   }
   return `I don't have that detail on hand for the ${product.title} — want me to suggest something similar or share the full product page?`;
 }
