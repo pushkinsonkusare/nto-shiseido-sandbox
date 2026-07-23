@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCatalog } from "../../catalog/CatalogContext";
-import { useAgentMode } from "../AgentModeBar/AgentModeContext";
+import { useAgentMode, UT_WELCOME_NBA_LABEL } from "../AgentModeBar/AgentModeContext";
 import {
   ChevronRightIcon,
   CloseIcon,
@@ -645,7 +645,8 @@ export function SidecarAssistant({
 }: SidecarAssistantProps = {}) {
   const { products, heroProduct, getProductBySlug, getRelatedProducts, orderHistory } =
     useCatalog();
-  const { accordionRecommendations, contextIsland, viewportMode } = useAgentMode();
+  const { accordionRecommendations, contextIsland, viewportMode, userTestingLock } =
+    useAgentMode();
   const [isOpen, setIsOpen] = useState(false);
   const [simKeyboardOpen, setSimKeyboardOpen] = useState(false);
 
@@ -2371,7 +2372,10 @@ export function SidecarAssistant({
   useEffect(() => {
     if (!isOpen) return;
     if (messages.length > 0) return;
-    const welcomeLabels = buildWelcomeNbas(0);
+    // UserTesting lock: one study chip only — testers click/type to reveal A/B.
+    const welcomeLabels = userTestingLock
+      ? [UT_WELCOME_NBA_LABEL]
+      : buildWelcomeNbas(0);
     const welcomeNbasId = nextId("nbas");
     welcomeNbasMessageIdRef.current = welcomeNbasId;
     setWelcomeRefreshCount(0);
@@ -2389,7 +2393,7 @@ export function SidecarAssistant({
       {
         id: welcomeNbasId,
         kind: "agent_nbas",
-        regenerateButton: true,
+        regenerateButton: !userTestingLock,
         nbas: buildNbaItems(welcomeLabels, "nba-welcome"),
       },
     ];
@@ -2399,7 +2403,7 @@ export function SidecarAssistant({
       refreshCount: 0,
       thresholds: LANDING_NBA_SUCCESS_THRESHOLDS,
     });
-  }, [isOpen, messages.length]);
+  }, [isOpen, messages.length, userTestingLock]);
 
   // Hybrid auto-scroll:
   // - Small new cards stay bottom-oriented.

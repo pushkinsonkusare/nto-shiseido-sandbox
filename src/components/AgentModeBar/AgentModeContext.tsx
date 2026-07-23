@@ -14,17 +14,16 @@ export const AGENT_MODES: { id: AgentMode; label: string }[] = [
 
 export type DemoViewportMode = "desktop" | "mobile";
 
-/** Fixed seed for UserTesting A/B oily-skin studies. Overridable via ?prompt=. */
-export const UT_DEFAULT_PROMPT = "best skincare for oily skin";
-
 export type UserTestingVariant = "a" | "b";
+
+/** Single welcome NBA shown under UserTesting lock (`?ut=a|b`). */
+export const UT_WELCOME_NBA_LABEL = "Skincare for oily skin";
 
 type UserTestingBootstrap = {
   variant: UserTestingVariant | null;
   userTestingLock: boolean;
   accordionRecommendations: boolean;
   viewportMode: DemoViewportMode;
-  seedPrompt: string;
 };
 
 type AgentModeContextValue = {
@@ -40,11 +39,9 @@ type AgentModeContextValue = {
   setContextIsland: (enabled: boolean) => void;
   /**
    * True when the page was opened with `?ut=a` or `?ut=b`. Locks the
-   * experience for UserTesting (hides AgentModeBar, seeds the oily-skin prompt).
+   * experience for UserTesting (hides AgentModeBar, single welcome NBA).
    */
   userTestingLock: boolean;
-  /** Seed prompt used when `userTestingLock` is active. */
-  utSeedPrompt: string;
 };
 
 const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefined);
@@ -65,7 +62,6 @@ function readUserTestingBootstrap(): UserTestingBootstrap {
       userTestingLock: false,
       accordionRecommendations: DEFAULT_ACCORDION_RECOMMENDATIONS,
       viewportMode: DEFAULT_VIEWPORT_MODE,
-      seedPrompt: UT_DEFAULT_PROMPT,
     };
   }
 
@@ -79,16 +75,12 @@ function readUserTestingBootstrap(): UserTestingBootstrap {
   const viewportOverride: DemoViewportMode | null =
     viewportRaw === "mobile" || viewportRaw === "desktop" ? viewportRaw : null;
 
-  const promptRaw = params.get("prompt")?.trim();
-  const seedPrompt = promptRaw || UT_DEFAULT_PROMPT;
-
   if (!userTestingLock) {
     return {
       variant: null,
       userTestingLock: false,
       accordionRecommendations: DEFAULT_ACCORDION_RECOMMENDATIONS,
       viewportMode: DEFAULT_VIEWPORT_MODE,
-      seedPrompt,
     };
   }
 
@@ -98,7 +90,6 @@ function readUserTestingBootstrap(): UserTestingBootstrap {
     // A = accordion on (one fold open); B = all sections open
     accordionRecommendations: variant === "a",
     viewportMode: viewportOverride ?? "mobile",
-    seedPrompt,
   };
 }
 
@@ -129,7 +120,6 @@ export function AgentModeProvider({ children }: { children: ReactNode }) {
       contextIsland,
       setContextIsland,
       userTestingLock: UT_BOOTSTRAP.userTestingLock,
-      utSeedPrompt: UT_BOOTSTRAP.seedPrompt,
     }),
     [mode, viewportMode, accordionRecommendations, contextIsland],
   );

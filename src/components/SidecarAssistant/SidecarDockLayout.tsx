@@ -14,11 +14,8 @@ type Props = {
 // keyframe / transition durations in SideBySideLayout.css.
 const FAB_REVEAL_DELAY_MS = 280;
 
-/** Module-level guard so React StrictMode remount does not double-seed UT. */
-let utPromptSeeded = false;
-
 export function SidecarDockLayout({ children }: Props) {
-  const { viewportMode, userTestingLock, utSeedPrompt } = useAgentMode();
+  const { viewportMode, userTestingLock } = useAgentMode();
   const isMobileViewport = viewportMode === "mobile";
 
   const [panelOpen, setPanelOpen] = useState(() => userTestingLock);
@@ -77,6 +74,8 @@ export function SidecarDockLayout({ children }: Props) {
   // Open on the same storefront events the sidecar/SxS assistants listen for.
   // The `agentic:ask-assistant` prompt itself is seeded by SidecarAssistant's
   // own listener; here we only need to open the panel so the grid reflows.
+  // UserTesting lock opens the panel on load (initial state above) but does
+  // not auto-dispatch a prompt — testers click/type the welcome NBA instead.
   useEffect(() => {
     const onOpen = () => openPanel();
     document.addEventListener("agentic:open-assistant", onOpen);
@@ -86,25 +85,6 @@ export function SidecarDockLayout({ children }: Props) {
       document.removeEventListener("agentic:ask-assistant", onOpen);
     };
   }, []);
-
-  // UserTesting lock: once SidecarAssistant is mounted, fire the seeded
-  // oily-skin prompt so testers land on the routine card immediately.
-  useEffect(() => {
-    if (!userTestingLock || !panelMounted) return;
-    if (utPromptSeeded) return;
-    utPromptSeeded = true;
-    const prompt = utSeedPrompt.trim();
-    if (!prompt) return;
-    // Defer so SidecarAssistant's ask listener is registered after mount.
-    const timer = window.setTimeout(() => {
-      document.dispatchEvent(
-        new CustomEvent("agentic:ask-assistant", {
-          detail: { prompt },
-        }),
-      );
-    }, 50);
-    return () => window.clearTimeout(timer);
-  }, [userTestingLock, panelMounted, utSeedPrompt]);
 
   useEffect(() => {
     if (!isMobileViewport) return;
