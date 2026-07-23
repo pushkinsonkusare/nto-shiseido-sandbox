@@ -1,0 +1,14 @@
+---
+description: Concept switcher is hidden; wait for explicit show or delete
+alwaysApply: true
+---
+
+# Concept switcher (AgentModeBar)
+
+The Concept switcher section in `AgentModeBar` is **hidden for now** via `SHOW_CONCEPT_SWITCHER = false` in `src/components/AgentModeBar/AgentModeBar.tsx`.
+
+- App remains on Sidecar (`assistant-only`). Native Storefront and Side by side experiences stay in the codebase.
+- Only act when the user **explicitly** says:
+  - **"show"** — set `SHOW_CONCEPT_SWITCHER` to `true` (restore the section)
+  - **"delete"** — remove the Concept switcher UI and/or the other experiences as instructed
+- Do not re-enable, delete, or refactor those modes unprompted.
