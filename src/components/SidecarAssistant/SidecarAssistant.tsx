@@ -2750,6 +2750,10 @@ export function SidecarAssistant({
               />
             );
           case "context_separator": {
+            // Context island owns product scope in the header — hide the
+            // in-chat divider whenever that feature is on (including mid-thread
+            // toggles that left separators already in message history).
+            if (contextIsland) return null;
             const product = getProductBySlug(message.productSlug);
             if (!product) return null;
             return (
@@ -2802,6 +2806,7 @@ export function SidecarAssistant({
       selectedSet,
       messages,
       accordionRecommendations,
+      contextIsland,
     ],
   );
 
