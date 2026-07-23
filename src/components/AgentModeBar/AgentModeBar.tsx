@@ -26,6 +26,7 @@ export function AgentModeBar() {
     setAccordionRecommendations,
     contextIsland,
     setContextIsland,
+    userTestingLock,
   } = useAgentMode();
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [theme, setTheme] = useState<DemoTheme>(() => {
@@ -56,7 +57,9 @@ export function AgentModeBar() {
      * DON'T persist this to localStorage anymore. Every page
      * refresh resets to Sidecar assistant + Desktop
      * (see `AgentModeContext.tsx`). One-time cleanup of any stale
-     * value left by a previous build keeps the storage tidy. */
+     * value left by a previous build keeps the storage tidy.
+     * Still runs under UserTesting lock so `data-demo-viewport`
+     * is applied even when the FAB is hidden. */
     const root = document.documentElement;
     root.setAttribute("data-demo-viewport", viewportMode);
     try {
@@ -75,6 +78,11 @@ export function AgentModeBar() {
       /* localStorage can fail in private mode; ignore gracefully. */
     }
   }, [theme]);
+
+  /* Hide the experience switcher during UserTesting so shoppers
+   * cannot flip accordion A/B mid-study. Viewport/theme effects
+   * above still run. */
+  if (userTestingLock) return null;
 
   return (
     <div className="agent-mode-bar" role="banner" aria-label="Experience switcher">

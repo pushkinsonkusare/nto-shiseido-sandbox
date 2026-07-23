@@ -14,6 +14,19 @@ export const AGENT_MODES: { id: AgentMode; label: string }[] = [
 
 export type DemoViewportMode = "desktop" | "mobile";
 
+/** Fixed seed for UserTesting A/B oily-skin studies. Overridable via ?prompt=. */
+export const UT_DEFAULT_PROMPT = "best skincare for oily skin";
+
+export type UserTestingVariant = "a" | "b";
+
+type UserTestingBootstrap = {
+  variant: UserTestingVariant | null;
+  userTestingLock: boolean;
+  accordionRecommendations: boolean;
+  viewportMode: DemoViewportMode;
+  seedPrompt: string;
+};
+
 type AgentModeContextValue = {
   mode: AgentMode;
   setMode: (mode: AgentMode) => void;
@@ -25,6 +38,13 @@ type AgentModeContextValue = {
   /** Context island feature toggle (behavior TBD). */
   contextIsland: boolean;
   setContextIsland: (enabled: boolean) => void;
+  /**
+   * True when the page was opened with `?ut=a` or `?ut=b`. Locks the
+   * experience for UserTesting (hides AgentModeBar, seeds the oily-skin prompt).
+   */
+  userTestingLock: boolean;
+  /** Seed prompt used when `userTestingLock` is active. */
+  utSeedPrompt: string;
 };
 
 const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefined);
@@ -32,20 +52,69 @@ const AgentModeContext = createContext<AgentModeContextValue | undefined>(undefi
 /* Hard defaults for every page load. By design, refreshing the
  * page ALWAYS resets the experience switcher to Sidecar assistant +
  * Desktop regardless of what the shopper picked in the previous
- * session. */
+ * session — unless a UserTesting `?ut=` lock is present. */
 const DEFAULT_AGENT_MODE: AgentMode = "assistant-only";
 const DEFAULT_VIEWPORT_MODE: DemoViewportMode = "desktop";
 const DEFAULT_ACCORDION_RECOMMENDATIONS = true;
 const DEFAULT_CONTEXT_ISLAND = false;
 
+function readUserTestingBootstrap(): UserTestingBootstrap {
+  if (typeof window === "undefined") {
+    return {
+      variant: null,
+      userTestingLock: false,
+      accordionRecommendations: DEFAULT_ACCORDION_RECOMMENDATIONS,
+      viewportMode: DEFAULT_VIEWPORT_MODE,
+      seedPrompt: UT_DEFAULT_PROMPT,
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const utRaw = (params.get("ut") || "").trim().toLowerCase();
+  const variant: UserTestingVariant | null =
+    utRaw === "a" || utRaw === "b" ? utRaw : null;
+  const userTestingLock = variant !== null;
+
+  const viewportRaw = (params.get("viewport") || "").trim().toLowerCase();
+  const viewportOverride: DemoViewportMode | null =
+    viewportRaw === "mobile" || viewportRaw === "desktop" ? viewportRaw : null;
+
+  const promptRaw = params.get("prompt")?.trim();
+  const seedPrompt = promptRaw || UT_DEFAULT_PROMPT;
+
+  if (!userTestingLock) {
+    return {
+      variant: null,
+      userTestingLock: false,
+      accordionRecommendations: DEFAULT_ACCORDION_RECOMMENDATIONS,
+      viewportMode: DEFAULT_VIEWPORT_MODE,
+      seedPrompt,
+    };
+  }
+
+  return {
+    variant,
+    userTestingLock: true,
+    // A = accordion on (one fold open); B = all sections open
+    accordionRecommendations: variant === "a",
+    viewportMode: viewportOverride ?? "mobile",
+    seedPrompt,
+  };
+}
+
+const UT_BOOTSTRAP = readUserTestingBootstrap();
+
 export function AgentModeProvider({ children }: { children: ReactNode }) {
   /* No localStorage init for either piece of state: every refresh
-   * starts from the hard defaults above. The mid-session setters
-   * still work normally; they just don't survive a reload. */
+   * starts from the hard defaults above (or UT lock from the URL).
+   * The mid-session setters still work normally; they just don't
+   * survive a reload. */
   const [mode, setMode] = useState<AgentMode>(DEFAULT_AGENT_MODE);
-  const [viewportMode, setViewportMode] = useState<DemoViewportMode>(DEFAULT_VIEWPORT_MODE);
+  const [viewportMode, setViewportMode] = useState<DemoViewportMode>(
+    UT_BOOTSTRAP.viewportMode,
+  );
   const [accordionRecommendations, setAccordionRecommendations] = useState<boolean>(
-    DEFAULT_ACCORDION_RECOMMENDATIONS,
+    UT_BOOTSTRAP.accordionRecommendations,
   );
   const [contextIsland, setContextIsland] = useState<boolean>(DEFAULT_CONTEXT_ISLAND);
 
@@ -59,6 +128,8 @@ export function AgentModeProvider({ children }: { children: ReactNode }) {
       setAccordionRecommendations,
       contextIsland,
       setContextIsland,
+      userTestingLock: UT_BOOTSTRAP.userTestingLock,
+      utSeedPrompt: UT_BOOTSTRAP.seedPrompt,
     }),
     [mode, viewportMode, accordionRecommendations, contextIsland],
   );

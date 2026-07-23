@@ -14,11 +14,14 @@ type Props = {
 // keyframe / transition durations in SideBySideLayout.css.
 const FAB_REVEAL_DELAY_MS = 280;
 
+/** Module-level guard so React StrictMode remount does not double-seed UT. */
+let utPromptSeeded = false;
+
 export function SidecarDockLayout({ children }: Props) {
-  const { viewportMode } = useAgentMode();
+  const { viewportMode, userTestingLock, utSeedPrompt } = useAgentMode();
   const isMobileViewport = viewportMode === "mobile";
 
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(() => userTestingLock);
   // When detached the assistant floats as a centered modal and the storefront
   // reflows to full width. Desktop-only; mobile keeps the overlay sheet.
   const [detached, setDetached] = useState(false);
@@ -26,8 +29,8 @@ export function SidecarDockLayout({ children }: Props) {
   // session so the chat history survives a close -> reopen. The close
   // transition is driven entirely by CSS (grid collapses to 0px and the panel
   // slides out via `--closing`).
-  const [panelMounted, setPanelMounted] = useState(false);
-  const [fabVisible, setFabVisible] = useState(true);
+  const [panelMounted, setPanelMounted] = useState(() => userTestingLock);
+  const [fabVisible, setFabVisible] = useState(() => !userTestingLock);
 
   const panelRef = useRef<HTMLElement | null>(null);
   const swipeStartXRef = useRef<number | null>(null);
@@ -83,6 +86,25 @@ export function SidecarDockLayout({ children }: Props) {
       document.removeEventListener("agentic:ask-assistant", onOpen);
     };
   }, []);
+
+  // UserTesting lock: once SidecarAssistant is mounted, fire the seeded
+  // oily-skin prompt so testers land on the routine card immediately.
+  useEffect(() => {
+    if (!userTestingLock || !panelMounted) return;
+    if (utPromptSeeded) return;
+    utPromptSeeded = true;
+    const prompt = utSeedPrompt.trim();
+    if (!prompt) return;
+    // Defer so SidecarAssistant's ask listener is registered after mount.
+    const timer = window.setTimeout(() => {
+      document.dispatchEvent(
+        new CustomEvent("agentic:ask-assistant", {
+          detail: { prompt },
+        }),
+      );
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [userTestingLock, panelMounted, utSeedPrompt]);
 
   useEffect(() => {
     if (!isMobileViewport) return;
